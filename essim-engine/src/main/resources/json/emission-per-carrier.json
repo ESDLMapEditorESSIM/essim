@@ -1,0 +1,117 @@
+{
+	"columns": [
+	],
+	"datasource": "${DS_AMELANDESSIM}",
+	"fontSize": "100%",
+	"gridPos": {
+		"h": 9,
+		"w": 4,
+		"x": 3,
+		"y": 0
+	},
+	"id": 2,
+	"links": [
+	],
+	"pageSize": null,
+	"scroll": true,
+	"showHeader": true,
+	"sort": {
+		"col": 0,
+		"desc": true
+	},
+	"styles": [
+		{
+			"alias": "Time",
+			"dateFormat": "YYYY-MM-DD HH:mm:ss",
+			"pattern": "Time",
+			"type": "hidden"
+		},
+		{
+			"alias": "FuelType",
+			"colorMode": null,
+			"colors": [
+				"rgba(245, 54, 54, 0.9)",
+				"rgba(237, 129, 40, 0.89)",
+				"rgba(50, 172, 45, 0.97)"
+			],
+			"dateFormat": "YYYY-MM-DD HH:mm:ss",
+			"decimals": 2,
+			"mappingType": 1,
+			"pattern": "Metric",
+			"thresholds": [
+			],
+			"type": "number",
+			"unit": "masst"
+		},
+		{
+			"alias": "tonnes of CO₂",
+			"colorMode": null,
+			"colors": [
+				"rgba(245, 54, 54, 0.9)",
+				"rgba(237, 129, 40, 0.89)",
+				"rgba(50, 172, 45, 0.97)"
+			],
+			"decimals": 2,
+			"pattern": "Value",
+			"thresholds": [
+			],
+			"type": "number",
+			"unit": "short"
+		}
+	],
+	"targets": [
+		{
+			"alias": "$tag_carrierName",
+			"groupBy": [
+				{
+					"params": [
+						"carrierName"
+					],
+					"type": "tag"
+				}
+			],
+			"measurement": "ESSIM",
+			"orderByTime": "ASC",
+			"policy": "default",
+			"refId": "A",
+			"resultFormat": "time_series",
+			"select": [
+				[
+					{
+						"params": [
+							"emission"
+						],
+						"type": "field"
+					},
+					{
+						"params": [
+						],
+						"type": "sum"
+					},
+					{
+						"params": [
+							" / 1000"
+						],
+						"type": "math"
+					}
+				]
+			],
+			"tags": [
+				{
+					"key": "simulationRun",
+					"operator": "=",
+					"value": "$$SimulationRunName$$"
+				},
+				{
+					"condition": "AND",
+					"key": "capability",
+					"operator": "=",
+					"value": "Producer"
+				}
+			]
+		}
+	],
+	"title": "Emission per Carrier",
+	"transform": "timeseries_to_rows",
+	"type": "table"
+}

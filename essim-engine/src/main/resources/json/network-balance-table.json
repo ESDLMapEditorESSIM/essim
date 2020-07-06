@@ -1,0 +1,131 @@
+{
+	"columns": [
+	],
+	"datasource": "${DS_AMELANDESSIM}",
+	"fontSize": "100%",
+	"gridPos": {
+		"h": 9,
+		"w": 9,
+		"x": 15,
+		"y": 0
+	},
+	"id": 4,
+	"links": [
+	],
+	"pageSize": null,
+	"scroll": true,
+	"showHeader": true,
+	"sort": {
+		"col": 0,
+		"desc": true
+	},
+	"styles": [
+		{
+			"alias": "Time",
+			"dateFormat": "YYYY-MM-DD HH:mm:ss",
+			"pattern": "Time",
+			"type": "hidden"
+		},
+		{
+			"alias": "Network",
+			"colorMode": null,
+			"colors": [
+				"rgba(50, 172, 45, 0.97)",
+				"rgb(255,255,255)",
+				"rgba(245, 54, 54, 0.9)"
+			],
+			"decimals": 2,
+			"mappingType": 1,
+			"pattern": "Metric",
+			"preserveFormat": false,
+			"sanitize": false,
+			"thresholds": [
+				""
+			],
+			"type": "string",
+			"unit": "joule",
+			"valueMaps": [
+			]
+		},
+		{
+			"alias": "Balance",
+			"colorMode": "cell",
+			"colors": [
+				"rgba(245, 54, 54, 0.9)",
+				"rgba(50, 172, 45, 0.97)",
+				"rgba(245, 54, 54, 0.9)"
+			],
+			"dateFormat": "YYYY-MM-DD HH:mm:ss",
+			"decimals": 2,
+			"mappingType": 2,
+			"pattern": "Value",
+			"preserveFormat": false,
+			"rangeMaps": [
+				{
+					"from": "-1000000000000000000000000000000",
+					"text": "NOT OK",
+					"to": "-1000"
+				},
+				{
+					"from": "-1000",
+					"text": "OK",
+					"to": "1000"
+				},
+				{
+					"from": "1000",
+					"text": "NOT OK",
+					"to": "1000000000000000000000000000000"
+				}
+			],
+			"thresholds": [
+				"-1000",
+				"1000"
+			],
+			"type": "string",
+			"unit": "joule"
+		}
+	],
+	"targets": [
+		{
+			"alias": "$tag_transportNetworkId",
+			"groupBy": [
+				{
+					"params": [
+						"transportNetworkId"
+					],
+					"type": "tag"
+				}
+			],
+			"measurement": "/AmelandEnergySystem_(.*)/",
+			"orderByTime": "ASC",
+			"policy": "default",
+			"refId": "A",
+			"resultFormat": "time_series",
+			"select": [
+				[
+					{
+						"params": [
+							"imbalanceEnergy"
+						],
+						"type": "field"
+					},
+					{
+						"params": [
+						],
+						"type": "mean"
+					}
+				]
+			],
+			"tags": [
+				{
+					"key": "simulationRun",
+					"operator": "=",
+					"value": "/^$SimulationRun$/"
+				}
+			]
+		}
+	],
+	"title": "Network Balances",
+	"transform": "timeseries_to_rows",
+	"type": "table"
+}

@@ -1,0 +1,189 @@
+{
+	"aliasColors": {
+		"Imbalance": "#ffffff"
+	},
+	"bars": false,
+	"dashLength": 10,
+	"dashes": false,
+	"datasource": "${DS_AMELANDESSIM}",
+	"decimals": 2,
+	"fill": 1,
+	"gridPos": {
+		"h": 8,
+		"w": 24,
+		"x": 0,
+		"y": 11
+	},
+	"id": 8,
+	"legend": {
+		"alignAsTable": true,
+		"avg": false,
+		"current": false,
+		"max": false,
+		"min": false,
+		"rightSide": true,
+		"show": true,
+		"total": true,
+		"values": true
+	},
+	"lines": true,
+	"linewidth": 1,
+	"links": [],
+	"nullPointMode": "null",
+	"percentage": false,
+	"pointradius": 5,
+	"points": false,
+	"renderer": "flot",
+	"seriesOverrides": [{
+		"alias": "SOC",
+		"yaxis": 2
+	}],
+	"spaceLength": 10,
+	"stack": false,
+	"steppedLine": true,
+	"targets": [
+		{
+			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
+			"groupBy": [{
+				"params": [
+					"assetName"
+				],
+				"type": "tag"
+			},
+			{
+				"params": [
+					"assetClass"
+				],
+				"type": "tag"
+			},
+			{
+				"params": [
+					"address"
+				],
+				"type": "tag"
+			}],
+			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
+			"orderByTime": "ASC",
+			"policy": "default",
+			"refId": "A",
+			"resultFormat": "time_series",
+			"select": [
+				[{
+					"params": [
+						"allocationEnergy"
+					],
+					"type": "field"
+				}]
+			],
+			"tags": [{
+					"key": "simulationRun",
+					"operator": "=",
+					"value": "/^$SimulationRun$/"
+				},
+				{
+					"condition": "AND",
+					"key": "capability",
+					"operator": "<>",
+					"value": "Transport"
+				}
+			]
+		},
+		{
+			"alias": "Imbalance",
+			"groupBy": [],
+			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
+			"orderByTime": "ASC",
+			"policy": "default",
+			"refId": "B",
+			"resultFormat": "time_series",
+			"select": [
+				[{
+						"params": [
+							"imbalanceEnergy"
+						],
+						"type": "field"
+					},
+					{
+						"params": [
+							"*-1"
+						],
+						"type": "math"
+					}
+				]
+			],
+			"tags": [{
+				"key": "simulationRun",
+				"operator": "=",
+				"value": "/^$SimulationRun$/"
+			}]
+		},
+		{
+			"alias": "SOC",
+			"groupBy": [],
+			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
+			"orderByTime": "ASC",
+			"policy": "default",
+			"refId": "C",
+			"resultFormat": "time_series",
+			"select": [
+				[{
+					"params": [
+						"soc"
+					],
+					"type": "field"
+				}]
+			],
+			"tags": [{
+					"key": "simulationRun",
+					"operator": "=",
+					"value": "/^$SimulationRun$/"
+				},
+				{
+					"condition": "AND",
+					"key": "capability",
+					"operator": "=",
+					"value": "Storage"
+				}
+			]
+		}
+	],
+	"thresholds": [],
+	"timeFrom": null,
+	"timeShift": null,
+	"title": "$$$TRANSPORT-SOLVER-NAME$$$",
+	"tooltip": {
+		"shared": true,
+		"sort": 0,
+		"value_type": "individual"
+	},
+	"transparent": true,
+	"type": "graph",
+	"xaxis": {
+		"buckets": null,
+		"mode": "time",
+		"name": null,
+		"show": true,
+		"values": []
+	},
+	"yaxes": [{
+			"format": "joule",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": null,
+			"show": true
+		},
+		{
+			"format": "percentunit",
+			"label": null,
+			"logBase": 1,
+			"max": null,
+			"min": "0",
+			"show": true
+		}
+	],
+	"yaxis": {
+		"align": false,
+		"alignLevel": null
+	}
+}

@@ -1,0 +1,57 @@
+version: '3'
+services:
+  mongo:
+    image: mvertes/alpine-mongo
+    ports:
+      - 0.0.0.0:27017:27017
+#  vmq:
+#    image: vernemq/vernemq
+#    ports:
+#      - 1883:1883 
+#      - 8888:8888 
+#    environment:
+#      - DOCKER_VERNEMQ_ACCEPT_EULA=yes
+#      - DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on
+  nats:
+    image: ci.hesi.energy:5000/nats-server:latest
+    ports:
+      - 4222:4222
+      - 6222:6222
+      - 8222:8222
+#  kafka:
+#    image: johnnypark/kafka-zookeeper:2.3.0
+#    ports:
+#      - 2181:2181
+#      - 9092:9092
+#    environment:
+#      - ADVERTISED_HOST=127.0.0.1
+#      - NUM_PARTITIONS=1
+#      - KAFKA_LOG_RETENTION_HOURS=24
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+    volumes:
+      - influxdb-storage:/var/lib/influxdb      
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    environment:
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+    volumes:
+      - grafana-storage:/var/lib/grafana
+#  essim-engine:
+#    build: .
+#    ports:
+#     - 8112:8112
+#    environment:
+#     - HTTP_SERVER_SCHEME=http
+#     - HTTP_SERVER_HOSTNAME=0.0.0.0
+#     - HTTP_SERVER_PORT=8112
+#     - HTTP_SERVER_PATH=essim
+#     - MONGODB_HOST=mongo
+#     - MONGODB_PORT=27017
+volumes:
+  grafana-storage:
+  influxdb-storage:

@@ -1,0 +1,99 @@
+version: '3'
+
+networks:
+  essim_net:
+    driver: overlay
+
+services:
+  essim-engine:
+    image: ci.hesi.energy:5000/essim-engine:latest
+    ports:
+     - 8112:8112
+    environment:
+     - HTTP_SERVER_SCHEME=http
+     - HTTP_SERVER_HOSTNAME=0.0.0.0
+     - HTTP_SERVER_PORT=8112
+     - HTTP_SERVER_PATH=essim
+     - MONGODB_HOST=mongo
+     - MONGODB_PORT=27017
+     - GRAFANA_API_KEY=eyJrIjoiNTI3NEd4d1AzblZtek9SNEhTMHRwYzVnODNWOTg2a3kiLCJuIjoiRXNzaW1LZXkiLCJpZCI6MX0=
+    deploy:
+      placement:
+        constraints:
+          - node.labels.function != dbs-only
+    networks:
+     - essim_net
+
+  kafka:
+    image: johnnypark/kafka-zookeeper:2.3.0
+    ports:
+      - 2182:2181
+      - 9093:9092
+    environment:
+      - ADVERTISED_HOST_CMD=hostname -i
+      - KAFKA_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - NUM_PARTITIONS=20
+      - KAFKA_LOG_RETENTION_HOURS=24
+    networks:
+     - essim_net
+
+  mongo:
+    image: mvertes/alpine-mongo
+    ports:
+      - 0.0.0.0:27017:27017
+    deploy:
+      placement:
+        constraints:
+          - node.labels.function != dbs-only
+    volumes:
+      - mongo-storage:/data/db
+    networks:
+     - essim_net
+
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - 8086:8086
+      - 8998:8088
+    volumes:
+      - influxdb-storage:/var/lib/influxdb
+    deploy:
+      placement:
+        constraints:
+          - node.labels.function == dbs-only
+    networks:
+     - essim_net
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    environment:
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+        #- GF_AUTH_BASIC_ENABLED=False
+        #- GF_AUTH_OAUTH_AUTO_LOGIN=True
+        #- GF_AUTH_GENERIC_OAUTH_ENABLED=True
+        #- GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=True
+        #- GF_AUTH_GENERIC_OAUTH_NAME=Auth0
+        #- GF_AUTH_GENERIC_OAUTH_CLIENT_ID=essim-dashboard
+        #- GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=7edfad6c-2ac4-4c7a-a725-fe7ffa032049
+        #- GF_AUTH_GENERIC_OAUTH_SCOPES=openid profile email
+        #- GF_AUTH_GENERIC_OAUTH_AUTH_URL="https://idm.hesi.energy/auth/realms/esdl-mapeditor/protocol/openid-connect/auth"
+        #- GF_AUTH_GENERIC_OAUTH_TOKEN_URL="https://idm.hesi.energy/auth/realms/esdl-mapeditor/protocol/openid-connect/token"
+        #- GF_AUTH_GENERIC_OAUTH_API_URL="https://idm.hesi.energy/auth/realms/esdl-mapeditor/protocol/openid-connect/userinfo"
+
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    deploy:
+      placement:
+        constraints:
+          - node.labels.function == dbs-only
+    networks:
+     - essim_net
+
+
+volumes:
+  grafana-storage:
+  influxdb-storage:
+  mongo-storage:

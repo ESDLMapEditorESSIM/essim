@@ -1,0 +1,135 @@
+{
+	"type": "graph",
+	"title": "Transport loads (in J)",
+	"gridPos": {
+		"x": 0,
+		"y": 56,
+		"w": 24,
+		"h": 8
+	},
+	"id": 17,
+	"datasource": "AmelandESSIM",
+	"targets": [
+		{
+			"refId": "B",
+			"policy": "default",
+			"resultFormat": "time_series",
+			"orderByTime": "ASC",
+			"tags": [
+				{
+					"key": "simulationRun",
+					"operator": "=",
+					"value": "SimRun_2019-03-29T10:20:03.585_subramaniana"
+				},
+				{
+					"condition": "AND",
+					"key": "capability",
+					"operator": "=",
+					"value": "Transport"
+				}
+			],
+			"groupBy": [
+				{
+					"type": "tag",
+					"params": [
+						"assetClass"
+					]
+				},
+				{
+					"type": "tag",
+					"params": [
+						"assetName"
+					]
+				},
+				{
+					"params": [
+						"address"
+					],
+					"type": "tag"
+				}
+			],
+			"select": [
+				[
+					{
+						"type": "field",
+						"params": [
+							"allocationEnergy"
+						]
+					}
+				]
+			],
+			"measurement": "AmelandEnergySystem_ELECCOMM_0",
+			"alias": "$tag_assetClass ($tag_assetName, $tag_address)"
+		}
+	],
+	"renderer": "flot",
+	"yaxes": [
+		{
+			"label": null,
+			"show": true,
+			"logBase": 1,
+			"min": null,
+			"max": null,
+			"format": "joule"
+		},
+		{
+			"label": null,
+			"show": true,
+			"logBase": 1,
+			"min": null,
+			"max": null,
+			"format": "short"
+		}
+	],
+	"xaxis": {
+		"show": true,
+		"mode": "time",
+		"name": null,
+		"values": [
+		],
+		"buckets": null
+	},
+	"yaxis": {
+		"align": false,
+		"alignLevel": null
+	},
+	"lines": true,
+	"fill": 1,
+	"linewidth": 1,
+	"dashes": false,
+	"dashLength": 10,
+	"spaceLength": 10,
+	"points": false,
+	"pointradius": 5,
+	"bars": false,
+	"stack": false,
+	"percentage": false,
+	"legend": {
+		"avg": false,
+		"current": false,
+		"max": false,
+		"min": false,
+		"show": true,
+		"total": true,
+		"values": true,
+		"alignAsTable": true,
+		"rightSide": true
+	},
+	"nullPointMode": "null",
+	"steppedLine": false,
+	"tooltip": {
+		"value_type": "individual",
+		"shared": true,
+		"sort": 0
+	},
+	"timeFrom": null,
+	"timeShift": null,
+	"aliasColors": {
+	},
+	"seriesOverrides": [
+	],
+	"thresholds": [
+	],
+	"links": [
+	]
+}

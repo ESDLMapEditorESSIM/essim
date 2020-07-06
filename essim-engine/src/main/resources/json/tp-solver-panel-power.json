@@ -1,0 +1,162 @@
+{
+  "aliasColors": {
+    "Imbalance": "#ffffff"
+  },
+  "bars": false,
+  "dashLength": 10,
+  "dashes": false,
+  "datasource": "AmelandESSIM",
+  "decimals": 2,
+  "fill": 1,
+  "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 3
+  },
+  "id": 21,
+  "legend": {
+    "alignAsTable": true,
+    "avg": false,
+    "current": false,
+    "max": false,
+    "min": false,
+    "rightSide": true,
+    "show": true,
+    "total": false,
+    "values": false
+  },
+  "lines": true,
+  "linewidth": 1,
+  "links": [],
+  "nullPointMode": "null",
+  "percentage": false,
+  "pointradius": 5,
+  "points": false,
+  "renderer": "flot",
+  "seriesOverrides": [],
+  "spaceLength": 10,
+  "stack": false,
+  "steppedLine": false,
+  "targets": [
+    {
+      "alias": "$tag_name",
+      "groupBy": [
+        {
+          "params": [
+            "name"
+          ],
+          "type": "tag"
+        }
+      ],
+      "measurement": "TransportSolver-AmelandEnergySystem_ElectricityCarrier",
+      "orderByTime": "ASC",
+      "policy": "default",
+      "query": "SELECT \"allocationPower\" FROM \"TransportSolver-AmelandEnergySystem_ELECCOMM\" WHERE (\"simulationRun\" =~ /^$SimulationRun$/ AND \"type\" <> 'ElectricityNetwork' AND \"type\" <> 'ElectricityCable') AND $timeFilter GROUP BY \"id\"",
+      "rawQuery": false,
+      "refId": "A",
+      "resultFormat": "time_series",
+      "select": [
+        [
+          {
+            "params": [
+              "allocationPower"
+            ],
+            "type": "field"
+          }
+        ]
+      ],
+      "tags": [
+        {
+          "key": "simulationRun",
+          "operator": "=",
+          "value": "$SimulationRun$"
+        },
+        {
+          "condition": "AND",
+          "key": "assetClass",
+          "operator": "<>",
+          "value": "ElectricityNetwork"
+        },
+        {
+          "condition": "AND",
+          "key": "assetClass",
+          "operator": "<>",
+          "value": "ElectricityCable"
+        }
+      ]
+    },
+    {
+      "alias": "Imbalance",
+      "groupBy": [],
+      "measurement": "TransportSolver-AmelandEnergySystem_ElectricityCarrier",
+      "orderByTime": "ASC",
+      "policy": "default",
+      "refId": "B",
+      "resultFormat": "time_series",
+      "select": [
+        [
+          {
+            "params": [
+              "imbalancePower"
+            ],
+            "type": "field"
+          },
+          {
+            "params": [
+              "*-1"
+            ],
+            "type": "math"
+          }
+        ]
+      ],
+      "tags": [
+        {
+          "key": "simulationRun",
+          "operator": "=",
+          "value": "$SimulationRun$"
+        }
+      ]
+    }
+  ],
+  "thresholds": [],
+  "timeFrom": null,
+  "timeShift": null,
+  "title": "Electricity Network",
+  "tooltip": {
+    "shared": true,
+    "sort": 0,
+    "value_type": "individual"
+  },
+  "transparent": true,
+  "type": "graph",
+  "xaxis": {
+    "buckets": null,
+    "mode": "time",
+    "name": null,
+    "show": true,
+    "values": []
+  },
+  "yaxes": [
+    {
+      "format": "watt",
+      "label": null,
+      "logBase": 1,
+      "max": null,
+      "min": null,
+      "show": true
+    },
+    {
+      "format": "percentunit",
+      "label": null,
+      "logBase": 1,
+      "max": null,
+      "min": null,
+      "show": true
+    }
+  ],
+  "yaxis": {
+    "align": false,
+    "alignLevel": null
+  }
+}

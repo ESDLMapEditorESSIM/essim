@@ -1,0 +1,110 @@
+#%RAML 1.0
+title: ESSIM REST Services
+version: v3
+mediaType: application/json
+
+uses:
+  type: types/essim-types.raml
+
+/simulation:
+  post:
+    body: type.EssimSimulation
+    description: Create and start a simulation run
+    responses:
+      201:
+        body: type.CreatedStatus
+      400:
+        body: type.ErrorStatus
+
+  get:
+    description: Get all Simulation Runs
+    responses:
+      200:
+        body: type.EssimSimulation[]
+  
+  /status:
+    get:
+      description: Get status of current ESSIM instance
+      responses:
+        200:
+          body: string
+
+  /kpiModules:
+    get:
+      description: Get all KPI Modules
+      responses:
+        200:
+          body: type.KPIModuleInfo[]
+           
+  /{simulationId}:
+    get:
+      description: Get information of simulation run
+      responses:
+        200:
+          body: type.EssimSimulation
+        404:
+          body: {}
+          
+    put:
+      body: type.EssimSimulation
+      description: Get information of simulation run
+      responses:
+        202:
+          body: string
+        404:
+          body: {}
+
+    /kpi:
+      get:
+        description: Get KPIs of simulation run
+        responses:
+          200:
+            body: string
+          404:
+            body: string
+
+      /{kpiId}:
+        get:
+          description: Get KPI calculation results
+          responses:
+            200:
+              body: string
+            404:
+              body: {}
+
+    /status:
+      get:
+        description: Give status of this simulation
+        responses:
+          200:
+            body: string
+          404:
+            body: {}
+
+    /load_animation:
+      get:
+        description: 
+        responses:
+          200:
+            body: string
+          404:
+            body: string
+
+    /transport:
+      get:
+        description: List all transport networks created in this simulation run
+        responses:
+          200:
+            body: type.TransportNetwork[]
+          404:
+            body: {}            
+
+      /{index}:
+        get:
+          description: Get description of Transport Network
+          responses:
+            200:
+              body: type.TransportNetwork
+            404:
+              body: {}
+            
