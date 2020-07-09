@@ -31,39 +31,6 @@
 		<esdl.version>1.1.1-SNAPSHOT</esdl.version>
 	</properties>
 
-	<repositories>
-		<repository>
-			<id>hesi-snapshots</id>
-			<name>HESI snapshot artifactory</name>
-			<url>http://ci.hesi.energy:8081/artifactory/libs-snapshot-local</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</repository>
-		<repository>
-			<id>hesi-releases</id>
-			<name>HESI release artifactory</name>
-			<url>http://ci.hesi.energy:8081/artifactory/libs-release-local</url>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-		</repository>
-	</repositories>
-
-	<distributionManagement>
-		<snapshotRepository>
-			<id>hesi</id>
-			<name>HESI snapshot artifactory</name>
-			<url>http://ci.hesi.energy:8081/artifactory/libs-snapshot-local</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
