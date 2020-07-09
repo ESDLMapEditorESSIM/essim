@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -41,6 +42,8 @@ public class GrafanaClient {
 	private static final String GRAFANA_JLOAD_PANEL = JSON_RESOURCES + "transport-loads-joule.json";
 	private static final String GRAFANA_PLOAD_PANEL = JSON_RESOURCES + "transport-loads-percent.json";
 
+	private static final String GRAFANA_ADMIN_USER_ENV = "GRAFANA_ADMIN_USER";
+	private static final String GRAFANA_ADMIN_PASSWORD_ENV = "GRAFANA_ADMIN_PASSWORD";
 	private static final String GRAFANA_KEY = "GRAFANA_KEY";
 	private static final String DATASOURCES_URL = "/api/datasources";
 	private static final String DASHBOARDS_URL = "/api/dashboards/db";
@@ -52,15 +55,24 @@ public class GrafanaClient {
 	@Getter
 	private String dashboardUrl;
 	private MongoBackend mongo;
+	private String grafanaAdminUser;
+	private String grafanaAdminPassword;
+	private String grafanaAdminAuthorisation;
 
 	public GrafanaClient(String user, String timeString, String grafanaUrl, String influxDBURL,
 			List<TransportSolver> solversList, String energySystemId, String scenarioName, String simulationRunName,
 			LocalDateTime simStartDate, LocalDateTime simEndDate) {
 		this.grafanaUrl = grafanaUrl;
 
+		grafanaAdminUser = System.getenv(GRAFANA_ADMIN_USER_ENV) == null ? "admin"
+				: System.getenv(GRAFANA_ADMIN_USER_ENV);
+		grafanaAdminPassword = System.getenv(GRAFANA_ADMIN_PASSWORD_ENV) == null ? "admin"
+				: System.getenv(GRAFANA_ADMIN_PASSWORD_ENV);
+		grafanaAdminAuthorisation = Base64.getEncoder()
+				.encodeToString((grafanaAdminUser + ":" + grafanaAdminPassword).getBytes());
+
 		mongo = MongoBackend.getInstance();
 		grafanaAdminKey = createGrafanaAdminKey();
-		// grafanaAdminKey = System.getenv("GRAFANA_API_KEY");
 
 		String dashboardString = null;
 		String totalEmissionsString = null;
@@ -109,8 +121,7 @@ public class GrafanaClient {
 
 		// 2
 		emissionsPerCarrierString = emissionsPerCarrierString.replace("$$SimulationRunName$$", simulationRunName)
-				.replace("$$DBName$$", scenarioName)
-				.replace("$$InfluxDBURL$$", influxDBURL)
+				.replace("$$DBName$$", scenarioName).replace("$$InfluxDBURL$$", influxDBURL)
 				.replace("$$ESID$$", energySystemId);
 		JSONObject emissionsPerCarrierPanel = new JSONObject(emissionsPerCarrierString);
 		if (emissionsPerCarrierPanel.has("datasource")) {
@@ -126,8 +137,7 @@ public class GrafanaClient {
 			for (Object tagObj : target.getJSONArray("tags")) {
 				JSONObject tag = (JSONObject) tagObj;
 				if (tag.has("key")) {
-					if (tag.getString("key")
-							.equals("simulationRun")) {
+					if (tag.getString("key").equals("simulationRun")) {
 						tag.put("value", simulationRunName);
 					}
 				}
@@ -144,8 +154,7 @@ public class GrafanaClient {
 			for (Object tagObj : target.getJSONArray("tags")) {
 				JSONObject tag = (JSONObject) tagObj;
 				if (tag.has("key")) {
-					if (tag.getString("key")
-							.equals("simulationRun")) {
+					if (tag.getString("key").equals("simulationRun")) {
 						tag.put("value", simulationRunName);
 					}
 				}
@@ -155,8 +164,7 @@ public class GrafanaClient {
 
 		// 5
 		producerEmissionPanelString = producerEmissionPanelString.replace("$$SimulationRunName$$", simulationRunName)
-				.replace("$$DBName$$", scenarioName)
-				.replace("$$InfluxDBURL$$", influxDBURL)
+				.replace("$$DBName$$", scenarioName).replace("$$InfluxDBURL$$", influxDBURL)
 				.replace("$$ESID$$", energySystemId);
 		JSONObject prodEmissionsPanel = new JSONObject(producerEmissionPanelString);
 		if (prodEmissionsPanel.has("datasource")) {
@@ -166,8 +174,7 @@ public class GrafanaClient {
 
 		// 6
 		consumerEmissionPanelString = consumerEmissionPanelString.replace("$$SimulationRunName$$", simulationRunName)
-				.replace("$$DBName$$", scenarioName)
-				.replace("$$InfluxDBURL$$", influxDBURL);
+				.replace("$$DBName$$", scenarioName).replace("$$InfluxDBURL$$", influxDBURL);
 		JSONObject consEmissionsPanel = new JSONObject(consumerEmissionPanelString);
 		if (consEmissionsPanel.has("datasource")) {
 			consEmissionsPanel.put("datasource", databaseLabel);
@@ -195,8 +202,7 @@ public class GrafanaClient {
 				for (Object tagObj : target.getJSONArray("tags")) {
 					JSONObject tag = (JSONObject) tagObj;
 					if (tag.has("key")) {
-						if (tag.getString("key")
-								.equals("simulationRun")) {
+						if (tag.getString("key").equals("simulationRun")) {
 							tag.put("value", simulationRunName);
 						}
 					}
@@ -225,8 +231,7 @@ public class GrafanaClient {
 					for (Object tagObj : target.getJSONArray("tags")) {
 						JSONObject tag = (JSONObject) tagObj;
 						if (tag.has("key")) {
-							if (tag.getString("key")
-									.equals("simulationRun")) {
+							if (tag.getString("key").equals("simulationRun")) {
 								tag.put("value", simulationRunName);
 							}
 						}
@@ -253,8 +258,7 @@ public class GrafanaClient {
 					for (Object tagObj : target.getJSONArray("tags")) {
 						JSONObject tag = (JSONObject) tagObj;
 						if (tag.has("key")) {
-							if (tag.getString("key")
-									.equals("simulationRun")) {
+							if (tag.getString("key").equals("simulationRun")) {
 								tag.put("value", simulationRunName);
 							}
 						}
@@ -288,8 +292,7 @@ public class GrafanaClient {
 		String response = post(DASHBOARDS_URL, makeDashboardJSON.toString());
 		JSONObject respJSON = new JSONObject(response);
 		if (respJSON.has("status")) {
-			if (respJSON.get("status")
-					.equals("success")) {
+			if (respJSON.get("status").equals("success")) {
 				log.debug("Dashboard successfully created!!");
 				dashboardUrl = grafanaUrl + respJSON.get("url");
 				log.debug("Go to {}", dashboardUrl);
@@ -304,15 +307,14 @@ public class GrafanaClient {
 			log.debug("Found Grafana API Key: " + key);
 		} else {
 			log.debug("No Grafana API key found! Going to create one");
-			String body = new JSONObject().put("name", String.valueOf(new Date().getTime()))
-					.put("role", "Admin")
+			String body = new JSONObject().put("name", String.valueOf(new Date().getTime())).put("role", "Admin")
 					.toString();
 			String result = postAdmin(AUTH_URL, body);
 			log.trace("Result from querying Grafana : " + result);
-			
+
 			JSONObject adminResponse = new JSONObject(result);
 			key = adminResponse.getString("key");
-			
+
 			mongo.updateMetaInfo(GRAFANA_KEY, key);
 		}
 		return key;
@@ -365,15 +367,21 @@ public class GrafanaClient {
 			conn.setRequestProperty("Content-Type", "application/json");
 			conn.setRequestProperty("Authorization", "Bearer " + grafanaAdminKey);
 
-			log.trace("HTTP code for GET call to {}{} : {}", grafanaUrl, path, conn.getResponseCode());
-
-			BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+			BufferedReader br;
+			try {
+				log.trace("HTTP code for GET call to {}{} : {}", grafanaUrl, path, conn.getResponseCode());
+				br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+			} catch (IOException e) {
+				throw new IllegalArgumentException("Attempt to connect to Grafana at " + url.toString()
+						+ " failed. Please check if the service is up and running.");
+			}
 
 			String output;
 			while ((output = br.readLine()) != null) {
 				response.append(output);
 			}
 
+			br.close();
 			conn.disconnect();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -392,21 +400,27 @@ public class GrafanaClient {
 			conn.setDoOutput(true);
 			conn.setRequestMethod("POST");
 			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setRequestProperty("Authorization", "Basic YWRtaW46ZSQkaW00bGlmZQ==");
+			conn.setRequestProperty("Authorization", "Basic " + grafanaAdminAuthorisation);
 
 			OutputStream os = conn.getOutputStream();
 			os.write(body.getBytes());
 			os.flush();
 
-			log.trace("HTTP code for POST call to {} with {} : {}", url.toString(), body, conn.getResponseCode());
-
-			BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+			BufferedReader br;
+			try {
+				log.trace("HTTP code for POST call to {} with {} : {}", url.toString(), body, conn.getResponseCode());
+				br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+			} catch (IOException e) {
+				throw new IllegalArgumentException("Attempt to authenticate with Grafana at " + url.toString()
+						+ " failed. Please check the admin credentials.");
+			}
 
 			String output;
 			while ((output = br.readLine()) != null) {
 				response.append(output);
 			}
 
+			br.close();
 			conn.disconnect();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -430,15 +444,22 @@ public class GrafanaClient {
 			os.write(body.getBytes());
 			os.flush();
 
-			log.trace("HTTP code for POST call to {}{} with {} : {}", grafanaUrl, path, body, conn.getResponseCode());
-
-			BufferedReader br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+			BufferedReader br;
+			try {
+				log.trace("HTTP code for POST call to {}{} with {} : {}", grafanaUrl, path, body,
+						conn.getResponseCode());
+				br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
+			} catch (IOException e) {
+				throw new IllegalArgumentException("Attempt to connect to Grafana at " + url.toString()
+						+ " failed. Please check if the service is up and running.");
+			}
 
 			String output;
 			while ((output = br.readLine()) != null) {
 				response.append(output);
 			}
 
+			br.close();
 			conn.disconnect();
 		} catch (IOException e) {
 			e.printStackTrace();
