@@ -80,8 +80,9 @@ public class RestSimulation implements Simulation {
 				Date now = new Date();
 				simulation.setSimRunDate(now);
 				ESSimEngine engine = new ESSimEngine(simId, simulation, esdlFile);
-				if (simulation.getGrafanaURL() != null) {
-					simulation.setDashboardURL(engine.createGrafanaDashboard());
+				String grafanaDashboard = engine.createGrafanaDashboard();
+				if (grafanaDashboard != null) {
+					simulation.setDashboardURL(grafanaDashboard);
 				} else {
 					simulation.setDashboardURL("*headless simulation*");
 				}

@@ -44,14 +44,17 @@ public class GrafanaClient {
 
 	private static final String GRAFANA_ADMIN_USER_ENV = "GRAFANA_ADMIN_USER";
 	private static final String GRAFANA_ADMIN_PASSWORD_ENV = "GRAFANA_ADMIN_PASSWORD";
+	private static final String GRAFANA_INTERNAL_URL_ENV = "GRAFANA_INTERNAL_URL";
+	private static final String GRAFANA_EXTERNAL_URL_ENV = "GRAFANA_EXTERNAL_URL";
 	private static final String GRAFANA_KEY = "GRAFANA_KEY";
 	private static final String DATASOURCES_URL = "/api/datasources";
 	private static final String DASHBOARDS_URL = "/api/dashboards/db";
 	private static final String AUTH_URL = "/api/auth/keys";
-	private static final String DS_HANDLE = "DS_AMELANDESSIM";
+	private static final String DS_HANDLE = "DS_ESSIM";
 
 	private String grafanaAdminKey = "";
-	private String grafanaUrl;
+	private String grafanaInternalUrl;
+	private String grafanaExternalUrl;
 	@Getter
 	private String dashboardUrl;
 	private MongoBackend mongo;
@@ -59,10 +62,22 @@ public class GrafanaClient {
 	private String grafanaAdminPassword;
 	private String grafanaAdminAuthorisation;
 
-	public GrafanaClient(String user, String timeString, String grafanaUrl, String influxDBURL,
+	public GrafanaClient(String user, String timeString, String influxDBURL,
 			List<TransportSolver> solversList, String energySystemId, String scenarioName, String simulationRunName,
 			LocalDateTime simStartDate, LocalDateTime simEndDate) {
-		this.grafanaUrl = grafanaUrl;
+		
+		grafanaInternalUrl = System.getenv(GRAFANA_INTERNAL_URL_ENV);
+		grafanaExternalUrl = System.getenv(GRAFANA_EXTERNAL_URL_ENV);
+		
+		if(grafanaInternalUrl == null) {
+			log.warn("No internal Grafana URL defined! Dashboard will not be created!");
+			return;
+		}
+		
+		if(grafanaExternalUrl == null) {
+			log.warn("No external Grafana URL defined! Going to use " + grafanaInternalUrl + " in dashboard URL!");
+			grafanaExternalUrl = grafanaInternalUrl;
+		}
 
 		grafanaAdminUser = System.getenv(GRAFANA_ADMIN_USER_ENV) == null ? "admin"
 				: System.getenv(GRAFANA_ADMIN_USER_ENV);
@@ -294,7 +309,7 @@ public class GrafanaClient {
 		if (respJSON.has("status")) {
 			if (respJSON.get("status").equals("success")) {
 				log.debug("Dashboard successfully created!!");
-				dashboardUrl = grafanaUrl + respJSON.get("url");
+				dashboardUrl = grafanaExternalUrl + respJSON.get("url");
 				log.debug("Go to {}", dashboardUrl);
 			}
 		}
@@ -360,7 +375,7 @@ public class GrafanaClient {
 	private String get(String path) {
 		StringBuilder response = new StringBuilder();
 		try {
-			URL url = new URL(grafanaUrl + path);
+			URL url = new URL(grafanaInternalUrl + path);
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("GET");
 			conn.setRequestProperty("Accept", "application/json");
@@ -369,7 +384,7 @@ public class GrafanaClient {
 
 			BufferedReader br;
 			try {
-				log.trace("HTTP code for GET call to {}{} : {}", grafanaUrl, path, conn.getResponseCode());
+				log.trace("HTTP code for GET call to {}{} : {}", grafanaInternalUrl, path, conn.getResponseCode());
 				br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
 			} catch (IOException e) {
 				throw new IllegalArgumentException("Attempt to connect to Grafana at " + url.toString()
@@ -393,7 +408,7 @@ public class GrafanaClient {
 	private String postAdmin(String path, String body) {
 		StringBuilder response = new StringBuilder();
 		try {
-			URL url = new URL(grafanaUrl + path);
+			URL url = new URL(grafanaInternalUrl + path);
 			log.trace("Going to do POST query : " + url.toString());
 
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -432,7 +447,7 @@ public class GrafanaClient {
 	private String post(String path, String body) {
 		StringBuilder response = new StringBuilder();
 		try {
-			URL url = new URL(grafanaUrl + path);
+			URL url = new URL(grafanaInternalUrl + path);
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 			conn.setDoOutput(true);
 			conn.setRequestMethod("POST");
@@ -446,7 +461,7 @@ public class GrafanaClient {
 
 			BufferedReader br;
 			try {
-				log.trace("HTTP code for POST call to {}{} with {} : {}", grafanaUrl, path, body,
+				log.trace("HTTP code for POST call to {}{} with {} : {}", grafanaInternalUrl, path, body,
 						conn.getResponseCode());
 				br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
 			} catch (IOException e) {

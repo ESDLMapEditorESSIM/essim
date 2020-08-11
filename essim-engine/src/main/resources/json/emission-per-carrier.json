@@ -1,7 +1,7 @@
 {
 	"columns": [
 	],
-	"datasource": "${DS_AMELANDESSIM}",
+	"datasource": "${DS_ESSIM}",
 	"fontSize": "100%",
 	"gridPos": {
 		"h": 9,

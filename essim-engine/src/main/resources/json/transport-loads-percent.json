@@ -8,7 +8,7 @@
 		"h": 8
 	},
 	"id": 17,
-	"datasource": "AmelandESSIM",
+	"datasource": "${DS_ESSIM}",
 	"targets": [
 		{
 			"refId": "B",
@@ -19,7 +19,7 @@
 				{
 					"key": "simulationRun",
 					"operator": "=",
-					"value": "SimRun_2019-03-29T10:20:03.585_subramaniana"
+					"value": "/^$SimulationRun$/"
 				},
 				{
 					"condition": "AND",
@@ -58,7 +58,7 @@
 					}
 				]
 			],
-			"measurement": "AmelandEnergySystem_ELECCOMM_0",
+			"measurement": "EnergySystem_ELECCOMM_0",
 			"alias": "$tag_assetClass ($tag_assetName, $tag_address)"
 		}
 	],

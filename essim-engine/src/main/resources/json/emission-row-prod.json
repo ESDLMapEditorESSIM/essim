@@ -4,7 +4,7 @@
 	"bars": false,
 	"dashLength": 10,
 	"dashes": false,
-	"datasource": "${DS_AMELANDESSIM}",
+	"datasource": "${DS_ESSIM}",
 	"fill": 1,
 	"gridPos": {
 		"h": 8,

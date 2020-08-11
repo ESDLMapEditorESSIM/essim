@@ -9,7 +9,7 @@
   "links": [],
   "title": "Total Emissions",
   "type": "singlestat",
-  "datasource": "${DS_AMELANDESSIM}",
+  "datasource": "${DS_ESSIM}",
   "targets": [
     {
       "refId": "A",

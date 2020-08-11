@@ -90,7 +90,6 @@ public class ESSimEngine implements IStatusProvider {
 	private EssimDuration simulationStepLength;
 	private HashMap<EnergyAsset, Role> energyAssetRoles;
 	private List<TransportSolver> solversList = new ArrayList<TransportSolver>();
-	private String grafanaHost;
 	private String simulationDescription;
 	private String user;
 	@Getter
@@ -122,7 +121,6 @@ public class ESSimEngine implements IStatusProvider {
 	};
 	
 	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
-		grafanaHost = simulation.getGrafanaURL();
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -364,9 +362,6 @@ public class ESSimEngine implements IStatusProvider {
 	public String createGrafanaDashboard() {
 		// Make a Grafana Dashboard:
 		log.debug("Building Grafana Dashboard now!");
-		if (grafanaHost == null) {
-			grafanaHost = iflxHost;
-		}
 		String iflxURL = iflxHost + ":" + iflxPort;
 		if (user == null) {
 			user = "ESSIM_USER";
@@ -378,7 +373,7 @@ public class ESSimEngine implements IStatusProvider {
 			timeString = DateTimeFormatter.ISO_DATE_TIME
 					.format(LocalDateTime.ofInstant(simRunTime.toInstant(), ZoneId.of("UTC")));
 		}
-		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, grafanaHost, iflxURL, solversList,
+		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, iflxURL, solversList,
 				energySystemId, scenarioName, simulationRunName, simulationStartTime, simulationEndTime);
 		return grafanaClient.getDashboardUrl();
 	}

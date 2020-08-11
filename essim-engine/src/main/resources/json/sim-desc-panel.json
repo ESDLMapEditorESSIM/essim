@@ -7,7 +7,7 @@
 		"rgba(237, 129, 40, 0.89)",
 		"#d44a3a"
 	],
-	"datasource": "AmelandESSIM",
+	"datasource": "${DS_ESSIM}",
 	"format": "none",
 	"gauge": {
 		"maxValue": 100,
