@@ -21,13 +21,13 @@ deploy:
   dependencies:
     - build
   variables:
-    CONTAINER_IMAGE: $GEIS_REGISTRY/$CI_PROJECT_NAME
+    CONTAINER_IMAGE: $CI_TNO_REGISTRY/essim-engine
   stage: deploy
   image: docker:stable
   before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $GEIS_REGISTRY
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_TNO_REGISTRY
   script:
-    - docker build -t $CONTAINER_IMAGE:latest essim-engine/.
+    - docker build -t $CONTAINER_IMAGE:latest essim-engine
     - docker tag $CONTAINER_IMAGE:latest $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
     - docker push $CONTAINER_IMAGE:latest
     - docker push $CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
