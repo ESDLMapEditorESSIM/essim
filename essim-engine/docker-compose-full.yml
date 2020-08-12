@@ -6,8 +6,7 @@ networks:
 
 services:
   essim-engine:
-#   image: ci.hesi.energy:5000/essim-engine:latest
-    build: .
+    image: ci.tno.nl/essim/open-sourced-essim/essim-engine:latest
     ports:
      - 8112:8112
     environment:
