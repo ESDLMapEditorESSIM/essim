@@ -12,6 +12,7 @@ import org.eclipse.emf.common.util.EList;
 import esdl.Duration;
 import esdl.EsdlFactory;
 import esdl.ProfileElement;
+import esdl.ProfileTypeEnum;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -31,9 +32,9 @@ public class ExtendedESSIMDateTimeProfile extends ESSIMDateTimeProfileImpl {
 		if (start == null && end == null && step == null) {
 			return;
 		}
-		
+
 		EssimDuration simStep = Converter.toEssimDuration(step);
-		
+
 		HashMap<LocalDateTime, Double> vals = new HashMap<LocalDateTime, Double>();
 		EList<ProfileElement> profileElementList = getElement();
 		if (profileElementList != null) {
@@ -45,12 +46,17 @@ public class ExtendedESSIMDateTimeProfile extends ESSIMDateTimeProfileImpl {
 		LocalDateTime startDate = EssimTime.dateToLocalDateTime(start);
 		LocalDateTime endDate = EssimTime.dateToLocalDateTime(end);
 		double val = 0.0;
+
 		for (LocalDateTime t = startDate; t.isEqual(endDate)
 				|| t.isBefore(endDate); t = t.plus(simStep.getSeconds(), ChronoUnit.SECONDS)) {
 			if (vals.containsKey(t)) {
 				val = vals.get(t);
 			}
-			profile.put(t, val);
+			if (getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
+				profile.put(t, Converter.toStandardizedUnits(val, getProfileQuantityAndUnit()));
+			} else {
+				profile.put(t, Converter.toStandardizedUnits(val, getProfileType()));
+			}
 		}
 		log.debug("Initialised profile " + this);
 	}
@@ -58,7 +64,8 @@ public class ExtendedESSIMDateTimeProfile extends ESSIMDateTimeProfileImpl {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see esdl.impl.GenericProfileImpl#getProfile(java.util.Date, java.util.Date, esdl.Duration)
+	 * @see esdl.impl.GenericProfileImpl#getProfile(java.util.Date, java.util.Date,
+	 * esdl.Duration)
 	 */
 	@Override
 	public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
@@ -84,14 +91,16 @@ public class ExtendedESSIMDateTimeProfile extends ESSIMDateTimeProfileImpl {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see esdl.impl.GenericProfileImpl#setProfile(org.eclipse.emf.common.util.EList)
+	 * @see
+	 * esdl.impl.GenericProfileImpl#setProfile(org.eclipse.emf.common.util.EList)
 	 */
 	@Override
 	public boolean setProfile(EList<ProfileElement> profileElementList) {
 		// LocalDateTime startTime = DidoTime.dateToLocalDateTime(start);
 		// DidoDuration didoDuration = Converter.toDidoDuration(duration);
 
-		// LocalDateTime endTime = startTime.plus(didoDuration.getAmount(), didoDuration.getUnit());
+		// LocalDateTime endTime = startTime.plus(didoDuration.getAmount(),
+		// didoDuration.getUnit());
 		// long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
 		// long period = seconds / profileItem.size();
 		// for(int i=0; i<profileItem.size(); i++) {

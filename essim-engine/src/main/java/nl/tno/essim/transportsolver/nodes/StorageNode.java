@@ -64,7 +64,7 @@ public class StorageNode extends Node {
 			double energy = 0.0;
 			GenericProfile storageProfile = storage.getProfile();
 			if (Commons.isPowerProfile(storageProfile)) {
-				energy = Commons.aggregatePower(Commons.readProfile(storageProfile, now));
+				energy = timeStep * Commons.aggregatePower(Commons.readProfile(storageProfile, now));
 			} else if (Commons.isEnergyProfile(storageProfile)) {
 				energy = Commons.aggregateEnergy(Commons.readProfile(storageProfile, now));
 			} else if (Commons.isSoCProfile(storageProfile)) {

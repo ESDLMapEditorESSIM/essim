@@ -170,7 +170,8 @@ public class CoGenerationNode extends ConversionNode {
 
 						if (convProfile != null) {
 							if (Commons.isPowerProfile(convProfile)) {
-								energyOutput = Commons.aggregatePower(Commons.readProfile(convProfile, now));
+								energyOutput = timeStep
+										* Commons.aggregatePower(Commons.readProfile(convProfile, now));
 							} else if (Commons.isEnergyProfile(convProfile)) {
 								energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 							} else {
@@ -192,7 +193,7 @@ public class CoGenerationNode extends ConversionNode {
 
 					if (convProfile != null) {
 						if (Commons.isPowerProfile(convProfile)) {
-							energyOutput = Commons.aggregatePower(Commons.readProfile(convProfile, now));
+							energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
 						} else if (Commons.isEnergyProfile(convProfile)) {
 							energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 						} else {
@@ -222,7 +223,7 @@ public class CoGenerationNode extends ConversionNode {
 
 						if (convProfile != null) {
 							if (Commons.isPowerProfile(convProfile)) {
-								energyOutput = Commons.aggregatePower(Commons.readProfile(convProfile, now));
+								energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
 							} else if (Commons.isEnergyProfile(convProfile)) {
 								energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 							} else {
@@ -268,7 +269,7 @@ public class CoGenerationNode extends ConversionNode {
 
 					if (convProfile != null) {
 						if (Commons.isPowerProfile(convProfile)) {
-							energyOutput = Commons.aggregatePower(Commons.readProfile(convProfile, now));
+							energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
 						} else if (Commons.isEnergyProfile(convProfile)) {
 							energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 						} else {

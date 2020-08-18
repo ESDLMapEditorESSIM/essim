@@ -153,7 +153,7 @@ public class HeatPumpNode extends ConversionNode {
 
 				if (convProfile != null) {
 					if (Commons.isPowerProfile(convProfile)) {
-						energyOutput = Commons.aggregatePower(Commons.readProfile(convProfile, now));
+						energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
 					} else if (Commons.isEnergyProfile(convProfile)) {
 						energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 					} else {
@@ -188,7 +188,7 @@ public class HeatPumpNode extends ConversionNode {
 					}
 					if (profile != null) {
 						if (Commons.isPowerProfile(profile)) {
-							energyInput = Commons.aggregatePower(Commons.readProfile(profile, now));
+							energyInput = timeStep * Commons.aggregatePower(Commons.readProfile(profile, now));
 						} else if (Commons.isEnergyProfile(profile)) {
 							energyInput = Commons.aggregateEnergy(Commons.readProfile(profile, now));
 						} else {
@@ -215,7 +215,7 @@ public class HeatPumpNode extends ConversionNode {
 					}
 					if (profile != null) {
 						if (Commons.isPowerProfile(profile)) {
-							energyInput = Commons.aggregatePower(Commons.readProfile(profile, now));
+							energyInput = timeStep * Commons.aggregatePower(Commons.readProfile(profile, now));
 						} else if (Commons.isEnergyProfile(profile)) {
 							energyInput = Commons.aggregateEnergy(Commons.readProfile(profile, now));
 						} else {
@@ -267,7 +267,7 @@ public class HeatPumpNode extends ConversionNode {
 					}
 					if (profile != null) {
 						if (Commons.isPowerProfile(profile)) {
-							energyInput = Commons.aggregatePower(Commons.readProfile(profile, now));
+							energyInput = timeStep * Commons.aggregatePower(Commons.readProfile(profile, now));
 						} else if (Commons.isEnergyProfile(profile)) {
 							energyInput = Commons.aggregateEnergy(Commons.readProfile(profile, now));
 						} else {
@@ -294,7 +294,7 @@ public class HeatPumpNode extends ConversionNode {
 
 				if (profile != null) {
 					if (Commons.isPowerProfile(profile)) {
-						energyOutput = Commons.aggregatePower(Commons.readProfile(profile, now));
+						energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(profile, now));
 					} else if (Commons.isEnergyProfile(profile)) {
 						energyOutput = Commons.aggregateEnergy(Commons.readProfile(profile, now));
 					} else {

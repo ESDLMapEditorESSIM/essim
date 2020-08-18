@@ -50,7 +50,7 @@ public class WindTurbineNode extends ProducerNode {
 				GenericProfile profile = Commons.getEnergyProfile(port);
 				if (profile != null) {
 					if (Commons.isPowerProfile(profile)) {
-						energyOutput = Commons.aggregatePower(Commons.readProfile(profile, now));
+						energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(profile, now));
 						break;
 					} else if (Commons.isEnergyProfile(profile)) {
 						energyOutput = Commons.aggregateEnergy(Commons.readProfile(profile, now));

@@ -76,7 +76,7 @@ public class ProducerNode extends Node {
 				GenericProfile producerProfile = Commons.getEnergyProfile(port);
 				if (producerProfile != null) {
 					if (Commons.isPowerProfile(producerProfile)) {
-						energyOutput = Commons.aggregatePower(Commons.readProfile(producerProfile, now));
+						energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(producerProfile, now));
 						break;
 					} else if (Commons.isEnergyProfile(producerProfile)) {
 						energyOutput = Commons.aggregateEnergy(Commons.readProfile(producerProfile, now));

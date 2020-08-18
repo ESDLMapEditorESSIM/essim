@@ -49,24 +49,29 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		simStartDate = EssimTime.dateToLocalDateTime(from);
 		simEndDate = EssimTime.dateToLocalDateTime(to);
 
-		Date profileStartDate = getStart();
-		String startTime;
-		String endTime;
+		Date profileStartDate = getStartDate();
+		Date profileEndDate = getEndDate();
+		String startDateString;
+		String endDateString;
 		if (profileStartDate != null) {
 			LocalDateTime startDateFromGUI = EssimTime.dateToLocalDateTime(profileStartDate);
-			LocalDateTime oneYearAfterStart = startDateFromGUI.plusYears(1L);
-			startTime = EssimTime.toInfluxDBTimeString(startDateFromGUI);
-			endTime = EssimTime.toInfluxDBTimeString(oneYearAfterStart);
+			LocalDateTime endDateFromGUI;
+			if (profileEndDate != null) {
+				endDateFromGUI = EssimTime.dateToLocalDateTime(profileEndDate);
+			} else {
+				endDateFromGUI = startDateFromGUI.plusYears(1L);
+			}
+			startDateString = EssimTime.toInfluxDBTimeString(startDateFromGUI);
+			endDateString = EssimTime.toInfluxDBTimeString(endDateFromGUI);
 		} else {
-			LocalDateTime startDateOfSimulation = EssimTime.dateToLocalDateTime(from);
-			startTime = EssimTime.toInfluxDBTimeString(startDateOfSimulation);
-			endTime = EssimTime.toInfluxDBTimeString(EssimTime.dateToLocalDateTime(to));
+			startDateString = EssimTime.toInfluxDBTimeString(EssimTime.dateToLocalDateTime(from));
+			endDateString = EssimTime.toInfluxDBTimeString(EssimTime.dateToLocalDateTime(to));
 		}
 		if (getProfileQuantityAndUnit() != null) {
-			fillCache(getProfileQuantityAndUnit(), startTime, endTime, Converter.toEssimDuration(aggregationPrecision),
-					getMultiplier(), getAnnualChangePercentage());
+			fillCache(getProfileQuantityAndUnit(), startDateString, endDateString,
+					Converter.toEssimDuration(aggregationPrecision), getMultiplier(), getAnnualChangePercentage());
 		} else {
-			fillCache(getProfileType(), startTime, endTime, Converter.toEssimDuration(aggregationPrecision),
+			fillCache(getProfileType(), startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
 					getMultiplier(), getAnnualChangePercentage());
 		}
 	}
@@ -74,13 +79,14 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see esdl.impl.GenericProfileImpl#getProfile(java.util.Date, java.util.Date, esdl.Duration)
+	 * @see esdl.impl.GenericProfileImpl#getProfile(java.util.Date, java.util.Date,
+	 * esdl.Duration)
 	 */
 	@Override
 	public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
 
-		if (this.aggregationPrecision != null && !this.aggregationPrecision.getDurationUnit()
-				.equals(aggregationPrecision.getDurationUnit())
+		if (this.aggregationPrecision != null
+				&& !this.aggregationPrecision.getDurationUnit().equals(aggregationPrecision.getDurationUnit())
 				&& (this.aggregationPrecision.getValue() == aggregationPrecision.getValue())) {
 			log.warn("Different aggregation precisions are not (yet) supported and ignored!");
 		}
@@ -99,8 +105,8 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 
 		int connectionAttempts = 0;
 
-		String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '"
-				+ startTimeOfDataset + "' AND time <= '" + endTime + "'";
+		String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '" + startTimeOfDataset
+				+ "' AND time <= '" + endTime + "'";
 
 		log.debug("Influx Call for: " + command);
 
@@ -108,8 +114,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 			if (!profileCache.isCached(command, profileType)) {
 				log.debug("Profile is not cached! Proceeding to query InfluxDB!");
 
-				influxClient = InfluxDBFactory.connect(getHost() + ":" + getPort())
-						.enableGzip();
+				influxClient = InfluxDBFactory.connect(getHost() + ":" + getPort()).enableGzip();
 
 				QueryResult queryResult = null;
 				while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
@@ -151,32 +156,31 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 
 	public String toInfluxDBTime(EssimDuration stepLength) {
 		switch (stepLength.getUnit()) {
-			case DAYS :
-				return stepLength.getAmount() + "d";
-			case HOURS :
-				return stepLength.getAmount() + "h";
-			case MICROS :
-				return stepLength.getAmount() + "u";
-			case MILLIS :
-				return stepLength.getAmount() + "ms";
-			case MINUTES :
-				return stepLength.getAmount() + "m";
-			case MONTHS :
-				log.warn(
-						"Using {} duration is not supported by InfluxDB, so it is mapped to 30 days, better use days using the number of days in a specific month",
-						stepLength);
-				return 30 * stepLength.getAmount() + "d";
-			case NANOS :
-				return stepLength.getAmount() + "ns";
-			case SECONDS :
-				return stepLength.getAmount() + "s";
-			case WEEKS :
-				return 7 * stepLength.getAmount() + "d";
-			case YEARS :
-				return 365 * stepLength.getAmount() + "d";
-			default :
-				throw new UnsupportedOperationException(stepLength.getUnit()
-						.name() + " is not supported by ESSIM yet!");
+		case DAYS:
+			return stepLength.getAmount() + "d";
+		case HOURS:
+			return stepLength.getAmount() + "h";
+		case MICROS:
+			return stepLength.getAmount() + "u";
+		case MILLIS:
+			return stepLength.getAmount() + "ms";
+		case MINUTES:
+			return stepLength.getAmount() + "m";
+		case MONTHS:
+			log.warn(
+					"Using {} duration is not supported by InfluxDB, so it is mapped to 30 days, better use days using the number of days in a specific month",
+					stepLength);
+			return 30 * stepLength.getAmount() + "d";
+		case NANOS:
+			return stepLength.getAmount() + "ns";
+		case SECONDS:
+			return stepLength.getAmount() + "s";
+		case WEEKS:
+			return 7 * stepLength.getAmount() + "d";
+		case YEARS:
+			return 365 * stepLength.getAmount() + "d";
+		default:
+			throw new UnsupportedOperationException(stepLength.getUnit().name() + " is not supported by ESSIM yet!");
 
 		}
 	}
