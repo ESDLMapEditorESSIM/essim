@@ -363,8 +363,9 @@ public class GrafanaClient {
 			dbJSON.put("jsonData", new JSONObject().put("keepCookies", new JSONArray()));
 			dbJSON.put("secureJsonFields", new JSONArray());
 
+			log.debug("Sending to Grafana: " + dbJSON.toString());
 			String response = post(DATASOURCES_URL, dbJSON.toString());
-			log.debug(response);
+			log.debug("Response: " + response);
 			return database;
 		} else {
 			log.trace("Database {} already exists and is called {}!", database, databaseName);
