@@ -83,7 +83,6 @@ public class ESSimEngine implements IStatusProvider {
 	private String simulationRunName;
 	private String scenarioName;
 	private String energySystemId;
-	private String iflxHost;
 	private EnergySystem energySystem;
 	private LocalDateTime simulationStartTime;
 	private LocalDateTime simulationEndTime;
@@ -95,7 +94,7 @@ public class ESSimEngine implements IStatusProvider {
 	@Getter
 	private SimulationManager simulationManager;
 	private HashMap<String, String> networkDiags = new HashMap<String, String>();
-	private int iflxPort;
+	private String influxURL;
 	private Date simRunTime;
 	private List<NodeConfiguration> nodeConfig;
 	private RemoteKPIModule kpiModules;
@@ -120,12 +119,14 @@ public class ESSimEngine implements IStatusProvider {
 		}
 	};
 	
+	
 	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
 		nodeConfig = simulation.getNodeConfig();
 		kpiModules = simulation.getKpiModule();
+		influxURL = simulation.getInfluxURL();
 
 		scenarioName = simulation.getScenarioID();
 		simulationRunName = simulationId;
@@ -362,7 +363,6 @@ public class ESSimEngine implements IStatusProvider {
 	public String createGrafanaDashboard() {
 		// Make a Grafana Dashboard:
 		log.debug("Building Grafana Dashboard now!");
-		String iflxURL = iflxHost + ":" + iflxPort;
 		if (user == null) {
 			user = "ESSIM_USER";
 		}
@@ -373,7 +373,7 @@ public class ESSimEngine implements IStatusProvider {
 			timeString = DateTimeFormatter.ISO_DATE_TIME
 					.format(LocalDateTime.ofInstant(simRunTime.toInstant(), ZoneId.of("UTC")));
 		}
-		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, iflxURL, solversList,
+		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList,
 				energySystemId, scenarioName, simulationRunName, simulationStartTime, simulationEndTime);
 		return grafanaClient.getDashboardUrl();
 	}
