@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.URLDecoder;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
@@ -58,7 +59,7 @@ public class RestSimulation implements Simulation {
 			return PostSimulationResponse.respond400WithApplicationJson(error);
 		} else {
 			try {
-				String decodedContents = URLDecoder.decode(esdlContents, "UTF-8");
+				String decodedContents = new String(Base64.getDecoder().decode(esdlContents), "UTF-8");
 				esdlFile = File.createTempFile("ess", ".esdl", null);
 				fw = new FileWriter(esdlFile);
 				fw.write(decodedContents);
@@ -94,8 +95,7 @@ public class RestSimulation implements Simulation {
 				thread.setUncaughtExceptionHandler(essimExceptionHandler);
 				thread.start();
 
-				mongo.getStatusMap()
-						.put(simId, engine);
+				mongo.getStatusMap().put(simId, engine);
 
 				CreatedStatusImpl created = new CreatedStatusImpl();
 				created.setStatus(Status.CREATED);
@@ -169,8 +169,7 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public GetSimulationStatusBySimulationIdResponse getSimulationStatusBySimulationId(String simulationId) {
-		IStatusProvider engine = mongo.getStatusMap()
-				.get(simulationId);
+		IStatusProvider engine = mongo.getStatusMap().get(simulationId);
 		if (engine != null) {
 			JSONObject status = new JSONObject();
 			status.put("status", engine.getStatus());
@@ -208,7 +207,8 @@ public class RestSimulation implements Simulation {
 	public GetSimulationLoadAnimationBySimulationIdResponse getSimulationLoadAnimationBySimulationId(
 			String simulationId) {
 		// StringBuilder contentBuilder = new StringBuilder();
-		// try (ZipInputStream zis = new ZipInputStream(new FileInputStream(simulationId + ".zip"))) {
+		// try (ZipInputStream zis = new ZipInputStream(new FileInputStream(simulationId
+		// + ".zip"))) {
 		// ZipEntry zipEntry = zis.getNextEntry();
 		// byte[] buffer = new byte[1024];
 		// int read = 0;
@@ -219,10 +219,12 @@ public class RestSimulation implements Simulation {
 		// zipEntry = zis.getNextEntry();
 		// }
 		// String loadAnimationJSON = contentBuilder.toString();
-		// return GetSimulationLoadAnimationBySimulationIdResponse.respond200WithApplicationJson(loadAnimationJSON);
+		// return
+		// GetSimulationLoadAnimationBySimulationIdResponse.respond200WithApplicationJson(loadAnimationJSON);
 		// } catch (Exception e) {
 		// return GetSimulationLoadAnimationBySimulationIdResponse
-		// .respond404WithApplicationJson("Animation not found! Error because " + e.getMessage());
+		// .respond404WithApplicationJson("Animation not found! Error because " +
+		// e.getMessage());
 		// }
 		return GetSimulationLoadAnimationBySimulationIdResponse
 				.respond404WithApplicationJson("Feature temporarily disabled!");
@@ -239,8 +241,7 @@ public class RestSimulation implements Simulation {
 			if (kpiModule == null) {
 				error = "SimulationID " + simulationId + " had no KPIs defined!";
 			} else {
-				if (kpiModule.getModules() == null || kpiModule.getModules()
-						.isEmpty()) {
+				if (kpiModule.getModules() == null || kpiModule.getModules().isEmpty()) {
 					error = "SimulationID " + simulationId + " had no KPIs defined!";
 				} else {
 					JSONArray result = new JSONArray();
@@ -292,14 +293,12 @@ public class RestSimulation implements Simulation {
 			if (kpiModule == null) {
 				error.setDescription("SimulationID " + simulationId + " had no KPIs defined!");
 			} else {
-				if (kpiModule.getModules() == null || kpiModule.getModules()
-						.isEmpty()) {
+				if (kpiModule.getModules() == null || kpiModule.getModules().isEmpty()) {
 					error.setDescription("SimulationID " + simulationId + " had no KPIs defined!");
 				} else {
 					for (KPIModule module : kpiModule.getModules()) {
 						if (module.getId() != null) {
-							if (module.getId()
-									.equals(kpiId)) {
+							if (module.getId().equals(kpiId)) {
 								JSONObject moduleResult;
 								String moduleResultString = module.getResult();
 								if (moduleResultString != null) {
