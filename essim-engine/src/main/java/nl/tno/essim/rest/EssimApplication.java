@@ -12,6 +12,7 @@ public class EssimApplication extends Application {
 		final Set<Class<?>> resources = new HashSet<>();
 
 		resources.add(RestSimulation.class);
+		resources.add(DebugMapper.class);
 
 		return resources;
 	}

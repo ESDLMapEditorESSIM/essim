@@ -59,7 +59,8 @@ public class RestSimulation implements Simulation {
 			return PostSimulationResponse.respond400WithApplicationJson(error);
 		} else {
 			try {
-				String decodedContents = new String(Base64.getDecoder().decode(esdlContents), "UTF-8");
+//				String decodedContents = new String(Base64.getDecoder().decode(esdlContents), "UTF-8");
+				String decodedContents = URLDecoder.decode(esdlContents,"UTF-8");
 				esdlFile = File.createTempFile("ess", ".esdl", null);
 				fw = new FileWriter(esdlFile);
 				fw.write(decodedContents);

@@ -59,8 +59,9 @@ public class Converter {
 			return profileTypeToStandardizedUnits(amount, (ProfileTypeEnum) unit);
 		} else if (unit instanceof AbstractQuantityAndUnit) {
 			return abstractQuantityToStandardizedUnits(amount, (AbstractQuantityAndUnit) unit);
+		} else {
+			return amount;
 		}
-		throw new IllegalArgumentException("Unknown profileType " + unit.getClass());
 	}
 
 	/**
