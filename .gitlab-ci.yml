@@ -1,0 +1,38 @@
+build:
+  variables:
+    MAVEN_IMAGE: maven:3.6.0
+  only:
+    - master
+  cache:
+    paths:
+      - .m2/repository
+
+  stage: build
+  image: $MAVEN_IMAGE-jdk-8
+  script:
+    - 'mvn package -X'
+  artifacts:
+    paths:
+      - essim-engine/target/essim.jar
+
+deploy:
+  only:
+    - master
+  dependencies:
+    - build
+  variables:
+    CI_CONTAINER_IMAGE: $CI_TNO_REGISTRY/essim-engine
+    DOCKERHUB_CONTAINER_IMAGE: $DOCKERHUB_REPOSITORY/essim
+  stage: deploy
+  image: docker:stable
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_TNO_REGISTRY
+    - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
+  script:
+    - docker build -t $CI_CONTAINER_IMAGE:latest -t $DOCKERHUB_CONTAINER_IMAGE:latest essim-engine
+    - docker tag $CI_CONTAINER_IMAGE:latest $CI_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker tag $DOCKERHUB_CONTAINER_IMAGE:latest $DOCKERHUB_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_CONTAINER_IMAGE:latest
+    - docker push $CI_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKERHUB_CONTAINER_IMAGE:latest
+    - docker push $DOCKERHUB_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
