@@ -118,8 +118,7 @@ public class ESSimEngine implements IStatusProvider {
 			return "ESSIM";
 		}
 	};
-	
-	
+
 	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
@@ -151,19 +150,22 @@ public class ESSimEngine implements IStatusProvider {
 			observationManager.registerConsumer(influxObservationConsumer);
 			simulationManager.addObservationConsumer(influxObservationConsumer);
 			log.debug("Registering InfluxDB Observation Consumer");
-		} else if (simulation.getKafkaURL() != null) {
+		}
+		if (simulation.getKafkaURL() != null) {
 			KafkaObservationConsumer kafkaObservationConsumer = new KafkaObservationConsumer(simulation.getKafkaURL());
 			kafkaObservationConsumer.init(simulationId);
 			observationManager.registerConsumer(kafkaObservationConsumer);
 			simulationManager.addObservationConsumer(kafkaObservationConsumer);
 			log.debug("Registering Kafka Observation Consumer");
-		} else if (simulation.getNatsURL() != null) {
+		}
+		if (simulation.getNatsURL() != null) {
 			NATSObservationConsumer natsObservationConsumer = new NATSObservationConsumer(simulation.getNatsURL());
 			natsObservationConsumer.init(simulationId);
 			observationManager.registerConsumer(natsObservationConsumer);
 			simulationManager.addObservationConsumer(natsObservationConsumer);
 			log.debug("Registering NATS Observation Consumer");
-		} else if (simulation.getMqttURL() != null) {
+		}
+		if (simulation.getMqttURL() != null) {
 			MQTTObservationConsumer mqttObservationConsumer = new MQTTObservationConsumer(simulation.getMqttURL());
 			mqttObservationConsumer.init(simulationId);
 			observationManager.registerConsumer(mqttObservationConsumer);
@@ -373,8 +375,8 @@ public class ESSimEngine implements IStatusProvider {
 			timeString = DateTimeFormatter.ISO_DATE_TIME
 					.format(LocalDateTime.ofInstant(simRunTime.toInstant(), ZoneId.of("UTC")));
 		}
-		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList,
-				energySystemId, scenarioName, simulationRunName, simulationStartTime, simulationEndTime);
+		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
+				scenarioName, simulationRunName, simulationStartTime, simulationEndTime);
 		return grafanaClient.getDashboardUrl();
 	}
 
@@ -539,28 +541,20 @@ public class ESSimEngine implements IStatusProvider {
 							// Control Strategy is specified - go according to specification
 							if (controlStrategy instanceof DrivenByDemand) {
 								DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-								boolean portFound = conversion.getPort()
-										.parallelStream()
-										.anyMatch(p -> drivenByDemand.getOutPort()
-												.equals(p)
-												&& p.getCarrier()
-														.equals(solver.getCarrier()));
-								if (solver.getRole(conversion)
-										.equals(Role.PRODUCER) && portFound) {
+								boolean portFound = conversion.getPort().parallelStream()
+										.anyMatch(p -> drivenByDemand.getOutPort().equals(p)
+												&& p.getCarrier().equals(solver.getCarrier()));
+								if (solver.getRole(conversion).equals(Role.PRODUCER) && portFound) {
 									solvers.addFirst(solver);
 								} else {
 									solvers.addLater(solver);
 								}
 							} else if (controlStrategy instanceof DrivenBySupply) {
 								DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-								boolean portFound = conversion.getPort()
-										.parallelStream()
-										.anyMatch(p -> drivenBySupply.getInPort()
-												.equals(p)
-												&& p.getCarrier()
-														.equals(solver.getCarrier()));
-								if (solver.getRole(conversion)
-										.equals(Role.CONSUMER) && portFound) {
+								boolean portFound = conversion.getPort().parallelStream()
+										.anyMatch(p -> drivenBySupply.getInPort().equals(p)
+												&& p.getCarrier().equals(solver.getCarrier()));
+								if (solver.getRole(conversion).equals(Role.CONSUMER) && portFound) {
 									solvers.addFirst(solver);
 								} else {
 									solvers.addLater(solver);
