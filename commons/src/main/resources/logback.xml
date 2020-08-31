@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+   <!-- send everything below WARN and ERROR to STDOUT (formats nicely in eclipse, 
+		as eclipse's console does not support ANSI coloring) -->
+   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      <target>System.out</target>
+      <encoder>
+         <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
+      </encoder>
+      <filter class="ch.qos.logback.classic.filter.LevelFilter">
+         <level>TRACE</level>
+         <onMatch>ACCEPT</onMatch>
+         <onMismatch>NEUTRAL</onMismatch>
+      </filter>
+      <filter class="ch.qos.logback.classic.filter.LevelFilter">
+         <level>DEBUG</level>
+         <onMatch>ACCEPT</onMatch>
+         <onMismatch>NEUTRAL</onMismatch>
+      </filter>
+      <filter class="ch.qos.logback.classic.filter.LevelFilter">
+         <level>INFO</level>
+         <onMatch>ACCEPT</onMatch>
+         <onMismatch>DENY</onMismatch>
+      </filter>
+   </appender>
+   <!-- send WARN and ERROR to STDERR (formats nicely in eclipse) -->
+   <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+      <target>System.err</target>
+      <encoder>
+         <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
+      </encoder>
+      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+         <level>WARN</level>
+      </filter>
+   </appender>
+   <appender name="SIFTER" class="ch.qos.logback.classic.sift.SiftingAppender">
+      <discriminator>
+         <key>testName</key>
+         <defaultValue>ALL</defaultValue>
+      </discriminator>
+      <sift>
+         <appender name="FILE-${testName}" class="ch.qos.logback.core.FileAppender">
+            <file>src/main/resources/log_${testName}.log</file>
+            <encoder>
+               <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
+            </encoder>
+         </appender>
+      </sift>
+   </appender>
+   <logger name="nl.tno.essim.managers" level="debug" />   
+   <logger name="nl.tno.essim.transportsolver.nodes" level="error" />
+   <logger name="org.apache.kafka" level="error" />
+   <root level="debug">
+      <appender-ref ref="STDOUT" />
+      <appender-ref ref="STDERR" />
+	  <!-- appender-ref ref="SIFTER" / -->
+   </root>
+</configuration>

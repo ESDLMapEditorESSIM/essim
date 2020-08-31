@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="essim" nsURI="http://www.tno.nl/essim" nsPrefix="essim">
+  <eClassifiers xsi:type="ecore:EClass" name="ESSIMInfluxDBProfile" eSuperTypes="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//InfluxDBProfile #//ESSIMProfile">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="annualChangePercentage"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDouble"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="start" lowerBound="1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="profileRepetition" eType="#//ProfileRepetitionEnum"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="ProfileRepetitionEnum">
+    <eLiterals name="NONE"/>
+    <eLiterals name="WEEKLY" value="1"/>
+    <eLiterals name="YEARLY" value="2"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ESSIMProfile" abstract="true" interface="true">
+    <eOperations name="initProfile">
+      <eParameters name="from" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+      <eParameters name="to" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EDate"/>
+      <eParameters name="aggregationPrecision" eType="ecore:EClass https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Duration"/>
+    </eOperations>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ESSIMDateTimeProfile" eSuperTypes="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DateTimeProfile #//ESSIMProfile"/>
+  <eClassifiers xsi:type="ecore:EClass" name="ESSIMSingleValueProfile" eSuperTypes="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//SingleValue #//ESSIMProfile"/>
+</ecore:EPackage>
