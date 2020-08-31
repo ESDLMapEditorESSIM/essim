@@ -1,3 +1,18 @@
+/**
+ *  This work is based on original code developed and copyrighted by TNO 2020. 
+ *  Subsequent contributions are licensed to you by the developers of such code and are
+ *  made available to the Project under one or several contributor license agreements.
+ *
+ *  This work is licensed to you under the Apache License, Version 2.0.
+ *  You may obtain a copy of the license at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Contributors:
+ *      TNO         - Initial implementation
+ *  Manager:
+ *      TNO
+ */
 package essim.impl;
 
 import java.time.LocalDateTime;
@@ -11,7 +26,7 @@ import org.influxdb.dto.QueryResult;
 import org.influxdb.dto.QueryResult.Result;
 import org.influxdb.dto.QueryResult.Series;
 
-import common.DidoQuery;
+import common.EssimQuery;
 import common.ProfileCache;
 import common.TimeSeriesDataCache;
 import esdl.Duration;
@@ -120,7 +135,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 				while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
 					try {
 						connectionAttempts++;
-						DidoQuery query = new DidoQuery(command, database);
+						EssimQuery query = new EssimQuery(command, database);
 						log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
 						queryResult = influxClient.query(query);
 						if (queryResult.hasError() || queryResult.getResults() == null) {

@@ -1,6 +1,7 @@
 /**
  * 
  */
+
 package nl.tno.essim.observation;
 
 import java.time.LocalDateTime;
@@ -16,14 +17,15 @@ import lombok.Singular;
 @Builder
 public class Observation implements IObservation {
 
-	
 	private LocalDateTime observedAt;
 	@Singular
 	private Map<String, Object> values;
 	@Singular
 	private Map<String, String> tags;
-	
-	/* (non-Javadoc)
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see dido.observation.framework.IObservation#getValues()
 	 */
 	@Override
@@ -31,7 +33,9 @@ public class Observation implements IObservation {
 		return values;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see dido.observation.framework.IObservation#getTags()
 	 */
 	@Override
@@ -39,7 +43,9 @@ public class Observation implements IObservation {
 		return tags;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see dido.observation.framework.IObservation#getObservedAt()
 	 */
 	@Override

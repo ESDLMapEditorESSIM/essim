@@ -13,11 +13,18 @@
  *  Manager:
  *      TNO
  */
-package essim;
+package common;
 
-import essim.impl.ExtendedESSIMPackageImpl;
+import org.influxdb.dto.Query;
 
-public interface ExtendedESSIMPackage extends EssimPackage {
+public class EssimQuery extends Query {
 
-	ExtendedESSIMPackage eINSTANCE = ExtendedESSIMPackageImpl.init();
+	public EssimQuery(String command, String database) {
+		super(command, database);
+	}
+
+	@Override
+	public String getCommandWithUrlEncoded() {
+		return super.getCommandWithUrlEncoded().replace("+", "%20");
+	}
 }
