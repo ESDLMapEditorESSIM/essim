@@ -22,12 +22,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import esdl.Carrier;
-import esdl.Consumer;
 import esdl.CoolingDemand;
 import esdl.CostInformation;
 import esdl.EnergyAsset;
 import esdl.GenericProfile;
-import esdl.InPort;
+import esdl.OutPort;
 import esdl.Port;
 import lombok.Builder;
 import lombok.Data;
@@ -49,7 +48,7 @@ public class CoolingDemandNode extends Node {
 	private Horizon now;
 	private long timeStep;
 	private double power;
-	private InPort inputPort;
+	private OutPort profilePort;
 	private CostInformation costInformation;
 	private String consumerName;
 
@@ -65,8 +64,8 @@ public class CoolingDemandNode extends Node {
 		this.power = consumer.getPower();
 		this.costInformation = consumer.getCostInformation();
 		for (Port port : consumer.getPort()) {
-			if (port instanceof InPort) {
-				inputPort = (InPort) port;
+			if (port instanceof OutPort) {
+				profilePort = (OutPort) port;
 				break;
 			}
 		}
@@ -75,7 +74,7 @@ public class CoolingDemandNode extends Node {
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
 		double energyOutput = Double.NaN;
-		GenericProfile convProfile = Commons.getEnergyProfile(inputPort);
+		GenericProfile convProfile = Commons.getEnergyProfile(profilePort);
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
