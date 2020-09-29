@@ -53,8 +53,8 @@ public class CoolingDemandNode extends Node {
 	private String consumerName;
 
 	@Builder(builderMethodName = "consumerNodeBuilder")
-	public CoolingDemandNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
+	public CoolingDemandNode(String simulationId, String nodeId, String address, String networkId,
+			JSONArray animationArray, JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
 			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
 			List<Node> children, long timeStep, Horizon now) {
 		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
@@ -74,7 +74,10 @@ public class CoolingDemandNode extends Node {
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
 		double energyOutput = Double.NaN;
-		GenericProfile convProfile = Commons.getEnergyProfile(profilePort);
+		GenericProfile convProfile = null;
+		if (profilePort != null) {
+			convProfile = Commons.getEnergyProfile(profilePort);
+		}
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
@@ -108,7 +111,7 @@ public class CoolingDemandNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Consumer");
-		EmissionManager.getInstance(simulationId).addConsumer(networkId, consumer, Math.abs(energy));
+		EmissionManager.getInstance(simulationId).addProducer(networkId, consumer, Math.abs(energy));
 	}
 
 }

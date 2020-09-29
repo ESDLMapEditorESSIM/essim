@@ -29,6 +29,7 @@ import org.json.JSONArray;
 
 import esdl.Asset;
 import esdl.Carrier;
+import esdl.Consumer;
 import esdl.Conversion;
 import esdl.DrivenByDemand;
 import esdl.EnergyAsset;
@@ -175,6 +176,12 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				if (conversion.getPower() > maxCapacity) {
 					rootAsset = conversion;
 					maxCapacity = conversion.getPower();
+				}
+			} else if (asset instanceof Consumer && roleMap.get(asset).equals(Role.PRODUCER)) {
+				Consumer consumer = (Consumer) asset;
+				if (consumer.getPower() > maxCapacity) {
+					rootAsset = consumer;
+					maxCapacity = consumer.getPower();
 				}
 			}
 		}
