@@ -206,7 +206,12 @@ public class ConversionNode extends Node {
 						throw new IllegalStateException(
 								"Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
 					}
-					makeInflexibleProductionFunction(energyOutput);
+					
+					double eff = 1.0;
+					if(drivenByProfile.getPort() instanceof InPort) {
+						eff = efficiency;
+					}
+					makeInflexibleProductionFunction(eff * energyOutput);
 				} else {
 					// Impossible!
 					throw new IllegalStateException("Profile in the outPort of " + conversionName + " is null!");
@@ -316,7 +321,12 @@ public class ConversionNode extends Node {
 						throw new IllegalStateException(
 								"Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
 					}
-					makeInflexibleConsumptionFunction(energyOutput * efficiency);
+					
+					double eff = 1.0;
+					if(drivenByProfile.getPort() instanceof OutPort) {
+						eff = efficiency;
+					}
+					makeInflexibleConsumptionFunction(energyOutput / eff);
 				} else {
 					// Impossible!
 					throw new IllegalStateException("Profile in the outPort of " + conversionName + " is null!");

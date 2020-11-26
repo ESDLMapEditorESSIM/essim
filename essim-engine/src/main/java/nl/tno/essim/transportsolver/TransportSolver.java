@@ -31,6 +31,7 @@ import esdl.Asset;
 import esdl.Carrier;
 import esdl.Conversion;
 import esdl.DrivenByDemand;
+import esdl.DrivenByProfile;
 import esdl.EnergyAsset;
 import esdl.EsdlFactory;
 import esdl.GenericProfile;
@@ -330,6 +331,12 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			for (Port port : asset.getPort()) {
 				initialiseProfile(port);
 			}
+
+			if (asset.getControlStrategy() != null) {
+				if (asset.getControlStrategy() instanceof DrivenByProfile) {
+					initialiseProfile(((DrivenByProfile) asset.getControlStrategy()).getProfile());
+				}
+			}
 		}
 	}
 
@@ -436,21 +443,25 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 	private void initialiseProfile(Port port) {
 		for (GenericProfile profile : port.getProfile()) {
-			if (profile != null) {
-				if (profile instanceof ProfileReference) {
-					profile = ((ProfileReference) profile).getReference();
-				}
-				if (profile instanceof ESSIMInfluxDBProfile) {
-					ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
-					profileImpl.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-							EssimTime.localDateTimeToDate(simulationEndTime),
-							Converter.toESDLDuration(simulationStepLength));
-				} else if (profile instanceof ESSIMDateTimeProfile) {
-					ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
-					dtProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-							EssimTime.localDateTimeToDate(simulationEndTime),
-							Converter.toESDLDuration(simulationStepLength));
-				}
+			initialiseProfile(profile);
+		}
+	}
+
+	private void initialiseProfile(GenericProfile profile) {
+		if (profile != null) {
+			if (profile instanceof ProfileReference) {
+				profile = ((ProfileReference) profile).getReference();
+			}
+			if (profile instanceof ESSIMInfluxDBProfile) {
+				ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
+				profileImpl.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
+						EssimTime.localDateTimeToDate(simulationEndTime),
+						Converter.toESDLDuration(simulationStepLength));
+			} else if (profile instanceof ESSIMDateTimeProfile) {
+				ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
+				dtProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
+						EssimTime.localDateTimeToDate(simulationEndTime),
+						Converter.toESDLDuration(simulationStepLength));
 			}
 		}
 	}
