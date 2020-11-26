@@ -87,8 +87,7 @@ public class HeatPumpNode extends ConversionNode {
 			if (controlStrategy instanceof DrivenByDemand) {
 				// PRODUCER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-				Carrier drivingCarrier = drivenByDemand.getOutPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
 					// = Make Flexible Producer curve
@@ -110,12 +109,39 @@ public class HeatPumpNode extends ConversionNode {
 				}
 			} else if (controlStrategy instanceof DrivenBySupply) {
 				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-				Carrier drivingCarrier = drivenBySupply.getInPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
-					// = Impossible!
-					throw new IllegalStateException("Conversion " + hpName + " cannot be a PRODUCER in this network!");
+					// = Read from OutPort, make flat production curve
+					// Selma: Read from InPort?
+					double energyOutput = Double.NaN;
+					Port outPort = null;
+					for (Port port : heatPump.getPort()) {
+						if (port instanceof OutPort) {
+							outPort = port;
+						}
+					}
+					GenericProfile convProfile;
+					if (outPort != null) {
+						convProfile = Commons.getEnergyProfile(outPort);
+					} else {
+						// Impossible!
+						throw new IllegalStateException("Conversion " + hpName + " should not exist in this network!");
+					}
+
+					if (convProfile != null) {
+						if (Commons.isPowerProfile(convProfile)) {
+							energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
+						} else if (Commons.isEnergyProfile(convProfile)) {
+							energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
+						} else {
+							throw new IllegalStateException(
+									"Profile in the outPort of " + hpName + " is neither Power nor Energy!");
+						}
+						makeInflexibleProductionFunction(energyOutput);
+					} else {
+						throw new IllegalStateException("Profile in the outPort of " + hpName + " is null!");
+					}
 				} else {
 					// PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
 					// = Read from OutPort, make flat production curve
@@ -185,8 +211,7 @@ public class HeatPumpNode extends ConversionNode {
 			if (controlStrategy instanceof DrivenByDemand) {
 				// CONSUMER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-				Carrier drivingCarrier = drivenByDemand.getOutPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// CONSUMER + DRIVENBYDEMAND + DRIVINGCARRIER (Heat Input)
 					// = Read from InPort, make flat consumption curve
@@ -194,8 +219,7 @@ public class HeatPumpNode extends ConversionNode {
 					double energyInput = 0.0;
 					for (Port port : heatPump.getPort()) {
 						if (port instanceof InPort) {
-							if (port.getCarrier()
-									.equals(carrier)) {
+							if (port.getCarrier().equals(carrier)) {
 								profile = Commons.getEnergyProfile(port);
 								break;
 							}
@@ -221,8 +245,7 @@ public class HeatPumpNode extends ConversionNode {
 					double energyInput = 0.0;
 					for (Port port : heatPump.getPort()) {
 						if (port instanceof InPort) {
-							if (port.getCarrier()
-									.equals(carrier)) {
+							if (port.getCarrier().equals(carrier)) {
 								profile = Commons.getEnergyProfile(port);
 								break;
 							}
@@ -245,8 +268,7 @@ public class HeatPumpNode extends ConversionNode {
 			} else if (controlStrategy instanceof DrivenBySupply) {
 				// CONSUMER + DRIVENBYSUPPLY
 				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-				Carrier drivingCarrier = drivenBySupply.getInPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
 					// = Make Flexible Consumer curve
@@ -274,8 +296,7 @@ public class HeatPumpNode extends ConversionNode {
 					GenericProfile profile = null;
 					double energyInput = 0.0;
 					for (Port port : heatPump.getPort()) {
-						if (port.getCarrier()
-								.equals(carrier)) {
+						if (port.getCarrier().equals(carrier)) {
 							profile = Commons.getEnergyProfile(port);
 							break;
 						}
@@ -331,14 +352,12 @@ public class HeatPumpNode extends ConversionNode {
 		builder.tag("capability", "Conversion");
 
 		if (getRole().equals(Role.PRODUCER)) {
-			EmissionManager.getInstance(simulationId)
-					.addProducer(networkId, heatPump, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addProducer(networkId, heatPump, Math.abs(energy));
 			// PRODUCER
 			if (controlStrategy instanceof DrivenByDemand) {
 				// PRODUCER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-				Carrier drivingCarrier = drivenByDemand.getOutPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
 					// = Calculate 2x InputEnergy and write to InPorts
@@ -380,18 +399,17 @@ public class HeatPumpNode extends ConversionNode {
 					// = Impossible!!
 					throw new IllegalStateException(hpName + " cannot be a producer of " + carrier.getName());
 				}
-			} else if (controlStrategy instanceof DrivenBySupply) {
-				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-				Carrier drivingCarrier = drivenBySupply.getInPort()
-						.getCarrier();
-				if (drivingCarrier.equals(carrier)) {
-					// PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
-					// = Impossible!!
-					throw new IllegalStateException(hpName + " cannot be a producer of " + carrier.getName());
-				} else {
-					// PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-					// = Do Nothing!!
-				}
+//			} else if (controlStrategy instanceof DrivenBySupply) {
+//				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+//				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+//				if (drivingCarrier.equals(carrier)) {
+//					// PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
+//					// = Impossible!!
+//					throw new IllegalStateException(hpName + " cannot be a producer of " + carrier.getName());
+//				} else {
+//					// PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
+//					// = Do Nothing!!
+//				}
 			} else if (controlStrategy instanceof DrivenByProfile) {
 				// PRODUCER + DRIVENBYPROFILE
 				// = Calculate 2x InputEnergy and write to InPorts
@@ -430,13 +448,11 @@ public class HeatPumpNode extends ConversionNode {
 			}
 		} else {
 			// CONSUMER
-			EmissionManager.getInstance(simulationId)
-					.addConsumer(networkId, heatPump, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, heatPump, Math.abs(energy));
 			if (controlStrategy instanceof DrivenByDemand) {
 				// CONSUMER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-				Carrier drivingCarrier = drivenByDemand.getOutPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// CONSUMER + DRIVENBYDEMAND + DRIVINGCARRIER
 					// = Calculate other InputEnergy and write to other InPort, calculate
@@ -471,8 +487,7 @@ public class HeatPumpNode extends ConversionNode {
 						if (port instanceof OutPort) {
 							Commons.writeProfile(port, timestamp, outputEnergy);
 						} else {
-							if (!port.getCarrier()
-									.equals(carrier)) {
+							if (!port.getCarrier().equals(carrier)) {
 								Commons.writeProfile(port, timestamp, otherInputEnergy);
 							}
 						}
@@ -484,8 +499,7 @@ public class HeatPumpNode extends ConversionNode {
 			} else if (controlStrategy instanceof DrivenBySupply) {
 				// CONSUMER + DRIVENBYSUPPLY
 				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-				Carrier drivingCarrier = drivenBySupply.getInPort()
-						.getCarrier();
+				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
 					// = Calculate other InputEnergy and write to other InPort, calculate
@@ -521,8 +535,7 @@ public class HeatPumpNode extends ConversionNode {
 						if (port instanceof OutPort) {
 							Commons.writeProfile(port, timestamp, outputEnergy);
 						} else {
-							if (!port.getCarrier()
-									.equals(carrier)) {
+							if (!port.getCarrier().equals(carrier)) {
 								Commons.writeProfile(port, timestamp, otherInputEnergy);
 							}
 						}
@@ -565,8 +578,7 @@ public class HeatPumpNode extends ConversionNode {
 					if (port instanceof OutPort) {
 						Commons.writeProfile(port, timestamp, outputEnergy);
 					} else {
-						if (!port.getCarrier()
-								.equals(carrier)) {
+						if (!port.getCarrier().equals(carrier)) {
 							Commons.writeProfile(port, timestamp, otherInputEnergy);
 						}
 					}

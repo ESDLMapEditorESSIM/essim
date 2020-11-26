@@ -3,10 +3,6 @@ build:
     MAVEN_IMAGE: maven:3.6.0
   only:
     - master
-  cache:
-    paths:
-      - .m2/repository
-
   stage: build
   image: $MAVEN_IMAGE-jdk-8
   script:
