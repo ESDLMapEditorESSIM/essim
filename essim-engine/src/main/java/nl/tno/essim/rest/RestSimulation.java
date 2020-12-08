@@ -59,6 +59,7 @@ public class RestSimulation implements Simulation {
 			e.printStackTrace(new PrintWriter(sw));
 			log.error(e.getMessage(), e);
 			mongo.updateSimulationStatus(t.getName(), Status.ERROR, sw.toString());
+			mongo.updateStatus("Ready");
 		}
 	};
 
