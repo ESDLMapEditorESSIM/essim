@@ -15,8 +15,6 @@
  */
 package nl.tno.essim.managers;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -28,7 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import lombok.Getter;
@@ -37,6 +37,8 @@ import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.commons.Simulatable;
+import nl.tno.essim.model.Status;
+import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -45,7 +47,7 @@ import nl.tno.essim.transportsolver.TransportSolver;
 @Slf4j
 public class SimulationManager implements ISimulationManager, IStatusProvider {
 
-	private String name;
+	private String simulationId;
 	private LocalDateTime startDateTime;
 	private LocalDateTime endDateTime;
 	private EssimTime time;
@@ -65,11 +67,13 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private List<Simulatable> otherSims;
 	@Getter
 	private boolean started;
+	private MongoBackend mongo;
+	private ScheduledExecutorService statusUpdater;
 
-	public SimulationManager(ESSimEngine engine, String name, LocalDateTime startDateTime, LocalDateTime endDateTime,
+	public SimulationManager(ESSimEngine engine, String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
 			EssimDuration simStepLength) {
 		this.engine = engine;
-		this.name = name;
+		this.simulationId = simulationId;
 		this.startDateTime = startDateTime;
 		this.endDateTime = endDateTime;
 		solverTypeIndex = new AtomicInteger();
@@ -77,12 +81,22 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		otherSims = new ArrayList<Simulatable>();
 		time = new EssimTime(startDateTime, endDateTime, simStepLength);
 		this.precheckTime = Duration.of(0, ChronoUnit.SECONDS);
+		this.mongo = MongoBackend.getInstance();
 
 		simulationExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime()
 				.availableProcessors());
+		statusUpdater = Executors.newScheduledThreadPool(1);
+		statusUpdater.scheduleAtFixedRate(statusUpdaterService, 0, 1, TimeUnit.SECONDS);
 
-		log.debug("Simulation " + name + " is initialised!");
+		log.debug("Simulation " + simulationId + " is initialised!");
 	}
+	
+	private Runnable statusUpdaterService = new Runnable() {
+		@Override
+		public void run() {
+			mongo.updateSimulationStatus(simulationId, Status.RUNNING, String.valueOf(status));
+		}	
+	};
 
 	/**
 	 * @return the startDateTime
@@ -107,7 +121,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	 */
 	@Override
 	public String getName() {
-		return name;
+		return simulationId;
 	}
 
 	@Override
@@ -204,19 +218,26 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			}
 
 			Instant endTime = Instant.now();
-			log.debug("Simulation finished and took {}", Duration.between(startTime, endTime)
+			String simDuration = Duration.between(startTime, endTime)
 					.plus(precheckTime)
-					.toString());
+					.toString();
+			log.debug("Simulation finished and took {}", simDuration);
 
 			log.debug("Done!");
+			statusUpdater.shutdownNow();
+			mongo.updateSimulationStatus(simulationId, Status.COMPLETE, "Finished in " + simDuration);
+			mongo.updateStatus("Ready");
 			engine.setFeatureCollections();
-			simulationExecutor.shutdown();
-		} catch (InterruptedException e) {
+			simulationExecutor.shutdownNow();
+		} catch (Exception e) {
+			statusUpdater.shutdownNow();
 			log.error("Error in scheduled runnable", e);
 			status = -1;
 			description = e.getMessage();
+			mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
+			simulationExecutor.shutdownNow();
 			Thread.currentThread()
-					.interrupt();
+			.interrupt();
 		}
 
 	}
@@ -238,13 +259,14 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				runnable.run();
 				barrier.countDown();
 			} catch (Exception e) {
+				statusUpdater.shutdownNow();
 				log.error("Error in scheduled runnable", e);
-				StringWriter sw = new StringWriter();
-				e.printStackTrace(new PrintWriter(sw));
 				status = -1;
-				description = sw.toString();
+				description = e.getMessage();
+				mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
+				simulationExecutor.shutdownNow();
 				Thread.currentThread()
-						.interrupt();
+				.interrupt();
 			}
 		}
 

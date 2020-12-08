@@ -13,11 +13,15 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.mongo;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import org.bson.types.ObjectId;
 import org.mongojack.DBQuery;
@@ -44,6 +48,9 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.KPIModuleInfo;
+import nl.tno.essim.model.SimulationStatus;
+import nl.tno.essim.model.SimulationStatusImpl;
+import nl.tno.essim.model.Status;
 
 @Slf4j
 public class MongoBackend {
@@ -62,7 +69,7 @@ public class MongoBackend {
 	private DB essimDB;
 	private DB kpiDB;
 	private JacksonDBCollection<KPIModuleInfo, String> kpiCollection;
-	private String essimTaskId;
+	private String essimStatusKey;
 
 	public synchronized static MongoBackend getInstance() {
 		return MongoBackend.instance;
@@ -74,10 +81,8 @@ public class MongoBackend {
 		Logger rootLogger = loggerContext.getLogger("org.mongodb.driver");
 		rootLogger.setLevel(Level.OFF);
 
-		MongoClientOptions opts = MongoClientOptions.builder()
-				.serverSelectionTimeout(2000)
-				.codecRegistry(MongoClient.getDefaultCodecRegistry())
-				.build();
+		MongoClientOptions opts = MongoClientOptions.builder().serverSelectionTimeout(2000)
+				.codecRegistry(MongoClient.getDefaultCodecRegistry()).build();
 		ServerAddress serverAddress = new ServerAddress(host, Integer.parseInt(port));
 		mongoClient = new MongoClient(serverAddress, opts);
 		essimDB = mongoClient.getDB(ESSIM_DATABASE);
@@ -88,19 +93,34 @@ public class MongoBackend {
 		essimMetaCollection = essimDB.createCollection(ESSIM_META_COLL_NAME, null);
 		DBCollection kpiDBCollection = kpiDB.createCollection(KPI_COLL_NAME, null);
 		kpiCollection = JacksonDBCollection.wrap(kpiDBCollection, KPIModuleInfo.class, String.class);
-		
-		updateStatus("waiting");
+
+		String essimTaskId;
+		try {
+			essimTaskId = InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			essimTaskId = UUID.randomUUID().toString();
+		}
+		essimStatusKey = essimTaskId + ".status";
+
+		updateStatus("Ready");
 
 		statusMap = new HashMap<String, IStatusProvider>();
 
+		log.debug("This ESSIM instance is called {}", essimTaskId);
 		instance = this;
 	}
 
 	public void updateStatus(String status) {
-		BasicDBObject entry = new BasicDBObject();
-		entry.put("_id", essimTaskId);
-		entry.put("status", status);
-		essimMetaCollection.save(entry);
+		updateMetaInfo(essimStatusKey, status);
+	}
+
+	public String getStatus() {
+		return getMetaInfo(essimStatusKey);
+	}
+
+	public void removeStatus() {
+		BasicDBObject remQuery = new BasicDBObject().append("_id", essimStatusKey);
+		essimMetaCollection.remove(remQuery);
 	}
 
 	private void testMongoConnection(ServerAddress serverAddress) {
@@ -115,22 +135,54 @@ public class MongoBackend {
 
 	public String addSimulation(EssimSimulation simulation) {
 		WriteResult<EssimSimulation, String> result = essimCollection.save(simulation);
-		String id = result.getDbObject()
-				.get("_id")
-				.toString();
+		String id = result.getDbObject().get("_id").toString();
 		return id;
 	}
 
 	public void updateSimulationData(String simulationId, EssimSimulation simulationData) {
 		try {
 			Query query = DBQuery.is("_id", new ObjectId(simulationId));
-			simulationData.getAdditionalProperties()
-					.clear();
+			simulationData.getAdditionalProperties().clear();
 			essimCollection.update(query, simulationData);
 		} catch (MongoException e) {
 			log.error("MongoException occurred: {}", e.getMessage());
 		}
+	}
 
+	public SimulationStatus getSimulationStatus(String simulationId) {
+		SimulationStatus simStatus = null;
+		try {
+			Query query = DBQuery.is("_id", new ObjectId(simulationId));
+			EssimSimulation simulation = essimCollection.findOne(query);
+			simStatus = simulation.getStatus();
+		} catch (MongoException e) {
+			log.error("MongoException occurred: {}", e.getMessage());
+		}
+		return simStatus;
+	}
+
+	public void updateSimulationStatus(String simulationId, Status type, String status) {
+		try {
+			System.out.println(Thread.currentThread().getName() + " updating status " + type + " : " + status);
+//			JSONObject statusJSON = new JSONObject();
+//			statusJSON.put("State", type.name());
+//			statusJSON.put("Sescription", status);
+			SimulationStatus statusObj = new SimulationStatusImpl();
+			statusObj.setState(type);
+			statusObj.setDescription(status);
+
+			Query query = DBQuery.is("_id", new ObjectId(simulationId));
+			EssimSimulation simulation = essimCollection.findOne(query);
+			if (simulation != null) {
+				simulation.getAdditionalProperties().clear();
+				simulation.setStatus(statusObj);
+				essimCollection.update(query, simulation);
+			}
+//			BasicDBObject updateQuery = new BasicDBObject();
+//			updateQuery.append("$set", new BasicDBObject().append("status", statusJSON.toString()));
+		} catch (MongoException e) {
+			log.error("MongoException occurred: {}", e.getMessage());
+		}
 	}
 
 	public List<EssimSimulation> getSimulations() {
@@ -139,8 +191,7 @@ public class MongoBackend {
 			for (EssimSimulation record : essimCollection.find()) {
 				simInstance.add(record);
 				if (record != null) {
-					record.getAdditionalProperties()
-							.clear();
+					record.getAdditionalProperties().clear();
 				}
 			}
 		} catch (MongoException e) {
@@ -156,8 +207,7 @@ public class MongoBackend {
 			Query query = DBQuery.is("_id", new ObjectId(simulationId));
 			simInstance = essimCollection.findOne(query);
 			if (simInstance != null) {
-				simInstance.getAdditionalProperties()
-						.clear();
+				simInstance.getAdditionalProperties().clear();
 			}
 		} catch (MongoException e) {
 			log.error("MongoException occurred: {}", e.getMessage());
