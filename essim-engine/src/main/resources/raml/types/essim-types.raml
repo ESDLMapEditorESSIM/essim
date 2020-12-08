@@ -5,34 +5,25 @@ types:
   Status:
     enum: [CREATED, RUNNING, COMPLETE, ERROR]
     
-  TimeDuration:
-    enum: [SECOND, MINUTE, HOUR, DAY, WEEK, MONTH, YEAR]
-    
   OrderPreference:
     enum: [FIRST, LAST]
   
-  TimeStep:
-    type: object
-    properties:
-      value: number
-      unit: TimeDuration
-
   CreatedStatus:
     type: object
     properties:
       status: Status
       id: string
   
-  RunningStatus:
-    type: object
-    properties:
-      status: Status
-      progress: number
-  
   ErrorStatus:
     type: object
     properties:
       status: Status
+      description: string
+  
+  SimulationStatus:
+    type: object
+    properties:
+      state: Status
       description: string
   
   TransportNetwork:
@@ -70,7 +61,8 @@ types:
       simulationDescription: string
       startDate: datetime
       endDate: datetime
-      timeStep: TimeStep
+      timeStep: string
+      status: SimulationStatus
       influxURL?: string
       natsURL?: string
       mqttURL?: string

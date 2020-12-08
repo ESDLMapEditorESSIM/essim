@@ -15,14 +15,11 @@
  */
 package nl.tno.essim;
 
-import org.mongojack.JacksonMongoCollection;
-
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.rest.EssimHttpServer;
 
@@ -41,8 +38,6 @@ public class ESSimMain {
 	@Getter
 	private MongoDatabase database;
 	@Getter
-	private JacksonMongoCollection<EssimSimulation> simCollection;
-	@Getter
 	private EssimHttpServer ramlServer;
 	private MongoBackend mongoBackend;
 	
@@ -60,6 +55,15 @@ public class ESSimMain {
 		log.debug("Starting ESSIM REST Server");
 		ramlServer = new EssimHttpServer(System.getenv(HTTP_SERVER_SCHEME), System.getenv(HTTP_SERVER_HOSTNAME),
 				Integer.parseInt(System.getenv(HTTP_SERVER_PORT)), System.getenv(HTTP_SERVER_PATH));
+		
+		Runtime.getRuntime().addShutdownHook(new Thread()
+        {
+            @Override
+            public void run()
+            {
+                mongoBackend.removeStatus();
+            }
+        });
 	}
 
 	public void cleanup() {

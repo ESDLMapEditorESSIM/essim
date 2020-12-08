@@ -95,7 +95,7 @@ public class ESSimEngine implements IStatusProvider {
 	private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
 	private List<EnergyAsset> energyAssets;
 	@Getter
-	private String simulationRunName;
+	private String simulationId;
 	private String scenarioName;
 	private String energySystemId;
 	private EnergySystem energySystem;
@@ -143,7 +143,7 @@ public class ESSimEngine implements IStatusProvider {
 		influxURL = simulation.getInfluxURL();
 
 		scenarioName = simulation.getScenarioID();
-		simulationRunName = simulationId;
+		this.simulationId = simulationId;
 
 		simulationStartTime = EssimTime.dateFromGUI(simulation.getStartDate());
 		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
@@ -155,7 +155,7 @@ public class ESSimEngine implements IStatusProvider {
 				simulationStepLength);
 
 		// Initialise ObservationManager
-		ObservationManager observationManager = new ObservationManager(simulationRunName);
+		ObservationManager observationManager = new ObservationManager(simulationId);
 
 		// Register all ObservationConsumers - Eg: InfluxDB
 		if (simulation.getInfluxURL() != null) {
@@ -391,7 +391,7 @@ public class ESSimEngine implements IStatusProvider {
 					.format(LocalDateTime.ofInstant(simRunTime.toInstant(), ZoneId.of("UTC")));
 		}
 		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
-				scenarioName, simulationRunName, simulationStartTime, simulationEndTime);
+				scenarioName, simulationId, simulationStartTime, simulationEndTime);
 		return grafanaClient.getDashboardUrl();
 	}
 

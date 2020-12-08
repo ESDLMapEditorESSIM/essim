@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.rest;
 
 import java.io.File;
@@ -34,13 +35,14 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.Simulation;
 import nl.tno.essim.commons.Commons;
-import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.model.CreatedStatusImpl;
 import nl.tno.essim.model.ErrorStatusImpl;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.KPIModule;
 import nl.tno.essim.model.KPIModuleInfo;
 import nl.tno.essim.model.RemoteKPIModule;
+import nl.tno.essim.model.SimulationStatus;
+import nl.tno.essim.model.SimulationStatusImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.mongo.MongoBackend;
@@ -53,7 +55,10 @@ public class RestSimulation implements Simulation {
 	private UncaughtExceptionHandler essimExceptionHandler = new UncaughtExceptionHandler() {
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
-			log.error("Caught Exception in REST handler: " + e.getMessage());
+			StringWriter sw = new StringWriter();
+			e.printStackTrace(new PrintWriter(sw));
+			log.error(e.getMessage(), e);
+			mongo.updateSimulationStatus(t.getName(), Status.ERROR, sw.toString());
 		}
 	};
 
@@ -79,7 +84,7 @@ public class RestSimulation implements Simulation {
 					decodedContents = new String(Base64.getDecoder().decode(esdlContents), "UTF-8");
 				} catch (IllegalArgumentException e) {
 					log.debug("ESDL content is not Base64 encoded. Trying URL decoder...");
-					decodedContents = URLDecoder.decode(esdlContents,"UTF-8");
+					decodedContents = URLDecoder.decode(esdlContents, "UTF-8");
 				}
 				esdlFile = File.createTempFile("ess", ".esdl", null);
 				fw = new FileWriter(esdlFile);
@@ -92,10 +97,15 @@ public class RestSimulation implements Simulation {
 			}
 		}
 
+		String simId = null;
 		try {
-			String simId;
 			if (mongo != null) {
+				SimulationStatusImpl status = new SimulationStatusImpl();
+				status.setState(Status.CREATED);
+				status.setDescription("");
+				simulation.setStatus(status);
 				simId = mongo.addSimulation(simulation);
+				mongo.updateStatus("Busy");
 
 				log.debug("Simulation ID : {}", simId);
 
@@ -131,6 +141,7 @@ public class RestSimulation implements Simulation {
 			e.printStackTrace(new PrintWriter(sw));
 			log.error(e.getMessage(), e);
 			error.setDescription("Internal error: " + sw.toString());
+			mongo.updateSimulationStatus(simId, Status.ERROR, sw.toString());
 		}
 
 		return PostSimulationResponse.respond400WithApplicationJson(error);
@@ -190,12 +201,12 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public GetSimulationStatusBySimulationIdResponse getSimulationStatusBySimulationId(String simulationId) {
-		IStatusProvider engine = mongo.getStatusMap().get(simulationId);
-		if (engine != null) {
-			JSONObject status = new JSONObject();
-			status.put("status", engine.getStatus());
-			status.put("description", engine.getDescription());
-			return GetSimulationStatusBySimulationIdResponse.respond200WithApplicationJson(status.toString());
+		SimulationStatus simStatus = mongo.getSimulationStatus(simulationId);
+		if (simStatus != null) {
+			JSONObject simStatusJSON = new JSONObject();
+			simStatusJSON.put("State", simStatus.getState());
+			simStatusJSON.put("Description", simStatus.getDescription());
+			return GetSimulationStatusBySimulationIdResponse.respond200WithApplicationJson(simStatusJSON.toString());
 		} else {
 			ErrorStatusImpl error = new ErrorStatusImpl();
 			error.setStatus(Status.ERROR);
@@ -361,7 +372,10 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public GetSimulationStatusResponse getSimulationStatus() {
-		// TODO Auto-generated method stub
-		return null;
+		String status = mongo.getStatus();
+		if (status.equals("Busy")) {
+			return GetSimulationStatusResponse.respond503WithApplicationJson(status);
+		}
+		return GetSimulationStatusResponse.respond200WithApplicationJson(status);
 	}
 }
