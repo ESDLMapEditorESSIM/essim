@@ -69,6 +69,7 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public PostSimulationResponse postSimulation(EssimSimulation simulation) {
+		mongo.updateStatus("Busy");
 		ErrorStatusImpl error = new ErrorStatusImpl();
 		error.setStatus(Status.ERROR);
 
@@ -106,7 +107,6 @@ public class RestSimulation implements Simulation {
 				status.setDescription("");
 				simulation.setStatus(status);
 				simId = mongo.addSimulation(simulation);
-				mongo.updateStatus("Busy");
 
 				log.debug("Simulation ID : {}", simId);
 
