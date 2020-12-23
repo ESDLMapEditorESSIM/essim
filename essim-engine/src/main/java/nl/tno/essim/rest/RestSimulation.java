@@ -69,6 +69,9 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public PostSimulationResponse postSimulation(EssimSimulation simulation) {
+		if(mongo.getStatus().equals("Busy")) {
+			return PostSimulationResponse.respond503WithApplicationJson("Busy");
+		}
 		mongo.updateStatus("Busy");
 		ErrorStatusImpl error = new ErrorStatusImpl();
 		error.setStatus(Status.ERROR);
