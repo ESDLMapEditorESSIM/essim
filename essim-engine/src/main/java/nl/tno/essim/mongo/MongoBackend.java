@@ -100,7 +100,7 @@ public class MongoBackend {
 		} catch (UnknownHostException e) {
 			essimTaskId = UUID.randomUUID().toString();
 		}
-		essimStatusKey = essimTaskId + ".status";
+		essimStatusKey = "essim.status";
 
 		updateStatus("Ready");
 
