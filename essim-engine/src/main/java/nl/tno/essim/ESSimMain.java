@@ -55,15 +55,6 @@ public class ESSimMain {
 		log.debug("Starting ESSIM REST Server");
 		ramlServer = new EssimHttpServer(System.getenv(HTTP_SERVER_SCHEME), System.getenv(HTTP_SERVER_HOSTNAME),
 				Integer.parseInt(System.getenv(HTTP_SERVER_PORT)), System.getenv(HTTP_SERVER_PATH));
-		
-		Runtime.getRuntime().addShutdownHook(new Thread()
-        {
-            @Override
-            public void run()
-            {
-                mongoBackend.removeStatus();
-            }
-        });
 	}
 
 	public void cleanup() {

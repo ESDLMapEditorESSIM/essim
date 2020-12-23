@@ -16,12 +16,9 @@
 
 package nl.tno.essim.mongo;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import org.bson.types.ObjectId;
 import org.mongojack.DBQuery;
@@ -69,7 +66,7 @@ public class MongoBackend {
 	private DB essimDB;
 	private DB kpiDB;
 	private JacksonDBCollection<KPIModuleInfo, String> kpiCollection;
-	private String essimStatusKey;
+	private String status;
 
 	public synchronized static MongoBackend getInstance() {
 		return MongoBackend.instance;
@@ -94,33 +91,19 @@ public class MongoBackend {
 		DBCollection kpiDBCollection = kpiDB.createCollection(KPI_COLL_NAME, null);
 		kpiCollection = JacksonDBCollection.wrap(kpiDBCollection, KPIModuleInfo.class, String.class);
 
-		String essimTaskId;
-		try {
-			essimTaskId = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e) {
-			essimTaskId = UUID.randomUUID().toString();
-		}
-		essimStatusKey = "essim.status";
-
 		updateStatus("Ready");
 
 		statusMap = new HashMap<String, IStatusProvider>();
 
-		log.debug("This ESSIM instance is called {}", essimTaskId);
 		instance = this;
 	}
 
 	public void updateStatus(String status) {
-		updateMetaInfo(essimStatusKey, status);
+		this.status = status;
 	}
 
 	public String getStatus() {
-		return getMetaInfo(essimStatusKey);
-	}
-
-	public void removeStatus() {
-		BasicDBObject remQuery = new BasicDBObject().append("_id", essimStatusKey);
-		essimMetaCollection.remove(remQuery);
+		return status;
 	}
 
 	private void testMongoConnection(ServerAddress serverAddress) {
