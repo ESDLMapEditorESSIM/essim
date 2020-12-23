@@ -39,7 +39,7 @@ import nl.tno.essim.util.Converter;
 @Slf4j
 public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 
-	private static final int MAX_ATTEMPTS = 5;
+	private static final int MAX_ATTEMPTS = 1;
 	private InfluxDB influxClient;
 	private TimeSeriesDataCache dataCache;
 	private Duration aggregationPrecision;

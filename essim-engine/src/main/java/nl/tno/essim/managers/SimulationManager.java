@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.managers;
 
 import java.time.Duration;
@@ -47,6 +48,7 @@ import nl.tno.essim.transportsolver.TransportSolver;
 @Slf4j
 public class SimulationManager implements ISimulationManager, IStatusProvider {
 
+	private static long TIME_OUT_IN_SEC;
 	private String simulationId;
 	private LocalDateTime startDateTime;
 	private LocalDateTime endDateTime;
@@ -70,8 +72,13 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private MongoBackend mongo;
 	private ScheduledExecutorService statusUpdater;
 
-	public SimulationManager(ESSimEngine engine, String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
-			EssimDuration simStepLength) {
+	public SimulationManager(ESSimEngine engine, String simulationId, LocalDateTime startDateTime,
+			LocalDateTime endDateTime, EssimDuration simStepLength) {
+		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
+		if(timeout == null) {
+			timeout = "45";
+		}
+		TIME_OUT_IN_SEC = Long.parseLong(timeout);
 		this.engine = engine;
 		this.simulationId = simulationId;
 		this.startDateTime = startDateTime;
@@ -83,19 +90,19 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		this.precheckTime = Duration.of(0, ChronoUnit.SECONDS);
 		this.mongo = MongoBackend.getInstance();
 
-		simulationExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(Runtime.getRuntime()
-				.availableProcessors());
+		simulationExecutor = (ThreadPoolExecutor) Executors
+				.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		statusUpdater = Executors.newScheduledThreadPool(1);
 		statusUpdater.scheduleAtFixedRate(statusUpdaterService, 0, 1, TimeUnit.SECONDS);
 
 		log.debug("Simulation " + simulationId + " is initialised!");
 	}
-	
+
 	private Runnable statusUpdaterService = new Runnable() {
 		@Override
 		public void run() {
 			mongo.updateSimulationStatus(simulationId, Status.RUNNING, String.valueOf(status));
-		}	
+		}
 	};
 
 	/**
@@ -151,29 +158,25 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				}
 			}
 			// Wait until everybody is initialised
-			barrier.await();
+			boolean result = barrier.await(TIME_OUT_IN_SEC, TimeUnit.SECONDS);
+			if (!result) {
+				throw new IllegalStateException("Error in Simulation Init: " + description);
+			}
 
 			Instant startTime = Instant.now();
 
 			log.debug("Starting simulation");
 			// Step through until end of simulation
-			long start = time.getTime()
-					.toEpochSecond(ZoneOffset.UTC);
+			long start = time.getTime().toEpochSecond(ZoneOffset.UTC);
 			long end = endDateTime.toEpochSecond(ZoneOffset.UTC);
-			while (time.getTime()
-					.isBefore(endDateTime)
-					|| time.getTime()
-							.isEqual(endDateTime)) {
-				Month thisMonth = time.getTime()
-						.getMonth();
+			while (time.getTime().isBefore(endDateTime) || time.getTime().isEqual(endDateTime)) {
+				Month thisMonth = time.getTime().getMonth();
 				if (thisMonth != currentMonth) {
-					log.debug("Next timestep {}", time.getTime()
-							.toString());
+					log.debug("Next timestep {}", time.getTime().toString());
 					currentMonth = thisMonth;
 				}
 
-				long step = time.getTime()
-						.toEpochSecond(ZoneOffset.UTC);
+				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
 
 				for (Integer simulatableType : solverBlock.keySet()) {
@@ -218,9 +221,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			}
 
 			Instant endTime = Instant.now();
-			String simDuration = Duration.between(startTime, endTime)
-					.plus(precheckTime)
-					.toString();
+			String simDuration = Duration.between(startTime, endTime).plus(precheckTime).toString();
 			log.debug("Simulation finished and took {}", simDuration);
 
 			log.debug("Done!");
@@ -235,9 +236,9 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			status = -1;
 			description = e.getMessage();
 			mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
+			mongo.updateStatus("Ready");
 			simulationExecutor.shutdownNow();
-			Thread.currentThread()
-			.interrupt();
+			Thread.currentThread().interrupt();
 		}
 
 	}
@@ -250,9 +251,11 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	 */
 	public class ExceptionRunnable implements Runnable {
 		private Runnable runnable;
+
 		public ExceptionRunnable(Runnable r) {
 			this.runnable = r;
 		}
+
 		@Override
 		public void run() {
 			try {
@@ -264,9 +267,9 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				status = -1;
 				description = e.getMessage();
 				mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
-				simulationExecutor.shutdownNow();
-				Thread.currentThread()
-				.interrupt();
+//				mongo.updateStatus("Ready");
+//				simulationExecutor.shutdownNow();
+//				Thread.currentThread().interrupt();
 			}
 		}
 
