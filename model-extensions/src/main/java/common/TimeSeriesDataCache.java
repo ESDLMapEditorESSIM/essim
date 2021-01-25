@@ -52,8 +52,6 @@ public class TimeSeriesDataCache {
 		for (int j = 0; j < YEARS; j++) {
 			for (int i = 0; i < size; i++) {
 				List<Object> list = influxDBSeriesData.get(i);
-				timestamps[j * size + i] = startDate.plus(i * simulationStep.getAmount(), simulationStep.getUnit())
-						.plusYears(j);
 				timestamps[j * size + i] = LocalDateTime.parse((String) list.get(TIMESTAMP),
 						DateTimeFormatter.ISO_DATE_TIME);
 				values[j * size + i] = Converter

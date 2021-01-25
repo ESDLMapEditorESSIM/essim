@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.observation.consumers;
 
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.time.EssimTime;
+import okhttp3.OkHttpClient;
 
 @Slf4j
 public class InfluxDBObservationConsumer implements IObservationConsumer {
@@ -59,7 +61,12 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 		this.database = database;
 
 		if (influxDbClient == null) {
-			influxDbClient = InfluxDBFactory.connect(url)
+			OkHttpClient.Builder client = new OkHttpClient.Builder()
+					.connectTimeout(1, TimeUnit.MINUTES)
+					.readTimeout(1, TimeUnit.MINUTES)
+					.writeTimeout(1, TimeUnit.MINUTES)
+					.retryOnConnectionFailure(true);
+			influxDbClient = InfluxDBFactory.connect(url, client)
 					.enableBatch(10000, 10, TimeUnit.SECONDS, simpleThreadFactory).enableGzip().setDatabase(database);
 		}
 
