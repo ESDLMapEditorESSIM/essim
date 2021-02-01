@@ -139,7 +139,7 @@ public class RemoteLogicNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		super.processAllocation(timestamp, builder, price);
-		ByteBuffer buf = ByteBuffer.allocate(24);
+		ByteBuffer buf = ByteBuffer.allocate(16);
 		buf.order(ByteOrder.BIG_ENDIAN);
 		buf.putLong(timestamp.getTime()
 				.toEpochSecond(ZoneOffset.UTC));
