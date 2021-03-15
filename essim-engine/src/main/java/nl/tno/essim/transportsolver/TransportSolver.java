@@ -211,8 +211,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		for (EnergyAsset connectedAsset : Commons.findAllConnectedAssets(parentNode.getAsset())) {
 
 			if (assetList.contains(connectedAsset) && !processedList.contains(connectedAsset)) {
-				final String nodeId = connectedAsset.getName() == null ? connectedAsset.getId()
-						: connectedAsset.getName();
+				final String nodeId = connectedAsset.getId();
 				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).simulationId(simulationId).asset(connectedAsset)
 						.parent(parentNode).networkId(getId()).carrier(carrier);
 				for (Port myPort : connectedAsset.getPort()) {
