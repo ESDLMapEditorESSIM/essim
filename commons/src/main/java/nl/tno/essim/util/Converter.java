@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import esdl.AbstractQuantityAndUnit;
 import esdl.DurationUnitEnum;
 import esdl.EsdlFactory;
+import esdl.GenericProfile;
 import esdl.MultiplierEnum;
 import esdl.ProfileTypeEnum;
 import esdl.QuantityAndUnitReference;
@@ -201,6 +202,11 @@ public class Converter {
 			standardizedUnit = reference.getReference();
 		} else {
 			return value;
+		}
+
+		if (standardizedUnit == null) {
+			GenericProfile profile = (GenericProfile) specifiedUnit.eContainer();
+			throw new IllegalArgumentException("Quantity and Unit is missing for profile with id : " + profile.getId());
 		}
 
 		return value * (fromMultiplier(standardizedUnit.getMultiplier()) * toSIUnit(standardizedUnit.getUnit()))
