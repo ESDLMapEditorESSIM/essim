@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package essim.impl;
 
 import java.time.LocalDateTime;
@@ -143,18 +144,19 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 									+ ", queryError: " + queryResult.getError());
 						}
 					} catch (InfluxDBIOException e) {
-						log.error("Error querying InfluxDB {}. Trying again...", e.getMessage());
+						log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
 					}
 				}
 				if (queryResult == null) {
 					throw new IllegalArgumentException("Cannot connect to InfluxDB service at [" + getHost() + ":"
-							+ getPort() + "] to query profile. Please verify the URL!");
+							+ getPort() + "] to query profile with id " + getId() + ". Please verify the URL!");
 				}
 				for (Result result : queryResult.getResults()) {
 					if (result.getSeries() == null) {
 						throw new IllegalArgumentException("No results returned on querying " + command
 								+ " at database [" + database + "] at [" + getHost() + ":" + getPort()
-								+ "]. Please verify the database name, measurement and field names and timeframe of query!");
+								+ "] for profile with id " + getId()
+								+ ". Please verify the database name, measurement and field names and timeframe of query!");
 					}
 					for (Series series : result.getSeries()) {
 						dataCache = new TimeSeriesDataCache(field, series.getValues(), simStartDate, simEndDate,

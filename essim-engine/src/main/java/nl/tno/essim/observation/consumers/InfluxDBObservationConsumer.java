@@ -16,6 +16,8 @@
 
 package nl.tno.essim.observation.consumers;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
@@ -61,19 +63,24 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 		this.database = database;
 
 		if (influxDbClient == null) {
-			OkHttpClient.Builder client = new OkHttpClient.Builder()
-					.connectTimeout(1, TimeUnit.MINUTES)
-					.readTimeout(1, TimeUnit.MINUTES)
-					.writeTimeout(1, TimeUnit.MINUTES)
-					.retryOnConnectionFailure(true);
+			OkHttpClient.Builder client = new OkHttpClient.Builder().connectTimeout(1, TimeUnit.MINUTES)
+					.readTimeout(1, TimeUnit.MINUTES).writeTimeout(1, TimeUnit.MINUTES).retryOnConnectionFailure(true);
 			influxDbClient = InfluxDBFactory.connect(url, client)
 					.enableBatch(10000, 10, TimeUnit.SECONDS, simpleThreadFactory).enableGzip().setDatabase(database);
+		}
+
+		try {
+			URL influx = new URL(url);
+			HttpURLConnection urlConn = (HttpURLConnection) influx.openConnection();
+			urlConn.setConnectTimeout(1000);
+			urlConn.connect();
+		} catch (Exception e) {
+			throw new IllegalArgumentException("Connecting to InfluxDB @ " + url + " timed out. Please check URL!");
 		}
 
 		if (!influxDbClient.databaseExists(database)) {
 			influxDbClient.createDatabase(database);
 		}
-
 	}
 
 	@Override

@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim;
 
 import java.io.File;
@@ -157,35 +158,41 @@ public class ESSimEngine implements IStatusProvider {
 		// Initialise ObservationManager
 		ObservationManager observationManager = new ObservationManager(simulationId);
 
-		// Register all ObservationConsumers - Eg: InfluxDB
-		if (simulation.getInfluxURL() != null) {
-			InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(
-					simulation.getInfluxURL());
-			influxObservationConsumer.init(scenarioName);
-			observationManager.registerConsumer(influxObservationConsumer);
-			simulationManager.addObservationConsumer(influxObservationConsumer);
-			log.debug("Registering InfluxDB Observation Consumer");
-		}
-		if (simulation.getKafkaURL() != null) {
-			KafkaObservationConsumer kafkaObservationConsumer = new KafkaObservationConsumer(simulation.getKafkaURL());
-			kafkaObservationConsumer.init(simulationId);
-			observationManager.registerConsumer(kafkaObservationConsumer);
-			simulationManager.addObservationConsumer(kafkaObservationConsumer);
-			log.debug("Registering Kafka Observation Consumer");
-		}
-		if (simulation.getNatsURL() != null) {
-			NATSObservationConsumer natsObservationConsumer = new NATSObservationConsumer(simulation.getNatsURL());
-			natsObservationConsumer.init(simulationId);
-			observationManager.registerConsumer(natsObservationConsumer);
-			simulationManager.addObservationConsumer(natsObservationConsumer);
-			log.debug("Registering NATS Observation Consumer");
-		}
-		if (simulation.getMqttURL() != null) {
-			MQTTObservationConsumer mqttObservationConsumer = new MQTTObservationConsumer(simulation.getMqttURL());
-			mqttObservationConsumer.init(simulationId);
-			observationManager.registerConsumer(mqttObservationConsumer);
-			simulationManager.addObservationConsumer(mqttObservationConsumer);
-			log.debug("Registering MQTT Observation Consumer");
+		try {
+			// Register all ObservationConsumers - Eg: InfluxDB
+			if (simulation.getInfluxURL() != null) {
+				InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(
+						simulation.getInfluxURL());
+				influxObservationConsumer.init(scenarioName);
+				observationManager.registerConsumer(influxObservationConsumer);
+				simulationManager.addObservationConsumer(influxObservationConsumer);
+				log.debug("Registering InfluxDB Observation Consumer");
+			}
+			if (simulation.getKafkaURL() != null) {
+				KafkaObservationConsumer kafkaObservationConsumer = new KafkaObservationConsumer(
+						simulation.getKafkaURL());
+				kafkaObservationConsumer.init(simulationId);
+				observationManager.registerConsumer(kafkaObservationConsumer);
+				simulationManager.addObservationConsumer(kafkaObservationConsumer);
+				log.debug("Registering Kafka Observation Consumer");
+			}
+			if (simulation.getNatsURL() != null) {
+				NATSObservationConsumer natsObservationConsumer = new NATSObservationConsumer(simulation.getNatsURL());
+				natsObservationConsumer.init(simulationId);
+				observationManager.registerConsumer(natsObservationConsumer);
+				simulationManager.addObservationConsumer(natsObservationConsumer);
+				log.debug("Registering NATS Observation Consumer");
+			}
+			if (simulation.getMqttURL() != null) {
+				MQTTObservationConsumer mqttObservationConsumer = new MQTTObservationConsumer(simulation.getMqttURL());
+				mqttObservationConsumer.init(simulationId);
+				observationManager.registerConsumer(mqttObservationConsumer);
+				simulationManager.addObservationConsumer(mqttObservationConsumer);
+				log.debug("Registering MQTT Observation Consumer");
+			}
+		} catch (Exception e) {
+			simulationManager.shutdown();
+			throw new IllegalArgumentException("Error in Observation Manager init: " + e.getMessage());
 		}
 
 		// Publish Simulation Description

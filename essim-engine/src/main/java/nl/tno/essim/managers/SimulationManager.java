@@ -229,6 +229,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			mongo.updateSimulationStatus(simulationId, Status.COMPLETE, "Finished in " + simDuration);
 			mongo.updateStatus("Ready");
 			engine.setFeatureCollections();
+			statusUpdater.shutdownNow();
 			simulationExecutor.shutdownNow();
 		} catch (Exception e) {
 			statusUpdater.shutdownNow();
@@ -237,10 +238,16 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			description = e.getMessage();
 			mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
 			mongo.updateStatus("Ready");
+			statusUpdater.shutdownNow();
 			simulationExecutor.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
 
+	}
+	
+	public void shutdown() {
+		statusUpdater.shutdownNow();
+		simulationExecutor.shutdownNow();
 	}
 
 	/**
