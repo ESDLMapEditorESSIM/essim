@@ -49,7 +49,6 @@ public class RemoteLogicNode extends Node {
 	private final NodeConfiguration remoteLogicConfig;
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
-	private final String remoteId;
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray, JSONObject geoJSON,
 			EnergyAsset asset, int directionFactor, Role role, TreeMap<Double, Double> demandFunction, double energy,
@@ -59,7 +58,6 @@ public class RemoteLogicNode extends Node {
 				cost, parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
-		this.remoteId = asset.getId();
 
 		String serverURI = "tcp://" + config.getMqttHost() + ":" + config.getMqttPort();
 		try {
@@ -79,7 +77,7 @@ public class RemoteLogicNode extends Node {
 			 * } });
 			 */
 			this.client.connect();
-			this.client.subscribe(config.getMqttTopic() + "/simulation/" + remoteId + "/#", this::receiveMessage);
+			this.client.subscribe(config.getMqttTopic() + "/simulation/" + nodeId + "/#", this::receiveMessage);
 			this.publishConfig();
 		} catch (MqttException e) {
 			throw new RuntimeException(e);
@@ -90,7 +88,7 @@ public class RemoteLogicNode extends Node {
 		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
 			serializeESDLNode(bos);
 			MqttMessage msg = new MqttMessage(bos.toByteArray());
-			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + this.remoteId + "/config", msg);
+			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
 		} catch (MqttException | IOException e) {
 			// FIXME this is now the default behavior
 			log.warn("Unable to send node asset info");
@@ -120,7 +118,7 @@ public class RemoteLogicNode extends Node {
 
 		try {
 			MqttMessage msg = new MqttMessage(buf.array());
-			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + this.nodeId + "/createBid", msg);
+			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/createBid", msg);
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
@@ -147,7 +145,7 @@ public class RemoteLogicNode extends Node {
 
 		try {
 			MqttMessage msg = new MqttMessage(buf.array());
-			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + remoteId + "/allocate", msg);
+			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/allocate", msg);
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}

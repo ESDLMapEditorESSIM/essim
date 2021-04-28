@@ -189,7 +189,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 		rootRole = roleMap.get(rootAsset);
 
-		tree = Node.builder().nodeId(rootAsset.getName() == null ? rootAsset.getId() : rootAsset.getName())
+		tree = Node.builder().nodeId(rootAsset.getId())
 				.simulationId(simulationId).asset(rootAsset).role(rootRole).parent(null).networkId(getId())
 				.carrier(carrier).build();
 
