@@ -59,7 +59,7 @@ public class RemoteLogicNode extends Node {
 				cost, parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
-		this.remoteId = (asset == null || asset.getName() == null) ? nodeId : asset.getName();
+		this.remoteId = asset.getId();
 
 		String serverURI = "tcp://" + config.getMqttHost() + ":" + config.getMqttPort();
 		try {
