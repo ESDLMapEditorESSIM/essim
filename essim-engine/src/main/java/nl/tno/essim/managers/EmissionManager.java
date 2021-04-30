@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.managers;
 
 import java.util.ArrayList;
@@ -33,7 +34,6 @@ import esdl.Storage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.Simulatable;
@@ -43,7 +43,6 @@ import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimTime;
 
-@Slf4j
 public class EmissionManager implements Simulatable, IObservationProvider {
 
 	private static final double eps = 1.0e-5;
@@ -54,7 +53,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	private ConcurrentHashMap<AssetEnergyPair, List<AssetEnergyPair>> consumerProducerMap;
 
 	public synchronized static EmissionManager getInstance(String simulationId) {
-		if(instanceMap.containsKey(simulationId)) {
+		if (instanceMap.containsKey(simulationId)) {
 			return instanceMap.get(simulationId);
 		}
 		EmissionManager newinstance = new EmissionManager();
@@ -99,15 +98,15 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		List<AssetEnergyPair> listOfProducers = producerMap.get(networkId);
 		List<ConsumerProducerPair> listOfConsumers = consumerMap.get(networkId);
 
-		double sumProduction = 0.0;
-		if (listOfProducers != null) {
-			sumProduction = listOfProducers.stream()
-					.mapToDouble(x -> x.getEnergy())
-					.sum();
-		} else {
-			log.error("Network {} has no producers!", networkId);
+		if (listOfConsumers == null) {
+			throw new IllegalStateException("Network " + networkId + " has no producers!");
+		}
+		if (listOfProducers == null) {
+			throw new IllegalStateException("Network " + networkId + " has no consumers!");
 		}
 
+		double sumProduction = 0.0;
+		sumProduction = listOfProducers.stream().mapToDouble(x -> x.getEnergy()).sum();
 		sumProduction = sumProduction <= eps ? 1.0 : sumProduction;
 
 		for (ConsumerProducerPair consumer : listOfConsumers) {
@@ -116,8 +115,8 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 				if (producers == null) {
 					producers = new ArrayList<AssetEnergyPair>();
 				}
-				producers.add(new AssetEnergyPair(producer.getAsset(), consumer.getConsumer()
-						.getEnergy() * producer.getEnergy() / sumProduction));
+				producers.add(new AssetEnergyPair(producer.getAsset(),
+						consumer.getConsumer().getEnergy() * producer.getEnergy() / sumProduction));
 				consumer.setProducers(producers);
 			}
 		}
@@ -137,16 +136,13 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 			List<AssetEnergyPair> consumersProductions = new ArrayList<AssetEnergyPair>();
 			for (List<AssetEnergyPair> list : consumerProducerMap.values()) {
 				for (AssetEnergyPair producer : list) {
-					if (producer.getAsset()
-							.equals(consumer)) {
+					if (producer.getAsset().equals(consumer)) {
 						consumersProductions.add(producer);
 					}
 				}
 			}
 
-			double sumProduction = consumersProductions.stream()
-					.mapToDouble(x -> x.getEnergy())
-					.sum();
+			double sumProduction = consumersProductions.stream().mapToDouble(x -> x.getEnergy()).sum();
 
 			sumProduction = sumProduction <= eps ? 1.0 : sumProduction;
 
@@ -156,8 +152,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 				double fraction = -1;
 				int index = 0;
 				for (AssetEnergyPair producer : entry.getValue()) {
-					if (producer.getAsset()
-							.equals(consumer)) {
+					if (producer.getAsset().equals(consumer)) {
 						fraction = producer.getEnergy() / sumProduction;
 						break;
 					}
@@ -168,10 +163,8 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 					for (AssetEnergyPair prod : consumersProducers) {
 						newProducers.add(new AssetEnergyPair(prod.getAsset(), prod.getEnergy() * fraction));
 					}
-					entry.getValue()
-							.remove(index);
-					entry.getValue()
-							.addAll(newProducers);
+					entry.getValue().remove(index);
+					entry.getValue().addAll(newProducers);
 					consumerProducerMap.remove(consumerPair);
 				}
 			}
@@ -183,8 +176,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 			for (AssetEnergyPair original : e.getValue()) {
 				AssetEnergyPair valRef = null;
 				for (AssetEnergyPair newValue : newValues) {
-					if (newValue.getAsset()
-							.equals(original.getAsset())) {
+					if (newValue.getAsset().equals(original.getAsset())) {
 						valRef = newValue;
 						break;
 					}
@@ -292,8 +284,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 					double emission = outputCarrierQuantity * carrierEmission;
 
 					if (producerAsset instanceof Producer) {
-						if (producerAsset.getProdType()
-								.equals(RenewableTypeEnum.RENEWABLE)) {
+						if (producerAsset.getProdType().equals(RenewableTypeEnum.RENEWABLE)) {
 							emission = 0;
 						}
 					}
@@ -318,18 +309,14 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 			double emission = entry.getValue();
 			Carrier producerCarrier = producerCarrierMap.get(producerAsset);
 			if (observationManager != null) {
-				observationManager.publish(this, Observation.builder()
-						.observedAt(timestamp.getTime())
-						.tag("assetId", producerAsset.getId())
-						.tag("capability", "Producer")
+				observationManager.publish(this, Observation.builder().observedAt(timestamp.getTime())
+						.tag("assetId", producerAsset.getId()).tag("capability", "Producer")
 						.tag("assetName", producerAsset.getName() == null ? "UnnamedAsset" : producerAsset.getName())
-						.tag("assetClass", producerAsset.getClass()
-								.getInterfaces()[0].getSimpleName())
+						.tag("assetClass", producerAsset.getClass().getInterfaces()[0].getSimpleName())
 						.tag("carrierId", producerCarrier.getId())
 						.tag("carrierName",
 								producerCarrier.getName() == null ? "UnnamedCarrier" : producerCarrier.getName())
-						.value("emission", emission)
-						.build());
+						.value("emission", emission).build());
 			}
 		}
 
@@ -338,22 +325,17 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 			double emission = entry.getValue();
 			Carrier consumerCarrier = consumerCarrierMap.get(consumerAsset);
 			if (observationManager != null) {
-				observationManager.publish(this, Observation.builder()
-						.observedAt(timestamp.getTime())
-						.tag("assetId", consumerAsset.getId())
-						.tag("capability", "Consumer")
-						.tag("sector", consumerAsset.getSector() == null
-								? "DefaultSector"
-								: consumerAsset.getSector()
-										.getName())
+				observationManager.publish(this, Observation.builder().observedAt(timestamp.getTime())
+						.tag("assetId", consumerAsset.getId()).tag("capability", "Consumer")
+						.tag("sector",
+								consumerAsset.getSector() == null ? "DefaultSector"
+										: consumerAsset.getSector().getName())
 						.tag("assetName", consumerAsset.getName() == null ? "UnnamedAsset" : consumerAsset.getName())
-						.tag("assetClass", consumerAsset.getClass()
-								.getInterfaces()[0].getSimpleName())
+						.tag("assetClass", consumerAsset.getClass().getInterfaces()[0].getSimpleName())
 						.tag("carrierId", consumerCarrier.getId())
 						.tag("carrierName",
 								consumerCarrier.getName() == null ? "UnnamedCarrier" : consumerCarrier.getName())
-						.value("emission", emission)
-						.build());
+						.value("emission", emission).build());
 			}
 		}
 

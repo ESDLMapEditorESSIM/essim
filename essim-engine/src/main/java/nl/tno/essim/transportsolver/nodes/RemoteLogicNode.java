@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.io.ByteArrayOutputStream;
@@ -39,6 +40,7 @@ import esdl.Carrier;
 import esdl.EnergyAsset;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -50,12 +52,12 @@ public class RemoteLogicNode extends Node {
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
 
-	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray, JSONObject geoJSON,
-			EnergyAsset asset, int directionFactor, Role role, TreeMap<Double, Double> demandFunction, double energy,
-			double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
-			NodeConfiguration config) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role, demandFunction, energy,
-				cost, parent, carrier, children, timeStep, now);
+	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
+			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
+			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
+			List<Node> children, long timeStep, Horizon now, NodeConfiguration config) {
+		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
+				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
 
@@ -67,12 +69,15 @@ public class RemoteLogicNode extends Node {
 			/*
 			 * client.setCallback(new MqttCallback() {
 			 * 
-			 * @Override public void messageArrived(String topic, MqttMessage message) throws Exception {
-			 * log.info("Also here received new message at topic: {}", topic); }
+			 * @Override public void messageArrived(String topic, MqttMessage message)
+			 * throws Exception { log.info("Also here received new message at topic: {}",
+			 * topic); }
 			 * 
-			 * @Override public void deliveryComplete(IMqttDeliveryToken token) { log.info("Delivery complete"); }
+			 * @Override public void deliveryComplete(IMqttDeliveryToken token) {
+			 * log.info("Delivery complete"); }
 			 * 
-			 * @Override public void connectionLost(Throwable cause) { log.error("Connection lost");
+			 * @Override public void connectionLost(Throwable cause) {
+			 * log.error("Connection lost");
 			 * 
 			 * } });
 			 */
@@ -97,8 +102,7 @@ public class RemoteLogicNode extends Node {
 
 	private void serializeESDLNode(ByteArrayOutputStream bos) throws IOException {
 		XMIResource xmiResource = new XMIResourceImpl();
-		xmiResource.getContents()
-				.add(asset);
+		xmiResource.getContents().add(asset);
 		xmiResource.save(bos, new HashMap<String, Object>());
 	}
 
@@ -106,13 +110,11 @@ public class RemoteLogicNode extends Node {
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
 		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 
-		long t = now.getStartTime()
-				.toEpochSecond(ZoneOffset.UTC);
+		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
 		ByteBuffer buf = ByteBuffer.allocate(32);
 		buf.order(ByteOrder.BIG_ENDIAN);
 		buf.putLong(t);
-		buf.putLong(now.getPeriod()
-				.getSeconds());
+		buf.putLong(now.getPeriod().getSeconds());
 		buf.putDouble(minPrice);
 		buf.putDouble(maxPrice);
 
@@ -126,8 +128,7 @@ public class RemoteLogicNode extends Node {
 		this.locks.put(t, new Object());
 		synchronized (this.locks.get(t)) {
 			try {
-				this.locks.get(t)
-						.wait();
+				this.locks.get(t).wait();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -136,11 +137,9 @@ public class RemoteLogicNode extends Node {
 
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-		super.processAllocation(timestamp, builder, price);
 		ByteBuffer buf = ByteBuffer.allocate(16);
 		buf.order(ByteOrder.BIG_ENDIAN);
-		buf.putLong(timestamp.getTime()
-				.toEpochSecond(ZoneOffset.UTC));
+		buf.putLong(timestamp.getTime().toEpochSecond(ZoneOffset.UTC));
 		buf.putDouble(price);
 
 		try {
@@ -149,7 +148,12 @@ public class RemoteLogicNode extends Node {
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
-
+		
+		if (role.equals(Role.CONSUMER)) {
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
+		} else {
+			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
+		}
 	}
 
 	private void receiveMessage(String topic, MqttMessage message) {
@@ -168,8 +172,7 @@ public class RemoteLogicNode extends Node {
 
 					// Resume the createBidCurve thread
 					synchronized (this.locks.get(timestep)) {
-						this.locks.get(timestep)
-								.notify();
+						this.locks.get(timestep).notify();
 					}
 
 				}
