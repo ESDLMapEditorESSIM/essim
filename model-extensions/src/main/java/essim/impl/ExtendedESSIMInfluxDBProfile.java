@@ -124,7 +124,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '" + startTimeOfDataset
 				+ "' AND time <= '" + endTime + "'";
 
-		if (this.filters != null && !this.filters.isBlank()) {
+		if (this.filters != null && !this.filters.trim().isEmpty()) {
 			final String filter = this.filters.trim();
 			command += filter.startsWith("AND") ? " " + filter : " AND " + filter;
 		}
