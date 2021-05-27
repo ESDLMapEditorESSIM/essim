@@ -120,10 +120,15 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 			EssimDuration simulationStepLength, double multiplier, double annualChange) {
 
 		int connectionAttempts = 0;
-
+		
 		String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '" + startTimeOfDataset
 				+ "' AND time <= '" + endTime + "'";
 
+		if (this.filters != null && !this.filters.trim().isEmpty()) {
+			final String filter = this.filters.trim();
+			command += filter.startsWith("AND") ? " " + filter : " AND " + filter;
+		}
+		
 		log.debug("Influx Call for: " + command);
 
 		synchronized (profileCache) {

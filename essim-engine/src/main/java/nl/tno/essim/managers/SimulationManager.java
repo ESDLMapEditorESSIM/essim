@@ -268,7 +268,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			try {
 				runnable.run();
 				barrier.countDown();
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				statusUpdater.shutdownNow();
 				log.error("Error in scheduled runnable", e);
 				status = -1;
