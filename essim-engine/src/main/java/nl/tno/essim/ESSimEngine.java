@@ -311,7 +311,7 @@ public class ESSimEngine implements IStatusProvider {
 				String solverId = energySystemId + " "
 						+ (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
 				TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
-						energyAssetRoles);
+						energyAssetRoles, energySystem);
 				solver.setSimulationManager(simulationManager);
 				for (EnergyAsset filteredAsset : filteredAssets) {
 					solver.addToNetwork(filteredAsset);

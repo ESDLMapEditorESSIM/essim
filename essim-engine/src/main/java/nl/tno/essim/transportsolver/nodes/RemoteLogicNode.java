@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,16 +33,16 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 import esdl.Carrier;
 import esdl.EnergyAsset;
+import esdl.EnergySystem;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -51,15 +52,22 @@ public class RemoteLogicNode extends Node {
 	private final NodeConfiguration remoteLogicConfig;
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
+	private JSONObject remoteConfig;
 
-	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now, NodeConfiguration config) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
+			NodeConfiguration config) {
+		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
+		@SuppressWarnings("unchecked")
+		HashMap<String, ?> remoteConfigMap = (HashMap<String, ?>) config.getConfig();
+		remoteConfig = new JSONObject(remoteConfigMap);
+
+		log.debug("Creating Remote Logic Node for asset : {} ({})", asset.getId(),
+				asset.getClass().getInterfaces()[0].getSimpleName());
 
 		String serverURI = "tcp://" + config.getMqttHost() + ":" + config.getMqttPort();
 		try {
@@ -91,19 +99,19 @@ public class RemoteLogicNode extends Node {
 
 	private void publishConfig() {
 		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-			serializeESDLNode(bos);
-			MqttMessage msg = new MqttMessage(bos.toByteArray());
+			XMIResource xmiResource = new XMIResourceImpl();
+			xmiResource.getContents().add(energySystem);
+			xmiResource.save(bos, new HashMap<String, Object>());
+			String esdlContents = Base64.getEncoder().encodeToString(bos.toByteArray());
+			JSONObject message = new JSONObject().put("esdlContents", esdlContents).put("simulationId", simulationId)
+					.put("config", remoteConfig);
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
 		} catch (MqttException | IOException e) {
 			// FIXME this is now the default behavior
 			log.warn("Unable to send node asset info");
+			e.printStackTrace();
 		}
-	}
-
-	private void serializeESDLNode(ByteArrayOutputStream bos) throws IOException {
-		XMIResource xmiResource = new XMIResourceImpl();
-		xmiResource.getContents().add(asset);
-		xmiResource.save(bos, new HashMap<String, Object>());
 	}
 
 	@Override
@@ -111,15 +119,11 @@ public class RemoteLogicNode extends Node {
 		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
-		ByteBuffer buf = ByteBuffer.allocate(32);
-		buf.order(ByteOrder.BIG_ENDIAN);
-		buf.putLong(t);
-		buf.putLong(now.getPeriod().getSeconds());
-		buf.putDouble(minPrice);
-		buf.putDouble(maxPrice);
 
+		JSONObject message = new JSONObject().put("timeStamp", t).put("timeStepInSeconds", now.getPeriod().getSeconds())
+				.put("minPrice", minPrice).put("maxPrice", maxPrice).put("carrierId", carrier.getId());
 		try {
-			MqttMessage msg = new MqttMessage(buf.array());
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/createBid", msg);
 		} catch (MqttException e) {
 			e.printStackTrace();
@@ -148,7 +152,7 @@ public class RemoteLogicNode extends Node {
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
-		
+
 		if (role.equals(Role.CONSUMER)) {
 			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
 		} else {

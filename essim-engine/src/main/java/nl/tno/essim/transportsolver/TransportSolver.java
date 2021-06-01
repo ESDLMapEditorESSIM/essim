@@ -34,6 +34,7 @@ import esdl.Conversion;
 import esdl.DrivenByDemand;
 import esdl.DrivenByProfile;
 import esdl.EnergyAsset;
+import esdl.EnergySystem;
 import esdl.EsdlFactory;
 import esdl.GenericProfile;
 import esdl.InPort;
@@ -91,12 +92,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private int transportCount;
 	private Collection<NodeConfiguration> nodeConfig;
 	private String simulationId;
+	private EnergySystem energySystem;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
-			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap) {
+			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, EnergySystem energySystem) {
 		this.id = name;
 		this.carrier = carrier;
 		this.nodeConfig = nodeConfig;
+		this.energySystem = energySystem;
 		assetList = new ArrayList<EnergyAsset>();
 		processedList = new ArrayList<EnergyAsset>();
 		deviceNodes = new ArrayList<Node>();
@@ -189,9 +192,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 		rootRole = roleMap.get(rootAsset);
 
-		tree = Node.builder().nodeId(rootAsset.getId())
-				.simulationId(simulationId).asset(rootAsset).role(rootRole).parent(null).networkId(getId())
-				.carrier(carrier).build();
+		String rootAssetId = rootAsset.getId();
+		NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
+				.energySystem(energySystem).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
+		if (nodeConfig != null) {
+			this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
+					.ifPresent(nodeBuilder::config);
+		}
+		tree = nodeBuilder.build();
 
 		processedList.add(rootAsset);
 		assetList.remove(rootAsset);
@@ -470,11 +478,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						Converter.toESDLDuration(simulationStepLength));
 			}
 		}
-	}
-
-	@Override
-	public JSONArray getFeatureCollection() {
-		return tree.getGeoJsonFeatures();
 	}
 
 	@Override

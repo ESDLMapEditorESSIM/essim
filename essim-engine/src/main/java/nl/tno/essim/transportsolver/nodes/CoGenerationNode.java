@@ -20,9 +20,6 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import esdl.Carrier;
 import esdl.CoGeneration;
 import esdl.ControlStrategy;
@@ -31,6 +28,7 @@ import esdl.DrivenByProfile;
 import esdl.DrivenBySupply;
 import esdl.EnergyAsset;
 import esdl.EnergyCarrier;
+import esdl.EnergySystem;
 import esdl.GenericProfile;
 import esdl.HeatCommodity;
 import esdl.InPort;
@@ -61,11 +59,10 @@ public class CoGenerationNode extends ConversionNode {
 	private double heatEfficiency;
 
 	@Builder(builderMethodName = "coGenerationNodeBuilder")
-	public CoGenerationNode(String simulationId, String nodeId, String address, String networkId,
-			JSONArray animationArray, JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
+	public CoGenerationNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role,
 				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 		coGenerationPlant = (CoGeneration) asset;
 		controlStrategy = coGenerationPlant.getControlStrategy();

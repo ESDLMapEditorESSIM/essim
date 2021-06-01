@@ -29,6 +29,7 @@ import esdl.AbstractBuilding;
 import esdl.Area;
 import esdl.Carrier;
 import esdl.EnergyAsset;
+import esdl.EnergySystem;
 import esdl.Sector;
 import esdl.Transport;
 import esdl.impl.ItemImpl;
@@ -56,9 +57,8 @@ public abstract class Node implements INode {
 	protected String nodeId;
 	protected String address;
 	protected String networkId;
-	protected JSONArray animationArray;
-	protected JSONObject geoJSON;
 	protected EnergyAsset asset;
+	protected EnergySystem energySystem;
 	protected int directionFactor;
 	protected Role role;
 	protected TreeMap<Double, Double> demandFunction;
@@ -89,8 +89,8 @@ public abstract class Node implements INode {
 
 		public Node build() {
 			Node node = null;
-			if (this.config != null && this.config.getRemoteNodeLogic()) {
-				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset,
+			if (this.config != null) {
+				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, energySystem,
 						directionFactor, role, demandFunction, energy, cost, parent, carrier, children, timeStep, now,
 						config);
 			} else if (asset != null) {
@@ -114,10 +114,10 @@ public abstract class Node implements INode {
 				if (assetNodeClass != null) {
 					try {
 						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
-								String.class, JSONArray.class, JSONObject.class, EnergyAsset.class, int.class,
+								String.class, EnergyAsset.class, EnergySystem.class, int.class,
 								Role.class, TreeMap.class, double.class, double.class, Node.class, Carrier.class,
 								List.class, long.class, Horizon.class).newInstance(simulationId, nodeId, address,
-										networkId, animationArray, geoJSON, asset, directionFactor, role,
+										networkId, asset, energySystem, directionFactor, role,
 										demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -496,26 +496,6 @@ public abstract class Node implements INode {
 			}
 		}
 		cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
-	}
-
-	public JSONArray getGeoJsonFeatures() {
-		JSONArray array = new JSONArray();
-		if (children != null) {
-			for (Node child : children) {
-				JSONArray childFeatures = child.getGeoJsonFeatures();
-				for (Object childFeature : childFeatures) {
-					if (childFeature != null) {
-						array.put(childFeature);
-					}
-				}
-			}
-		}
-		if (animationArray != null) {
-			for (Object object : animationArray) {
-				array.put(object);
-			}
-		}
-		return array;
 	}
 
 	@Override

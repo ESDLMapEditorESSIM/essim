@@ -18,16 +18,13 @@ package nl.tno.essim.transportsolver.nodes;
 import java.util.List;
 import java.util.TreeMap;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 import esdl.Carrier;
 import esdl.DrivenByDemand;
 import esdl.DrivenByProfile;
 import esdl.DrivenBySupply;
 import esdl.EnergyAsset;
 import esdl.EnergyCarrier;
+import esdl.EnergySystem;
 import esdl.GenericProfile;
 import esdl.HeatCommodity;
 import esdl.HeatPump;
@@ -41,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -55,11 +53,10 @@ public class HeatPumpNode extends ConversionNode {
 	private String hpName;
 
 	@Builder(builderMethodName = "heatPumpNodeBuilder")
-	public HeatPumpNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
+	public HeatPumpNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role,
 				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 		this.heatPump = (HeatPump) asset;
 		this.hpName = heatPump.getName() == null ? heatPump.getId() : heatPump.getName();

@@ -13,18 +13,17 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
 import java.util.TreeMap;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import esdl.Carrier;
 import esdl.Consumer;
 import esdl.CostInformation;
 import esdl.EnergyAsset;
+import esdl.EnergySystem;
 import esdl.GenericProfile;
 import esdl.InPort;
 import esdl.Port;
@@ -35,9 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -53,12 +52,11 @@ public class ConsumerNode extends Node {
 	private String consumerName;
 
 	@Builder(builderMethodName = "consumerNodeBuilder")
-	public ConsumerNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	public ConsumerNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now);
 		this.consumer = (Consumer) asset;
 		this.consumerName = consumer.getName() == null ? consumer.getId() : consumer.getName();
 		this.power = consumer.getPower();

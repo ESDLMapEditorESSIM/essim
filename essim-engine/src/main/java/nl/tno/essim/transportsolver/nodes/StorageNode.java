@@ -20,12 +20,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.TreeMap;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import esdl.Carrier;
 import esdl.ControlStrategy;
 import esdl.EnergyAsset;
+import esdl.EnergySystem;
 import esdl.GenericProfile;
 import esdl.Storage;
 import esdl.StorageStrategy;
@@ -52,11 +50,10 @@ public class StorageNode extends Node {
 	private ControlStrategy controlStrategy;
 
 	@Builder(builderMethodName = "storageNodeBuilder")
-	public StorageNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
+	public StorageNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role,
 				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 		this.storage = (Storage) asset;
 		this.timeStepinDT = EssimDuration.of(timeStep, ChronoUnit.SECONDS);
