@@ -141,13 +141,16 @@ public class RemoteLogicNode extends Node {
 
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-		ByteBuffer buf = ByteBuffer.allocate(16);
-		buf.order(ByteOrder.BIG_ENDIAN);
-		buf.putLong(timestamp.getTime().toEpochSecond(ZoneOffset.UTC));
-		buf.putDouble(price);
+//		ByteBuffer buf = ByteBuffer.allocate(16);
+//		buf.order(ByteOrder.BIG_ENDIAN);
+//		buf.putLong(timestamp.getTime().toEpochSecond(ZoneOffset.UTC));
+//		buf.putDouble(price);
+
+		JSONObject message = new JSONObject().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
+				.put("price", price).put("carrierId", carrier.getId());
 
 		try {
-			MqttMessage msg = new MqttMessage(buf.array());
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/allocate", msg);
 		} catch (MqttException e) {
 			e.printStackTrace();
