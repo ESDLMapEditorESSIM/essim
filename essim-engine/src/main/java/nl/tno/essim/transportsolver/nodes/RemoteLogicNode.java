@@ -19,7 +19,6 @@ package nl.tno.essim.transportsolver.nodes;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.HashMap;
@@ -141,11 +140,6 @@ public class RemoteLogicNode extends Node {
 
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-//		ByteBuffer buf = ByteBuffer.allocate(16);
-//		buf.order(ByteOrder.BIG_ENDIAN);
-//		buf.putLong(timestamp.getTime().toEpochSecond(ZoneOffset.UTC));
-//		buf.putDouble(price);
-
 		JSONObject message = new JSONObject().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
 				.put("price", price).put("carrierId", carrier.getId());
 
