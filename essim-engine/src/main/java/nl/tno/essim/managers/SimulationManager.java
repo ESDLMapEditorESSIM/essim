@@ -274,9 +274,9 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				status = -1;
 				description = e.getMessage();
 				mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
-//				mongo.updateStatus("Ready");
-//				simulationExecutor.shutdownNow();
-//				Thread.currentThread().interrupt();
+				mongo.updateStatus("Ready");
+				simulationExecutor.shutdownNow();
+				Thread.currentThread().interrupt();
 			}
 		}
 
