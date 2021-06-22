@@ -187,11 +187,31 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			}
 		}
 
+		if (rootAsset == null) {
+			log.warn("A network for carrier {} has no energy producers in it! Please check if this was intentional!",
+					carrier);
+			for (EnergyAsset asset : assetList) {
+				if (roleMap.get(asset).equals(Role.CONSUMER)) {
+					rootAsset = asset;
+					break;
+				}
+			}
+		}
+
+		if (rootAsset == null) {
+			List<String> assetListString = new ArrayList<String>();
+			for (EnergyAsset asset : assetList) {
+				assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
+						+ roleMap.get(asset));
+			}
+			throw new IllegalStateException("Cannot find a producer or consumer in the network for carrier: "
+					+ getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
+		}
+
 		rootRole = roleMap.get(rootAsset);
 
-		tree = Node.builder().nodeId(rootAsset.getId())
-				.simulationId(simulationId).asset(rootAsset).role(rootRole).parent(null).networkId(getId())
-				.carrier(carrier).build();
+		tree = Node.builder().nodeId(rootAsset.getId()).simulationId(simulationId).asset(rootAsset).role(rootRole)
+				.parent(null).networkId(getId()).carrier(carrier).build();
 
 		processedList.add(rootAsset);
 		assetList.remove(rootAsset);
