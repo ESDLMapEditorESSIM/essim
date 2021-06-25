@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.eclipse.emf.common.util.EList;
 import org.json.JSONArray;
 
 import esdl.Asset;
@@ -42,6 +44,8 @@ import esdl.OutPort;
 import esdl.Port;
 import esdl.Producer;
 import esdl.ProfileReference;
+import esdl.Service;
+import esdl.Services;
 import esdl.Transport;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
@@ -124,6 +128,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				log.warn("Conversion asset {} has no Control Strategy. Defaulting to DrivenByDemand",
 						asset.getName() == null ? asset.getId() : asset.getName());
 				DrivenByDemand drivenByDemand = EsdlFactory.eINSTANCE.createDrivenByDemand();
+				drivenByDemand.setId(UUID.randomUUID().toString());
+				drivenByDemand.setName("DrivenByDemand for " + asset.getName());
 				OutPort outport = null;
 				for (Port port : asset.getPort()) {
 					if (port instanceof OutPort) {
@@ -133,6 +139,12 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 				drivenByDemand.setOutPort(outport);
 				asset.setControlStrategy(drivenByDemand);
+				Services services = energySystem.getServices();
+				if (services == null) {
+					services = EsdlFactory.eINSTANCE.createServices();
+				}
+				EList<Service> serviceList = services.getService();
+				serviceList.add(drivenByDemand);
 			}
 			assetList.add(asset);
 		}
@@ -221,7 +233,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			if (assetList.contains(connectedAsset) && !processedList.contains(connectedAsset)) {
 				final String nodeId = connectedAsset.getId();
 				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).simulationId(simulationId).asset(connectedAsset)
-						.parent(parentNode).networkId(getId()).carrier(carrier);
+						.parent(parentNode).networkId(getId()).carrier(carrier).energySystem(energySystem);
 				for (Port myPort : connectedAsset.getPort()) {
 					if (myPort instanceof InPort) {
 						InPort myInPort = (InPort) myPort;

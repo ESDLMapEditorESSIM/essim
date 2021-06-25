@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
@@ -60,6 +61,8 @@ import esdl.InPort;
 import esdl.Instance;
 import esdl.OutPort;
 import esdl.Port;
+import esdl.Service;
+import esdl.Services;
 import esdl.Transport;
 import essim.EssimPackage;
 import lombok.Getter;
@@ -606,8 +609,17 @@ public class ESSimEngine implements IStatusProvider {
 												: (" with name " + conversion.getName()))
 										+ " has no control strategy defined! Defaulting to DrivenByDemand.");
 								DrivenByDemand drivenByDemand = EsdlFactory.eINSTANCE.createDrivenByDemand();
+								drivenByDemand.setId(UUID.randomUUID().toString());
+								drivenByDemand.setName("DrivenByDemand for " + conversion.getName());
 								drivenByDemand.setOutPort(outport);
 								conversion.setControlStrategy(drivenByDemand);
+								Services services = energySystem.getServices();
+								if(services == null) {
+									services = EsdlFactory.eINSTANCE.createServices();
+								}
+								EList<Service> serviceList = services.getService();
+								serviceList.add(drivenByDemand);
+								
 								if (solver.getRole(conversion).equals(Role.PRODUCER)) {
 									solvers.addFirst(solver);
 								} else {
