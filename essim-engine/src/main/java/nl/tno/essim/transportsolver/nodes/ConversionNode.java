@@ -27,7 +27,6 @@ import esdl.DrivenByProfile;
 import esdl.DrivenBySupply;
 import esdl.EnergyAsset;
 import esdl.EnergyCarrier;
-import esdl.EnergySystem;
 import esdl.GenericProfile;
 import esdl.InPort;
 import esdl.OutPort;
@@ -63,9 +62,9 @@ public class ConversionNode extends Node {
 
 	@Builder(builderMethodName = "conversionNodeBuilder")
 	public ConversionNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
+			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
 			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role,
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role,
 				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 		this.conversion = (Conversion) asset;
 		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();

@@ -96,14 +96,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private int transportCount;
 	private Collection<NodeConfiguration> nodeConfig;
 	private String simulationId;
-	private EnergySystem energySystem;
+	private String esdlString;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
-			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, EnergySystem energySystem) {
+			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem) {
 		this.id = name;
 		this.carrier = carrier;
 		this.nodeConfig = nodeConfig;
-		this.energySystem = energySystem;
+		this.esdlString = energySystem;
 		assetList = new ArrayList<EnergyAsset>();
 		processedList = new ArrayList<EnergyAsset>();
 		deviceNodes = new ArrayList<Node>();
@@ -139,12 +139,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 				drivenByDemand.setOutPort(outport);
 				asset.setControlStrategy(drivenByDemand);
-				Services services = energySystem.getServices();
-				if (services == null) {
-					services = EsdlFactory.eINSTANCE.createServices();
-				}
-				EList<Service> serviceList = services.getService();
-				serviceList.add(drivenByDemand);
 			}
 			assetList.add(asset);
 		}
@@ -206,7 +200,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 		String rootAssetId = rootAsset.getId();
 		NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
-				.energySystem(energySystem).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
+				.esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
 		if (nodeConfig != null) {
 			this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
 					.ifPresent(nodeBuilder::config);
@@ -233,7 +227,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			if (assetList.contains(connectedAsset) && !processedList.contains(connectedAsset)) {
 				final String nodeId = connectedAsset.getId();
 				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).simulationId(simulationId).asset(connectedAsset)
-						.parent(parentNode).networkId(getId()).carrier(carrier).energySystem(energySystem);
+						.parent(parentNode).networkId(getId()).carrier(carrier).esdlString(esdlString);
 				for (Port myPort : connectedAsset.getPort()) {
 					if (myPort instanceof InPort) {
 						InPort myInPort = (InPort) myPort;

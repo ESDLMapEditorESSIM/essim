@@ -16,8 +16,6 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.ZoneOffset;
 import java.util.Base64;
@@ -27,8 +25,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import org.eclipse.emf.ecore.xmi.XMIResource;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -36,7 +32,6 @@ import org.json.JSONObject;
 
 import esdl.Carrier;
 import esdl.EnergyAsset;
-import esdl.EnergySystem;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
@@ -54,10 +49,10 @@ public class RemoteLogicNode extends Node {
 	private JSONObject remoteConfig;
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			EnergySystem energySystem, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
-			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
+			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction, double energy,
+			double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
 			NodeConfiguration config) {
-		super(simulationId, nodeId, address, networkId, asset, energySystem, directionFactor, role, demandFunction,
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
 				energy, cost, parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
@@ -97,16 +92,12 @@ public class RemoteLogicNode extends Node {
 	}
 
 	private void publishConfig() {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-			XMIResource xmiResource = new XMIResourceImpl();
-			xmiResource.getContents().add(energySystem);
-			xmiResource.save(bos, new HashMap<String, Object>());
-			String esdlContents = Base64.getEncoder().encodeToString(bos.toByteArray());
-			JSONObject message = new JSONObject().put("esdlContents", esdlContents).put("simulationId", simulationId)
-					.put("config", remoteConfig);
+		try {
+			JSONObject message = new JSONObject().put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
+					.put("simulationId", simulationId).put("config", remoteConfig);
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
-		} catch (MqttException | IOException e) {
+		} catch (MqttException e) {
 			// FIXME this is now the default behavior
 			log.warn("Unable to send node asset info");
 			e.printStackTrace();

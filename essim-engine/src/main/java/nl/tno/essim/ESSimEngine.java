@@ -20,6 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -137,6 +139,7 @@ public class ESSimEngine implements IStatusProvider {
 			return "ESSIM";
 		}
 	};
+	private String esdlString;
 
 	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
 		simulationDescription = simulation.getSimulationDescription();
@@ -153,6 +156,8 @@ public class ESSimEngine implements IStatusProvider {
 		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
 		// TODO: Add this to ESSIM Configuration
 		simulationStepLength = SIMULATION_STEP;
+		
+		esdlString = new String(Files.readAllBytes(esdlFile.getAbsoluteFile().toPath()), StandardCharsets.UTF_8);
 
 		// Initialise SimulationManager
 		simulationManager = new SimulationManager(this, simulationId, simulationStartTime, simulationEndTime,
@@ -314,7 +319,7 @@ public class ESSimEngine implements IStatusProvider {
 				String solverId = energySystemId + " "
 						+ (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
 				TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
-						energyAssetRoles, energySystem);
+						energyAssetRoles, esdlString);
 				solver.setSimulationManager(simulationManager);
 				for (EnergyAsset filteredAsset : filteredAssets) {
 					solver.addToNetwork(filteredAsset);

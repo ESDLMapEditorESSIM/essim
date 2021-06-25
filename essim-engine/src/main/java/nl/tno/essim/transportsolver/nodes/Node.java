@@ -58,7 +58,7 @@ public abstract class Node implements INode {
 	protected String address;
 	protected String networkId;
 	protected EnergyAsset asset;
-	protected EnergySystem energySystem;
+	protected String esdlString;
 	protected int directionFactor;
 	protected Role role;
 	protected TreeMap<Double, Double> demandFunction;
@@ -90,7 +90,7 @@ public abstract class Node implements INode {
 		public Node build() {
 			Node node = null;
 			if (this.config != null) {
-				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, energySystem,
+				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, esdlString,
 						directionFactor, role, demandFunction, energy, cost, parent, carrier, children, timeStep, now,
 						config);
 			} else if (asset != null) {
@@ -114,10 +114,10 @@ public abstract class Node implements INode {
 				if (assetNodeClass != null) {
 					try {
 						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
-								String.class, EnergyAsset.class, EnergySystem.class, int.class,
+								String.class, EnergyAsset.class, String.class, int.class,
 								Role.class, TreeMap.class, double.class, double.class, Node.class, Carrier.class,
 								List.class, long.class, Horizon.class).newInstance(simulationId, nodeId, address,
-										networkId, asset, energySystem, directionFactor, role,
+										networkId, asset, esdlString, directionFactor, role,
 										demandFunction, energy, cost, parent, carrier, children, timeStep, now);
 					} catch (Exception e) {
 						e.printStackTrace();
