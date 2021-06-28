@@ -93,7 +93,8 @@ public class RemoteLogicNode extends Node {
 
 	private void publishConfig() {
 		try {
-			JSONObject message = new JSONObject().put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
+			JSONObject message = new JSONObject()
+					.put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
 					.put("simulationId", simulationId).put("config", remoteConfig);
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
@@ -145,6 +146,17 @@ public class RemoteLogicNode extends Node {
 			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
 		} else {
 			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
+		}
+	}
+
+	public void stop() {
+		JSONObject message = new JSONObject().put("carrierId", carrier.getId());
+
+		try {
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
+			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/stop", msg);
+		} catch (MqttException e) {
+			e.printStackTrace();
 		}
 	}
 

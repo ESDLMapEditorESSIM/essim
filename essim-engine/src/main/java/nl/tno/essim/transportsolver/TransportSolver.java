@@ -26,7 +26,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.eclipse.emf.common.util.EList;
 import org.json.JSONArray;
 
 import esdl.Asset;
@@ -36,7 +35,6 @@ import esdl.Conversion;
 import esdl.DrivenByDemand;
 import esdl.DrivenByProfile;
 import esdl.EnergyAsset;
-import esdl.EnergySystem;
 import esdl.EsdlFactory;
 import esdl.GenericProfile;
 import esdl.InPort;
@@ -44,8 +42,6 @@ import esdl.OutPort;
 import esdl.Port;
 import esdl.Producer;
 import esdl.ProfileReference;
-import esdl.Service;
-import esdl.Services;
 import esdl.Transport;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
@@ -67,6 +63,7 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
+import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
 import nl.tno.essim.util.Converter;
 
 @Slf4j
@@ -420,6 +417,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						}
 					}
 				}
+			}
+		}
+		for (Node node : deviceNodes) {
+			if (node instanceof RemoteLogicNode) {
+				((RemoteLogicNode) node).stop();
 			}
 		}
 	}
