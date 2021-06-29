@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.commons;
 
 import java.util.Map.Entry;
@@ -20,22 +21,44 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public class BidFunction {
 	private static final double eps = 1e-3;
-	
+	private static final double pmin = 0.0;
+	private static final double pmax = 1.0;
+
 	@Getter
+	@Setter
 	private TreeMap<Double, Double> curve;
+	@Getter
+	@Setter
+	private double marginalCost;
 
 	public BidFunction() {
 		curve = new TreeMap<Double, Double>();
+		marginalCost = 0.0;
 	}
-	
+
+	public BidFunction(TreeMap<Double, Double> curve) {
+		this.curve = curve;
+		marginalCost = 0.0;
+	}
+
 	public BidFunction addPoint(double price, double bid) {
 		curve.put(price, bid);
 		return this;
 	}
-	
+
+	public boolean isEmpty() {
+		return curve != null && curve.isEmpty();
+	}
+
+	@Override
+	public String toString() {
+		return "[curve=" + curve + "; mc=" + marginalCost + "]";
+	}
+
 	public BidFunction sumWith(BidFunction otherCurve) {
 		TreeMap<Double, Double> sum = new TreeMap<Double, Double>();
 		TreeSet<Double> allPrices = new TreeSet<Double>();
@@ -46,19 +69,33 @@ public class BidFunction {
 			double bValue = findDemandFromCurve(otherCurve.getCurve(), price);
 			sum.put(price, aValue + bValue);
 		}
-		
+
 		return this;
 	}
-	
+
+	public static BidFunction sumCurves(BidFunction firstCurve, BidFunction otherCurve) {
+		TreeMap<Double, Double> summedCurve = new TreeMap<Double, Double>();
+		TreeSet<Double> allPrices = new TreeSet<Double>();
+		allPrices.addAll(firstCurve.getCurve().keySet());
+		allPrices.addAll(otherCurve.getCurve().keySet());
+		for (double price : allPrices) {
+			double aValue = findDemandFromCurve(firstCurve.getCurve(), price);
+			double bValue = findDemandFromCurve(otherCurve.getCurve(), price);
+			summedCurve.put(price, aValue + bValue);
+		}
+
+		return new BidFunction(summedCurve);
+	}
+
 	public double findEquillibrium() {
 		return findPriceFromCurve(curve, 0.0);
 	}
-	
+
 	public double findDemandFromCurve(double price) {
 		return findDemandFromCurve(curve, price);
 	}
-	
-	public double findDemandFromCurve(TreeMap<Double, Double> curve, double price) {
+
+	public static double findDemandFromCurve(TreeMap<Double, Double> curve, double price) {
 		if (curve.isEmpty()) {
 			return 0.0;
 		}
@@ -89,12 +126,12 @@ public class BidFunction {
 			return v1 + (((v2 - v1) / (p2 - p1)) * (price - p1));
 		}
 	}
-	
+
 	public double findPriceFromCurve(double bidPoint) {
 		return findPriceFromCurve(curve, bidPoint);
 	}
-	
-	public double findPriceFromCurve(TreeMap<Double, Double> curve, double bidPoint) {
+
+	public static double findPriceFromCurve(TreeMap<Double, Double> curve, double bidPoint) {
 		for (Entry<Double, Double> entry : curve.entrySet()) {
 			if (Math.abs(entry.getValue() - bidPoint) < eps) {
 				return entry.getKey();
@@ -123,6 +160,21 @@ public class BidFunction {
 		} else {
 			return p1 + (((p2 - p1) / (v2 - v1)) * (bidPoint - v1));
 		}
+	}
+
+	public void normaliseCurve(double marginalCostSum) {
+		if (marginalCostSum - marginalCost < eps) {
+			return;
+		}
+		TreeMap<Double, Double> duplicateCurve = new TreeMap<Double, Double>(curve);
+		for (double p : curve.keySet()) {
+			double e = curve.get(p);
+			if (p != pmin && p != pmax) {
+				duplicateCurve.remove(p);
+				duplicateCurve.put(p / marginalCostSum, e);
+			}
+		}
+		curve = duplicateCurve;
 	}
 
 }

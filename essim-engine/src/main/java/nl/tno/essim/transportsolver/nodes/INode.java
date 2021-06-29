@@ -21,7 +21,7 @@ import nl.tno.essim.time.Horizon;
 
 public interface INode {
 
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice);
+	public void createBidCurve(long timeStep, Horizon now);
 	
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price);
 }

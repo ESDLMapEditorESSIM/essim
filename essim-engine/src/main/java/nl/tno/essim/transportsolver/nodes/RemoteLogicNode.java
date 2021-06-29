@@ -24,7 +24,6 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 
 import org.eclipse.emf.ecore.xmi.XMIResource;
@@ -32,16 +31,15 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 import esdl.Carrier;
 import esdl.EnergyAsset;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -52,12 +50,11 @@ public class RemoteLogicNode extends Node {
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
 
-	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now, NodeConfiguration config) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config) {
+		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
+				parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
 
@@ -107,16 +104,14 @@ public class RemoteLogicNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
-		super.createBidCurve(timeStep, now, minPrice, maxPrice);
+	public void createBidCurve(long timeStep, Horizon now) {
+		super.createBidCurve(timeStep, now);
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
 		ByteBuffer buf = ByteBuffer.allocate(32);
 		buf.order(ByteOrder.BIG_ENDIAN);
 		buf.putLong(t);
 		buf.putLong(now.getPeriod().getSeconds());
-		buf.putDouble(minPrice);
-		buf.putDouble(maxPrice);
 
 		try {
 			MqttMessage msg = new MqttMessage(buf.array());
@@ -148,7 +143,7 @@ public class RemoteLogicNode extends Node {
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
-		
+
 		if (role.equals(Role.CONSUMER)) {
 			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
 		} else {
@@ -164,10 +159,10 @@ public class RemoteLogicNode extends Node {
 				long timestep = buf.getLong();
 
 				if (this.locks.containsKey(timestep)) {
-					this.demandFunction = new TreeMap<>();
+					this.demandFunction = new BidFunction();
 
 					while (buf.remaining() >= 16) {
-						this.demandFunction.put(buf.getDouble(), buf.getDouble());
+						this.demandFunction.addPoint(buf.getDouble(), buf.getDouble());
 					}
 
 					// Resume the createBidCurve thread

@@ -13,15 +13,11 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
-import java.util.TreeMap;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 import esdl.Carrier;
 import esdl.ControlStrategy;
 import esdl.CostInformation;
@@ -36,9 +32,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -54,6 +52,9 @@ public class ProducerNode extends Node {
 	protected CostInformation costInformation;
 	protected RenewableTypeEnum producerType;
 	protected ControlStrategy controlStrategy;
+	private GenericProfile marginalCostProfile;
+	private GenericProfile costProfile;
+	private Object producerName;
 
 	protected boolean isRenewable() {
 		if (producerType != null) {
@@ -63,21 +64,30 @@ public class ProducerNode extends Node {
 	}
 
 	@Builder(builderMethodName = "producerNodeBuilder")
-	public ProducerNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	public ProducerNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
+			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
+				parent, carrier, children, timeStep, now);
 		this.producer = (Producer) asset;
+		this.producerName = producer.getName() == null ? producer.getId() : producer.getName();
 		this.power = producer.getPower();
 		this.costInformation = producer.getCostInformation();
 		this.producerType = producer.getProdType();
 		this.controlStrategy = producer.getControlStrategy();
+		if (costInformation != null) {
+			marginalCostProfile = costInformation.getMarginalCosts();
+		}
+		for (Port port : producer.getPort()) {
+			if (port instanceof OutPort) {
+				costProfile = port.getCarrier().getCost();
+				break;
+			}
+		}
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+	public void createBidCurve(long timeStep, Horizon now) {
 		double energyOutput = Double.NaN;
 
 		// Checks if an asset is operational (accounts for Commissioning and
@@ -108,14 +118,14 @@ public class ProducerNode extends Node {
 			makeInflexibleProductionFunction(energyOutput);
 		} else {
 			energyOutput = timeStep * power;
-			if (costInformation == null) {
-				log.warn("Producer {} is missing cost information!", getNodeId());
-				setCost(DEFAULT_MARGINAL_COST);
+			if (marginalCostProfile != null) {
+				setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+			} else if (costProfile != null) {
+				setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
 			} else {
-				GenericProfile marginalCosts = costInformation.getMarginalCosts();
-				if (marginalCosts != null) {
-					setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-				}
+				log.warn("Producer {} is missing cost information! Defaulting to {}", producerName,
+						DEFAULT_MARGINAL_COST);
+				setCost(DEFAULT_MARGINAL_COST);
 			}
 
 			if (controlStrategy != null && controlStrategy instanceof CurtailmentStrategy) {

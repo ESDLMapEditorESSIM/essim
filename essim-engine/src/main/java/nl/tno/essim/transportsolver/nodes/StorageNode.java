@@ -13,15 +13,12 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.TreeMap;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import esdl.Carrier;
 import esdl.ControlStrategy;
@@ -32,6 +29,7 @@ import esdl.StorageStrategy;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
@@ -52,12 +50,11 @@ public class StorageNode extends Node {
 	private ControlStrategy controlStrategy;
 
 	@Builder(builderMethodName = "storageNodeBuilder")
-	public StorageNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	public StorageNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
+			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
+				parent, carrier, children, timeStep, now);
 		this.storage = (Storage) asset;
 		this.timeStepinDT = EssimDuration.of(timeStep, ChronoUnit.SECONDS);
 		this.maxChargeRate = storage.getMaxChargeRate();
@@ -67,7 +64,7 @@ public class StorageNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+	public void createBidCurve(long timeStep, Horizon now) {
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)

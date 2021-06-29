@@ -13,16 +13,11 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
 
-import java.util.TreeMap;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 import esdl.Carrier;
 import esdl.ControlStrategy;
 import esdl.Conversion;
@@ -40,9 +35,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -63,24 +60,30 @@ public class ConversionNode extends Node {
 	private Carrier outputCarrier;
 	private boolean specialConversion;
 	private String conversionName;
+	private GenericProfile marginalCostProfile;
+	private GenericProfile costProfile;
 
 	@Builder(builderMethodName = "conversionNodeBuilder")
-	public ConversionNode(String simulationId, String nodeId, String address, String networkId,
-			JSONArray animationArray, JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	public ConversionNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
+			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
+				parent, carrier, children, timeStep, now);
 		this.conversion = (Conversion) asset;
 		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
 		this.efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY : conversion.getEfficiency();
 		this.power = conversion.getPower();
 		this.costInformation = conversion.getCostInformation();
+		if (costInformation != null) {
+			marginalCostProfile = costInformation.getMarginalCosts();
+		}
+
 		this.controlStrategy = conversion.getControlStrategy();
 		for (Port port : conversion.getPort()) {
 			if (port instanceof InPort) {
 				inputPort = (InPort) port;
 				inputCarrier = inputPort.getCarrier();
+				costProfile = inputCarrier.getCost();
 			} else {
 				outputPort = (OutPort) port;
 				outputCarrier = outputPort.getCarrier();
@@ -91,7 +94,7 @@ public class ConversionNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+	public void createBidCurve(long timeStep, Horizon now) {
 		// Generic Conversion or Gas Heater (All single-input/single-output conversions)
 
 		// Checks if an asset is operational (accounts for Commissioning and
@@ -111,14 +114,14 @@ public class ConversionNode extends Node {
 					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
 					// Make Flexible Producer Curve
 					double energyOutput = timeStep * power;
-					if (costInformation == null) {
-						log.warn("Conversion {} is missing cost information!", conversionName);
-						setCost(DEFAULT_MARGINAL_COST);
+					if (marginalCostProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+					} else if (costProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) / efficiency);
 					} else {
-						GenericProfile marginalCosts = costInformation.getMarginalCosts();
-						if (marginalCosts != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-						}
+						log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
+								DEFAULT_MARGINAL_COST);
+						setCost(DEFAULT_MARGINAL_COST);
 					}
 					makeAdjustableProductionFunction(energyOutput);
 				} else {
@@ -206,9 +209,9 @@ public class ConversionNode extends Node {
 						throw new IllegalStateException(
 								"Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
 					}
-					
+
 					double eff = 1.0;
-					if(drivenByProfile.getPort() instanceof InPort) {
+					if (drivenByProfile.getPort() instanceof InPort) {
 						eff = efficiency;
 					}
 					makeInflexibleProductionFunction(eff * energyOutput);
@@ -292,14 +295,14 @@ public class ConversionNode extends Node {
 					// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
 					// Make flexible consumption curve
 					double energyOutput = (timeStep * power) / efficiency;
-					if (costInformation == null) {
-						log.warn("Conversion {} is missing cost information!", conversionName);
-						setCost(DEFAULT_MARGINAL_COST);
+					if (marginalCostProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+					} else if (costProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
 					} else {
-						GenericProfile marginalCosts = costInformation.getMarginalCosts();
-						if (marginalCosts != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-						}
+						log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
+								DEFAULT_MARGINAL_COST);
+						setCost(DEFAULT_MARGINAL_COST);
 					}
 					makeAdjustableConsumptionFunction(energyOutput);
 				} else {
@@ -321,9 +324,9 @@ public class ConversionNode extends Node {
 						throw new IllegalStateException(
 								"Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
 					}
-					
+
 					double eff = 1.0;
-					if(drivenByProfile.getPort() instanceof OutPort) {
+					if (drivenByProfile.getPort() instanceof OutPort) {
 						eff = efficiency;
 					}
 					makeInflexibleConsumptionFunction(energyOutput / eff);

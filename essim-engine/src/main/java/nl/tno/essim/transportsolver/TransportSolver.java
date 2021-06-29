@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
@@ -46,6 +45,7 @@ import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.commons.ISimulationManager;
@@ -364,6 +364,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 			}
 		}
+
+		if (carrier.getCost() != null) {
+			initialiseProfile(carrier.getCost());
+		}
 	}
 
 	@Override
@@ -376,16 +380,18 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		Horizon now = new Horizon(timestamp.getTime(), timeStepinDT);
 
 		// Create Bid Curves.
+		double marginalCostSum = 0.0;
 		for (Node deviceNode : deviceNodes) {
-			deviceNode.createBidCurve(timeStep, now, Commons.P_MIN, Commons.P_MAX);
+			deviceNode.createBidCurve(timeStep, now);
+			marginalCostSum += deviceNode.getDemandFunction().getMarginalCost();
 		}
 
-		// Prices are between 0 and 1, but O&M costs may not be. First normalise these
-		// costs.
-		// tree.normaliseCosts();
+		for (Node deviceNode : deviceNodes) {
+			deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
+		}
 
 		// Send demand functions upwards
-		TreeMap<Double, Double> summedFunction = tree.aggregateDemandFunction();
+		BidFunction summedFunction = tree.aggregateDemandFunction();
 
 		// Allocate devices and collect observations
 		ArrayList<Observation> observations = new ArrayList<Observation>();
@@ -490,11 +496,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						Converter.toESDLDuration(simulationStepLength));
 			}
 		}
-	}
-
-	@Override
-	public JSONArray getFeatureCollection() {
-		return tree.getGeoJsonFeatures();
 	}
 
 	@Override

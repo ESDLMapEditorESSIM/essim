@@ -13,13 +13,10 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
-import java.util.TreeMap;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import esdl.Carrier;
 import esdl.Consumer;
@@ -32,12 +29,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.observation.Observation.ObservationBuilder;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -51,28 +49,33 @@ public class ConsumerNode extends Node {
 	private InPort inputPort;
 	private CostInformation costInformation;
 	private String consumerName;
+	private GenericProfile costProfile;
+	private GenericProfile marginalCostProfile;
 
 	@Builder(builderMethodName = "consumerNodeBuilder")
-	public ConsumerNode(String simulationId, String nodeId, String address, String networkId, JSONArray animationArray,
-			JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			TreeMap<Double, Double> demandFunction, double energy, double cost, Node parent, Carrier carrier,
-			List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, animationArray, geoJSON, asset, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+	public ConsumerNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
+			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
+				parent, carrier, children, timeStep, now);
 		this.consumer = (Consumer) asset;
 		this.consumerName = consumer.getName() == null ? consumer.getId() : consumer.getName();
 		this.power = consumer.getPower();
 		this.costInformation = consumer.getCostInformation();
+		if (costInformation != null) {
+			marginalCostProfile = costInformation.getMarginalCosts();
+		}
 		for (Port port : consumer.getPort()) {
 			if (port instanceof InPort) {
 				inputPort = (InPort) port;
+				costProfile = port.getCarrier().getCost();
 				break;
 			}
 		}
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+	public void createBidCurve(long timeStep, Horizon now) {
 		double energyOutput = Double.NaN;
 		GenericProfile convProfile = Commons.getEnergyProfile(inputPort);
 
@@ -93,13 +96,14 @@ public class ConsumerNode extends Node {
 			makeInflexibleConsumptionFunction(energyOutput);
 		} else {
 			energyOutput = timeStep * power;
-			if (costInformation == null) {
-				log.warn("Consumer {} is missing cost information!", consumerName);
+			if (marginalCostProfile != null) {
+				setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+			} else if (costProfile != null) {
+				setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
 			} else {
-				GenericProfile marginalCosts = costInformation.getMarginalCosts();
-				if (marginalCosts != null) {
-					setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-				}
+				log.warn("Consumer {} is missing cost information! Defaulting to {}", consumerName,
+						DEFAULT_MARGINAL_COST);
+				setCost(DEFAULT_MARGINAL_COST);
 			}
 			makeAdjustableConsumptionFunction(energyOutput);
 		}
