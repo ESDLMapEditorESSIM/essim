@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.commons;
 
 import java.io.BufferedReader;
@@ -74,17 +75,14 @@ public class Commons {
 	public static final String RESOURCE = ".";
 	public static final int STROKE_MIN = 4;
 	public static final int STROKE_MAX = 24;
-	public static final String[] COLOURS = {"#800000", "#ff0000", "#ff8080", "#000000", "#80b3ff", "#0066ff",
-			"#003380"};
-	public static final double[] THRESHOLDS = {-1.0, -0.8, -0.05, 0.05, 0.8, 1.0};
+	public static final String[] COLOURS = { "#800000", "#ff0000", "#ff8080", "#000000", "#80b3ff", "#0066ff",
+			"#003380" };
+	public static final double[] THRESHOLDS = { -1.0, -0.8, -0.05, 0.05, 0.8, 1.0 };
 	public static RangeMap<Double, String> thresholdMap;
 	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
 
 	public static enum Role {
-		TRANSPORT,
-		PRODUCER,
-		CONSUMER,
-		BOTH
+		TRANSPORT, PRODUCER, CONSUMER, BOTH
 	};
 
 	public static String getLoadColour(double load) {
@@ -139,10 +137,8 @@ public class Commons {
 	}
 
 	public static String readFileIntoString(String filename) throws IOException {
-		try (InputStream is = Commons.class.getClassLoader()
-				.getResourceAsStream(filename)) {
-			return new BufferedReader(new InputStreamReader(is)).lines()
-					.collect(Collectors.joining("\n"));
+		try (InputStream is = Commons.class.getClassLoader().getResourceAsStream(filename)) {
+			return new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
 		}
 	}
 
@@ -181,7 +177,6 @@ public class Commons {
 		return energyProfile;
 	}
 
-	// TODO: FIXME: check if the Duration of 1 day is a good choice here!!
 	public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
 		if (profile != null) {
 			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
@@ -189,10 +184,7 @@ public class Commons {
 
 			EList<ProfileElement> profileElements = profile.getProfile(from, to,
 					Converter.toESDLDuration(horizon.getPeriod()));
-			return profileElements.stream()
-					.mapToDouble(s -> s.getValue())
-					.boxed()
-					.collect(Collectors.toList());
+			return profileElements.stream().mapToDouble(s -> s.getValue()).boxed().collect(Collectors.toList());
 		}
 		return null;
 	}
@@ -257,22 +249,17 @@ public class Commons {
 
 	private static Double sumOrNothing(List<Double> profile) {
 		if (profile == null || profile.isEmpty()) {
-			return 0.0;
+			return Double.NaN;
 		} else {
-			return profile.stream()
-					.mapToDouble(fn -> fn.doubleValue())
-					.sum();
+			return profile.stream().mapToDouble(fn -> fn.doubleValue()).sum();
 		}
 	}
 
 	private static Double averageOrNothing(List<Double> profile) {
 		if (profile == null || profile.isEmpty()) {
-			return 0.0;
+			return Double.NaN;
 		} else {
-			return profile.stream()
-					.mapToDouble(fn -> fn.doubleValue())
-					.average()
-					.orElse(0.0);
+			return profile.stream().mapToDouble(fn -> fn.doubleValue()).average().orElse(0.0);
 		}
 	}
 
@@ -286,14 +273,11 @@ public class Commons {
 				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
 				qu = reference.getReference();
 			}
-			return qu != null && qu.getPhysicalQuantity()
-					.equals(PhysicalQuantityEnum.POWER);
+			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.POWER);
 		}
 
-		return (profile.getProfileType()
-				.getValue() <= ProfileTypeEnum.POWER_IN_TW_VALUE)
-				&& (profile.getProfileType()
-						.getValue() >= ProfileTypeEnum.POWER_IN_W_VALUE);
+		return (profile.getProfileType().getValue() <= ProfileTypeEnum.POWER_IN_TW_VALUE)
+				&& (profile.getProfileType().getValue() >= ProfileTypeEnum.POWER_IN_W_VALUE);
 	}
 
 	public static boolean isEnergyProfile(GenericProfile profile) {
@@ -306,14 +290,11 @@ public class Commons {
 				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
 				qu = reference.getReference();
 			}
-			return qu != null && qu.getPhysicalQuantity()
-					.equals(PhysicalQuantityEnum.ENERGY);
+			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.ENERGY);
 		}
 
-		return (profile.getProfileType()
-				.getValue() <= ProfileTypeEnum.ENERGY_IN_PJ_VALUE)
-				&& (profile.getProfileType()
-						.getValue() >= ProfileTypeEnum.ENERGY_IN_WH_VALUE);
+		return (profile.getProfileType().getValue() <= ProfileTypeEnum.ENERGY_IN_PJ_VALUE)
+				&& (profile.getProfileType().getValue() >= ProfileTypeEnum.ENERGY_IN_WH_VALUE);
 	}
 
 	public static boolean isSoCProfile(GenericProfile profile) {
@@ -326,27 +307,25 @@ public class Commons {
 				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
 				qu = reference.getReference();
 			}
-			return qu != null && qu.getPhysicalQuantity()
-					.equals(PhysicalQuantityEnum.STATE_OF_CHARGE);
+			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.STATE_OF_CHARGE);
 		}
 
-		return profile.getProfileType()
-				.equals(ProfileTypeEnum.STATEOFCHARGE_IN_WS);
+		return profile.getProfileType().equals(ProfileTypeEnum.STATEOFCHARGE_IN_WS);
 	}
 
-	public static List<EnergyAsset> findAllConnectedAssets(EnergyAsset asset) {
-		List<EnergyAsset> connectedAssets = new ArrayList<EnergyAsset>();
+	public static HashMap<EnergyAsset, Port> findAllConnectedAssets(EnergyAsset asset) {
+		HashMap<EnergyAsset, Port> connectedAssets = new HashMap<EnergyAsset, Port>();
 
 		for (Port port : asset.getPort()) {
 			if (port instanceof InPort) {
 				InPort inPort = (InPort) port;
 				for (OutPort outPort : inPort.getConnectedTo()) {
-					connectedAssets.add(outPort.getEnergyasset());
+					connectedAssets.put(outPort.getEnergyasset(), outPort);
 				}
 			} else if (port instanceof OutPort) {
 				OutPort outPort = (OutPort) port;
 				for (InPort inPort : outPort.getConnectedTo()) {
-					connectedAssets.add(inPort.getEnergyasset());
+					connectedAssets.put(inPort.getEnergyasset(), inPort);
 				}
 			} else {
 				throw new IllegalStateException("Port type " + port + " is not supported");
@@ -378,26 +357,26 @@ public class Commons {
 		}
 		// Convert all to seconds
 		switch (unit) {
-			case DAY :
-				return 24 * 60 * 60;
-			case HOUR :
-				return 60 * 60;
-			case MINUTE :
-				return 60;
-			case MONTH :
-				return 30 * 24 * 60 * 60;
-			case NONE :
-				return 1;
-			case QUARTER :
-				return 15 * 60;
-			case SECOND :
-				return 1;
-			case WEEK :
-				return 7 * 24 * 60 * 60;
-			case YEAR :
-				return 365 * 24 * 60 * 60;
-			default :
-				return 1;
+		case DAY:
+			return 24 * 60 * 60;
+		case HOUR:
+			return 60 * 60;
+		case MINUTE:
+			return 60;
+		case MONTH:
+			return 30 * 24 * 60 * 60;
+		case NONE:
+			return 1;
+		case QUARTER:
+			return 15 * 60;
+		case SECOND:
+			return 1;
+		case WEEK:
+			return 7 * 24 * 60 * 60;
+		case YEAR:
+			return 365 * 24 * 60 * 60;
+		default:
+			return 1;
 		}
 	}
 
@@ -406,64 +385,64 @@ public class Commons {
 			return 1;
 		}
 		switch (unit) {
-			case ARE :
-				return 100; // m2
-			case BAR :
-				return 100000; // Pa
-			case CUBIC_METRE :
-				return 1; // m3
-			case DAY :
-				return 24 * 60 * 60; // sec
-			case DEGREES_CELSIUS :
-				return 1;
-			case DOLLAR :
-				return 1;
-			case EURO :
-				return 1;
-			case GRAM :
-				return 1e-3; // kg
-			case HECTARE :
-				return 1e4; // m2
-			case HOUR :
-				return 60 * 60; // sec
-			case JOULE :
-				return 1;
-			case KELVIN :
-				return 1;
-			case LITRE :
-				return 1e-3; // m3
-			case METRE :
-				return 1; // m
-			case MINUTE :
-				return 60; // sec
-			case MONTH :
-				return 30 * 24 * 60 * 60; // sec
-			case NONE :
-				return 1;
-			case PERCENT :
-				return 0.01;
-			case PSI :
-				return 6894.76; // Pa
-			case QUARTER :
-				return 15 * 60; // sec
-			case SECOND :
-				return 1;
-			case SQUARE_METRE :
-				return 1;
-			case VOLT :
-				return 1;
-			case WATT :
-				return 1;
-			case WATTHOUR :
-				return 3600; // J (Ws)
-			case WATTSECOND :
-				return 1; // J
-			case WEEK :
-				return 7 * 24 * 60 * 60; // sec
-			case YEAR :
-				return 365 * 24 * 60 * 60; // sec
-			default :
-				return 1;
+		case ARE:
+			return 100; // m2
+		case BAR:
+			return 100000; // Pa
+		case CUBIC_METRE:
+			return 1; // m3
+		case DAY:
+			return 24 * 60 * 60; // sec
+		case DEGREES_CELSIUS:
+			return 1;
+		case DOLLAR:
+			return 1;
+		case EURO:
+			return 1;
+		case GRAM:
+			return 1e-3; // kg
+		case HECTARE:
+			return 1e4; // m2
+		case HOUR:
+			return 60 * 60; // sec
+		case JOULE:
+			return 1;
+		case KELVIN:
+			return 1;
+		case LITRE:
+			return 1e-3; // m3
+		case METRE:
+			return 1; // m
+		case MINUTE:
+			return 60; // sec
+		case MONTH:
+			return 30 * 24 * 60 * 60; // sec
+		case NONE:
+			return 1;
+		case PERCENT:
+			return 0.01;
+		case PSI:
+			return 6894.76; // Pa
+		case QUARTER:
+			return 15 * 60; // sec
+		case SECOND:
+			return 1;
+		case SQUARE_METRE:
+			return 1;
+		case VOLT:
+			return 1;
+		case WATT:
+			return 1;
+		case WATTHOUR:
+			return 3600; // J (Ws)
+		case WATTSECOND:
+			return 1; // J
+		case WEEK:
+			return 7 * 24 * 60 * 60; // sec
+		case YEAR:
+			return 365 * 24 * 60 * 60; // sec
+		default:
+			return 1;
 		}
 	}
 
@@ -472,28 +451,28 @@ public class Commons {
 			return 1;
 		}
 		switch (multiplier) {
-			case GIGA :
-				return 1e9;
-			case KILO :
-				return 1e3;
-			case MEGA :
-				return 1e6;
-			case MICRO :
-				return 1e-6;
-			case MILLI :
-				return 1e-3;
-			case NANO :
-				return 1e-9;
-			case NONE :
-				return 1;
-			case PETA :
-				return 1e15;
-			case PICO :
-				return 1e-12;
-			case TERRA :
-				return 1e12;
-			default :
-				return 1;
+		case GIGA:
+			return 1e9;
+		case KILO:
+			return 1e3;
+		case MEGA:
+			return 1e6;
+		case MICRO:
+			return 1e-6;
+		case MILLI:
+			return 1e-3;
+		case NANO:
+			return 1e-9;
+		case NONE:
+			return 1;
+		case PETA:
+			return 1e15;
+		case PICO:
+			return 1e-12;
+		case TERRA:
+			return 1e12;
+		default:
+			return 1;
 		}
 	}
 

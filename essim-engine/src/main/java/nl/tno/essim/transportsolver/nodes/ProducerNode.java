@@ -66,9 +66,9 @@ public class ProducerNode extends Node {
 	@Builder(builderMethodName = "producerNodeBuilder")
 	public ProducerNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now);
+				parent, carrier, children, timeStep, now, connectedPort);
 		this.producer = (Producer) asset;
 		this.producerName = producer.getName() == null ? producer.getId() : producer.getName();
 		this.power = producer.getPower();
@@ -175,7 +175,7 @@ public class ProducerNode extends Node {
 		} else {
 			builder.tag("energyType", RenewableTypeEnum.UNDEFINED.toString());
 		}
-		EmissionManager.getInstance(simulationId).addProducer(networkId, producer, Math.abs(energy));
+//		EmissionManager.getInstance(simulationId).addProducer(networkId, producer, Math.abs(energy));
 	}
 
 }

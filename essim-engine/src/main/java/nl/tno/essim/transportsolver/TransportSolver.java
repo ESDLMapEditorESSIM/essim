@@ -228,17 +228,22 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 	public void makeTree(Node parentNode) {
 		// if (!(Commons.isConversionToSameCarrier(parentNode.getAsset()))) {
-		for (EnergyAsset connectedAsset : Commons.findAllConnectedAssets(parentNode.getAsset())) {
-
+		HashMap<EnergyAsset, Port> assetConnections = Commons.findAllConnectedAssets(parentNode.getAsset());
+		for (EnergyAsset connectedAsset : assetConnections.keySet()) {
 			if (assetList.contains(connectedAsset) && !processedList.contains(connectedAsset)) {
-				final String nodeId = connectedAsset.getId();
-				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).simulationId(simulationId).asset(connectedAsset)
-						.parent(parentNode).networkId(getId()).carrier(carrier);
+				String nodeId = connectedAsset.getId();
+				Port connectedPort = assetConnections.get(connectedAsset);
+				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).connectedPort(connectedPort)
+						.simulationId(simulationId).asset(connectedAsset).parent(parentNode).networkId(getId())
+						.carrier(carrier);
 				for (Port myPort : connectedAsset.getPort()) {
 					if (myPort instanceof InPort) {
 						InPort myInPort = (InPort) myPort;
 						for (OutPort outPort : myInPort.getConnectedTo()) {
 							if (outPort.getEnergyasset().equals(parentNode.getAsset())) {
+								if (parentNode.getConnectedPort() == null) {
+									parentNode.setConnectedPort(outPort);
+								}
 								nodeBuilder.directionFactor(1);
 								break;
 							}
@@ -247,6 +252,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						OutPort myOutPort = (OutPort) myPort;
 						for (InPort inPort : myOutPort.getConnectedTo()) {
 							if (inPort.getEnergyasset().equals(parentNode.getAsset())) {
+								if (parentNode.getConnectedPort() == null) {
+									parentNode.setConnectedPort(inPort);
+								}
 								nodeBuilder.directionFactor(-1);
 								break;
 							}

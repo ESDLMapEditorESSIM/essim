@@ -34,10 +34,10 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import esdl.Carrier;
 import esdl.EnergyAsset;
+import esdl.Port;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
@@ -52,9 +52,10 @@ public class RemoteLogicNode extends Node {
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config) {
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config,
+			Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now);
+				parent, carrier, children, timeStep, now, connectedPort);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
 
@@ -145,9 +146,9 @@ public class RemoteLogicNode extends Node {
 		}
 
 		if (role.equals(Role.CONSUMER)) {
-			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
+//			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
 		} else {
-			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
+//			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
 		}
 	}
 

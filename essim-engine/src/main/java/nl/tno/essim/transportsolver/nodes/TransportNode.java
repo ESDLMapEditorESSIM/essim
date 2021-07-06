@@ -20,6 +20,7 @@ import java.util.List;
 
 import esdl.Carrier;
 import esdl.EnergyAsset;
+import esdl.Port;
 import esdl.Transport;
 import lombok.Builder;
 import lombok.Data;
@@ -40,9 +41,9 @@ public class TransportNode extends Node {
 	@Builder(builderMethodName = "transportNodeBuilder")
 	public TransportNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now);
+				parent, carrier, children, timeStep, now, connectedPort);
 		this.transport = (Transport) asset;
 		this.capacity = transport.getCapacity();
 	}

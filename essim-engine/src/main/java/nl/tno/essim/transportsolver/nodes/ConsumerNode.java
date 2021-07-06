@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -55,9 +54,9 @@ public class ConsumerNode extends Node {
 	@Builder(builderMethodName = "consumerNodeBuilder")
 	public ConsumerNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now);
+				parent, carrier, children, timeStep, now, connectedPort);
 		this.consumer = (Consumer) asset;
 		this.consumerName = consumer.getName() == null ? consumer.getId() : consumer.getName();
 		this.power = consumer.getPower();
@@ -112,7 +111,7 @@ public class ConsumerNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Consumer");
-		EmissionManager.getInstance(simulationId).addConsumer(networkId, consumer, Math.abs(energy));
+//		EmissionManager.getInstance(simulationId).addConsumer(networkId, consumer, Math.abs(energy));
 	}
 
 }
