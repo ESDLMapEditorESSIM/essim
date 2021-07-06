@@ -261,7 +261,7 @@ public class ConversionNode extends Node {
 					// There must already be at least one calculation done. So there is allocation
 					// on this port.
 					// Read connected port's profile for this time step into val.
-					if (Double.isNaN(energyValue)) {
+					if (!Double.isNaN(energyValue)) {
 						// if val is not Double.NaN,
 						// Make inflexible consumption curve(energy from this port's profile)
 						makeInflexibleConsumptionFunction(energyValue);
@@ -366,7 +366,7 @@ public class ConversionNode extends Node {
 					// if(driven by demand output port is the same as connected port):
 					// calculate input = output / efficiency
 					// write input to input port
-					Commons.writeProfile(inputPort, timestamp, energy / efficiency);
+					Commons.writeProfile(inputPort, timestamp, -energy / efficiency);
 				}
 				// else:
 				// we're already at the input port. Nothing more to do.
@@ -376,7 +376,7 @@ public class ConversionNode extends Node {
 					// if(driven by supply input port is the same as connected port):
 					// calculate output = input * efficiency
 					// write output to output port
-					Commons.writeProfile(outputPort, timestamp, energy * efficiency);
+					Commons.writeProfile(outputPort, timestamp, -energy * efficiency);
 				}
 				// else:
 				// we're already at the output port. Nothing more to do.
@@ -388,12 +388,12 @@ public class ConversionNode extends Node {
 						// if connected port is an input port:
 						// calculate output = input * efficiency
 						// write output to output port
-						Commons.writeProfile(outputPort, timestamp, energy * efficiency);
+						Commons.writeProfile(outputPort, timestamp, -energy * efficiency);
 					} else {
 						// else:
 						// calculate input = output / efficiency
 						// write input to input port
-						Commons.writeProfile(outputPort, timestamp, energy / efficiency);
+						Commons.writeProfile(outputPort, timestamp, -energy / efficiency);
 					}
 				}
 				// else:
