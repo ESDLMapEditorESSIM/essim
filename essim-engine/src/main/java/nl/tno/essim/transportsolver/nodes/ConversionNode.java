@@ -314,14 +314,6 @@ public class ConversionNode extends Node {
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Conversion");
 
-		if (connectedPort instanceof OutPort) {
-			// if connected port is an output port (equivalent of 'if role is producer'):
-//			EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));
-		} else {
-			// else:
-			// The connected port is an input port (equivalent of 'if role is consumer')
-//			EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));
-		}
 		if (mainPort != null) {
 			if (controlStrategy instanceof DrivenByDemand) {
 				// if(driven by demand):

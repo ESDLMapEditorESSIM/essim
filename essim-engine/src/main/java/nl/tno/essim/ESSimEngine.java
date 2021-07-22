@@ -152,7 +152,7 @@ public class ESSimEngine implements IStatusProvider {
 		simulationStepLength = SIMULATION_STEP;
 
 		// Initialise SimulationManager
-		simulationManager = new SimulationManager(this, simulationId, simulationStartTime, simulationEndTime,
+		simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
 				simulationStepLength);
 
 		// Initialise ObservationManager
@@ -319,7 +319,7 @@ public class ESSimEngine implements IStatusProvider {
 				remainingAssets = solver.createTree();
 				filteredAssets = remainingAssets;
 				if (remainingAssets != null) {
-					if (solver.getDeviceNodes().size() > 1) {
+					if (solver.getTree() != null) {
 						String networkDiag = solver.getNetworkDiag();
 						if (networkDiag != null) {
 							try {
@@ -491,16 +491,6 @@ public class ESSimEngine implements IStatusProvider {
 		xmiResource.save(opts);
 	}
 
-	// public static void main(String[] args) throws IOException {
-	// ESSimEngine engine;
-	// if (args.length > 0) {
-	// engine = new ESSimEngine(args[0]);
-	// } else {
-	// engine = new ESSimEngine(PROJECT_FILE_NAME);
-	// }
-	// engine.createGrafanaDashboard();
-	// }
-
 	private List<List<String>> printableSolversList(Solvers x) {
 		List<String> firsts = printableSolverList(x.getFirst());
 		List<String> laters = printableSolverList(x.getLater());
@@ -523,7 +513,7 @@ public class ESSimEngine implements IStatusProvider {
 			for (Port port : energyAsset.getPort()) {
 				Carrier portCarrier = port.getCarrier();
 				if (portCarrier != null) {
-					if (portCarrier.getId().equals(carrier.getId())) {
+					if (portCarrier.getId().equals(carrier.getId()) && !filteredAssets.contains(energyAsset)) {
 						filteredAssets.add(energyAsset);
 						if (energyAsset instanceof Transport) {
 							energyAssetRoles.put(energyAsset, Role.TRANSPORT);
@@ -621,32 +611,6 @@ public class ESSimEngine implements IStatusProvider {
 			}
 		}
 		return convAssets;
-	}
-
-	public void setFeatureCollections() {
-		// log.debug("Going to persist geoJSON animation data..");
-		// JSONObject featureCollection = new JSONObject();
-		// featureCollection.put("type", "FeatureCollection");
-		// JSONArray features = new JSONArray();
-		// for (ITransportSolver solver : solversList) {
-		// for (Object feature : solver.getFeatureCollection()) {
-		// if (feature != null) {
-		// features.put(feature);
-		// }
-		// }
-		// }
-		// featureCollection.put("features", features);
-		// String originalFeatColl = featureCollection.toString();
-		//
-		// try (ZipOutputStream zos = new ZipOutputStream(new
-		// FileOutputStream(simulationId + ".zip"))) {
-		// ZipEntry zipEntry = new ZipEntry(simulationId + ".geojson");
-		// zos.putNextEntry(zipEntry);
-		// zos.write(originalFeatColl.getBytes("UTF-8"));
-		// } catch (Exception e) {
-		// log.error("Cannot write geojson information due to {}", e.getMessage());
-		// }
-		// log.debug("Done!");
 	}
 
 	public List<TransportNetwork> getNetworkDiags() {

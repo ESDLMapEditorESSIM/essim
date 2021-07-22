@@ -160,10 +160,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		double maxCapacity = Double.NEGATIVE_INFINITY;
 		Role rootRole = Role.TRANSPORT;
 
-		if (assetList.size() <= 1) {
-			return null;
-		}
-
 		// Choose the biggest producer as the root node
 		for (EnergyAsset asset : assetList) {
 			if (asset instanceof Producer) {
@@ -188,8 +184,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		}
 
 		if (rootAsset == null) {
-			log.warn("A network for carrier {} has no energy producers in it! Please check if this was intentional!",
-					carrier);
+			log.warn(
+					"Network {} for carrier {} ({}) has no energy producers in it! Please check if this was intentional!",
+					getId(), carrier.getId(), carrier.getName());
 			for (EnergyAsset asset : assetList) {
 				if (roleMap.get(asset).equals(Role.CONSUMER)) {
 					rootAsset = asset;
@@ -204,8 +201,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
 						+ roleMap.get(asset));
 			}
-			throw new IllegalStateException("Cannot find a producer or consumer in the network for carrier: "
+			log.error("Cannot find a producer or consumer in network " + getId() + " for carrier: "
 					+ getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
+			log.error("This network ({}) will not be created!", getId());
+			return null;
 		}
 
 		rootRole = roleMap.get(rootAsset);
