@@ -77,6 +77,7 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.model.TransportNetworkImpl;
+import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
@@ -117,6 +118,7 @@ public class ESSimEngine implements IStatusProvider {
 	private double status;
 	private String statusDescription = "";
 	private HashMap<Conversion, Solvers> convAssets;
+	private EssimSimulation simulation;
 
 	private IObservationProvider generalObservationProvider = new IObservationProvider() {
 		@Override
@@ -136,6 +138,7 @@ public class ESSimEngine implements IStatusProvider {
 	};
 
 	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
+		this.simulation = simulation;
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -343,6 +346,9 @@ public class ESSimEngine implements IStatusProvider {
 		}
 
 		log.debug(solversList.toString());
+
+		simulation.setTransport(getNetworkDiags());
+		MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
 
 		// Find all Conversion assets and their solver orders
 		convAssets = findAllConversionAssets();
