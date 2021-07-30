@@ -224,7 +224,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			log.error("Only one asset in network " + getId() + " for carrier: " + getCarrier().getId() + "!! : "
 					+ deviceNodes.get(0));
 			log.error("This network ({}) will not be created!", getId());
-			return null;
+			return assetList;
 		}
 
 		printTree(getId());

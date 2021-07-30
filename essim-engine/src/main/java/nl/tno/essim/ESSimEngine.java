@@ -322,7 +322,7 @@ public class ESSimEngine implements IStatusProvider {
 				remainingAssets = solver.createTree();
 				filteredAssets = remainingAssets;
 				if (remainingAssets != null) {
-					if (solver.getTree() != null) {
+					if (solver.getDeviceNodes().size() > 1) {
 						String networkDiag = solver.getNetworkDiag();
 						if (networkDiag != null) {
 							try {
