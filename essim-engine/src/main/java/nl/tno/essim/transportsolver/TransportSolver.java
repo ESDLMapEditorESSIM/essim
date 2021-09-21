@@ -52,7 +52,6 @@ import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.commons.SimulationStatus;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
@@ -425,7 +424,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			}
 		}
 
-		EmissionManager.getInstance(simulationId).organiseNetwork(getId());
 	}
 
 	@Override

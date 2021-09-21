@@ -18,9 +18,6 @@ package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import esdl.Carrier;
 import esdl.CoolingDemand;
 import esdl.CostInformation;
@@ -55,10 +52,9 @@ public class CoolingDemandNode extends Node {
 	private GenericProfile costProfile;
 
 	@Builder(builderMethodName = "consumerNodeBuilder")
-	public CoolingDemandNode(String simulationId, String nodeId, String address, String networkId,
-			JSONArray animationArray, JSONObject geoJSON, EnergyAsset asset, int directionFactor, Role role,
-			BidFunction demandFunction, double energy, double cost, Node parent, Carrier carrier, List<Node> children,
-			long timeStep, Horizon now, Port connectedPort) {
+	public CoolingDemandNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
 				parent, carrier, children, timeStep, now, connectedPort);
 		this.consumer = (CoolingDemand) asset;

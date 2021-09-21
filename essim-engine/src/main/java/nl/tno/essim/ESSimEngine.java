@@ -69,7 +69,6 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.grafana.GrafanaClient;
 import nl.tno.essim.kpi.KPIModuleClient;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.EssimSimulation;
@@ -258,10 +257,6 @@ public class ESSimEngine implements IStatusProvider {
 						solver.setObservationManager(observationManager);
 					}
 				}
-
-				EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
-				emissionManager.setObservationManager(observationManager);
-				simulationManager.addOtherSimulatable(emissionManager);
 			} else {
 				// TODO: no carriers defined - going with copperplate
 			}

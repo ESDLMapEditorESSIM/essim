@@ -332,6 +332,7 @@ public class Converter {
 			return 1e15;
 		case PICO:
 			return 1e-12;
+		case TERA:
 		case TERRA:
 			return 1e12;
 		default:

@@ -35,7 +35,8 @@
 		<repository>
 			<id>hesi-snapshots</id>
 			<name>HESI snapshot artifactory</name>
-			<url>http://ci.hesi.energy:8081/artifactory/libs-snapshot-local</url>
+<!-- 			<url>http://ci.hesi.energy:8081/artifactory/libs-snapshot-local</url> -->
+			<url>https://ci.hesi.energy/artifactory/libs-snapshot-local</url>
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
@@ -46,7 +47,8 @@
 		<repository>
 			<id>hesi-releases</id>
 			<name>HESI release artifactory</name>
-			<url>http://ci.hesi.energy:8081/artifactory/libs-release-local</url>
+<!-- 			<url>http://ci.hesi.energy:8081/artifactory/libs-release-local</url> -->
+			<url>https://ci.hesi.energy/artifactory/libs-release-local</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>

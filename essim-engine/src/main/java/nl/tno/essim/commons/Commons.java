@@ -17,27 +17,19 @@
 package nl.tno.essim.commons;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
-import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
-import com.google.common.collect.TreeRangeMap;
 
 import esdl.AbstractQuantityAndUnit;
 import esdl.Carrier;
@@ -57,12 +49,10 @@ import esdl.QuantityAndUnitReference;
 import esdl.QuantityAndUnitType;
 import esdl.TimeUnitEnum;
 import esdl.UnitEnum;
-import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.util.Converter;
 
-@Slf4j
 public class Commons {
 	public static final double eps = 1e-5;
 	public static final double DEFAULT_EFFICIENCY = 0.6;
@@ -71,70 +61,13 @@ public class Commons {
 	public static final double DEFAULT_HP_COP = 3.5;
 	public static final double P_MIN = 0.0;
 	public static final double P_MAX = 1.0;
-	// public static final String RESOURCE = "src/main/resources";
 	public static final String RESOURCE = ".";
-	public static final int STROKE_MIN = 4;
-	public static final int STROKE_MAX = 24;
-	public static final String[] COLOURS = { "#800000", "#ff0000", "#ff8080", "#000000", "#80b3ff", "#0066ff",
-			"#003380" };
-	public static final double[] THRESHOLDS = { -1.0, -0.8, -0.05, 0.05, 0.8, 1.0 };
 	public static RangeMap<Double, String> thresholdMap;
 	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
 
 	public static enum Role {
 		TRANSPORT, PRODUCER, CONSUMER, BOTH
 	};
-
-	public static String getLoadColour(double load) {
-		if (thresholdMap == null) {
-			thresholdMap = TreeRangeMap.<Double, String>create();
-			double last = -Double.MAX_VALUE;
-			for (int i = 0; i < THRESHOLDS.length; i++) {
-				thresholdMap.put(Range.<Double>closed(last, THRESHOLDS[i]), COLOURS[i]);
-				last = THRESHOLDS[i];
-			}
-			thresholdMap.put(Range.<Double>closed(last, Double.MAX_VALUE), COLOURS[COLOURS.length - 1]);
-		}
-		return thresholdMap.get(load);
-	}
-
-	public static double getLoadWidth(double load) {
-		return Math.max(STROKE_MIN, Math.min(STROKE_MIN + Math.abs(load) * (STROKE_MAX - STROKE_MIN), STROKE_MAX));
-	}
-
-	public static byte[] compressString(String string) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		try {
-			GZIPOutputStream gzip = new GZIPOutputStream(out);
-			OutputStreamWriter osw = new OutputStreamWriter(gzip, StandardCharsets.UTF_8);
-			osw.write(string);
-			osw.close();
-		} catch (IOException e) {
-			log.error("Error writing geoJSON data into MongoDB because {}", e.getMessage());
-			return null;
-		}
-
-		return out.toByteArray();
-	}
-
-	public static String decompressString(byte[] bytes) {
-		String decompressedString = "";
-		try {
-			BufferedReader inBuf = new BufferedReader(new InputStreamReader(
-					new GZIPInputStream(new ByteArrayInputStream(bytes)), StandardCharsets.UTF_8));
-			StringBuffer strBuf = new StringBuffer();
-			String line;
-			while ((line = inBuf.readLine()) != null) {
-				strBuf.append(line);
-			}
-			decompressedString = strBuf.toString();
-		} catch (IOException e) {
-			log.error("Error decompressing geoJSON data because: {}", e.getMessage());
-			return null;
-		}
-
-		return decompressedString;
-	}
 
 	public static String readFileIntoString(String filename) throws IOException {
 		try (InputStream is = Commons.class.getClassLoader().getResourceAsStream(filename)) {
