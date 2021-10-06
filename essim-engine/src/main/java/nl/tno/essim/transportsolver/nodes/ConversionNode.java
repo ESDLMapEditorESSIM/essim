@@ -66,6 +66,7 @@ public class ConversionNode extends Node {
 	private String conversionName;
 	private GenericProfile marginalCostProfile;
 	private GenericProfile costProfile;
+	private HashMap<Port, GenericProfile> costProfileMap;
 	private Port mainPort;
 	private HashMap<Port, Double> ratioMap;
 	private Port dbpPort;
@@ -85,6 +86,7 @@ public class ConversionNode extends Node {
 		this.power = conversion.getPower();
 		this.costInformation = conversion.getCostInformation();
 		this.ratioMap = new HashMap<Port, Double>();
+		this.costProfileMap = new HashMap<Port, GenericProfile>();
 		if (costInformation != null) {
 			marginalCostProfile = costInformation.getMarginalCosts();
 		}
@@ -106,7 +108,7 @@ public class ConversionNode extends Node {
 			if (port instanceof InPort) {
 				inputPort = (InPort) port;
 				inputCarrier = inputPort.getCarrier();
-				costProfile = inputCarrier.getCost();
+				costProfileMap.put(port, inputCarrier.getCost());
 			} else {
 				outputPort = (OutPort) port;
 				outputCarrier = outputPort.getCarrier();
@@ -160,8 +162,26 @@ public class ConversionNode extends Node {
 		double energyValue = Commons.aggregateEnergy(Commons.readProfile(connectedPort, now));
 		if (marginalCostProfile != null) {
 			setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+		} else if (costProfileMap != null && !costProfileMap.isEmpty()) {
+			double costSum = 0.0;
+			for (Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
+				Port inPort = portCostPair.getKey();
+				GenericProfile costProfile = portCostPair.getValue();
+				Double cost = DEFAULT_MARGINAL_COST;
+				double ratio = 1.0;
+				if (costProfile != null) {
+					cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+					if (ratioMap != null) {
+						ratio = ratioMap.get(inPort);
+					}
+				}
+				costSum += cost / ratio;
+			}
+			setCost(costSum);
+		} else if (costProfile != null) {
+			setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
 		} else {
-			log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
+			log.warn("Conversion asset {} is missing cost information! Defaulting to {}", conversionName,
 					DEFAULT_MARGINAL_COST);
 			setCost(DEFAULT_MARGINAL_COST);
 		}
