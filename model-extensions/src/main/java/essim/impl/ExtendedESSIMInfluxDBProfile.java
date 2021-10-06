@@ -27,6 +27,7 @@ import org.influxdb.dto.QueryResult;
 import org.influxdb.dto.QueryResult.Result;
 import org.influxdb.dto.QueryResult.Series;
 
+import common.DataProcessor;
 import common.EssimQuery;
 import common.ProfileCache;
 import common.TimeSeriesDataCache;
@@ -47,6 +48,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 	private ProfileCache profileCache;
 	private LocalDateTime simStartDate;
 	private LocalDateTime simEndDate;
+	private DataProcessor dataProcessor;
 
 	public ExtendedESSIMInfluxDBProfile() {
 		super();
@@ -69,6 +71,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		Date profileEndDate = getEndDate();
 		String startDateString;
 		String endDateString;
+
 		if (profileStartDate != null) {
 			LocalDateTime startDateFromGUI = EssimTime.dateToLocalDateTime(profileStartDate);
 			LocalDateTime endDateFromGUI;
@@ -84,11 +87,13 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 			endDateString = EssimTime.toInfluxDBTimeString(EssimTime.dateToLocalDateTime(to));
 		}
 		if (getProfileQuantityAndUnit() != null) {
-			fillCache(getProfileQuantityAndUnit(), startDateString, endDateString,
-					Converter.toEssimDuration(aggregationPrecision), getMultiplier(), getAnnualChangePercentage());
+			dataProcessor = new DataProcessor(getProfileQuantityAndUnit(), getMultiplier());
+			fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
+					getAnnualChangePercentage());
 		} else {
-			fillCache(getProfileType(), startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
-					getMultiplier(), getAnnualChangePercentage());
+			dataProcessor = new DataProcessor(getProfileType(), getMultiplier());
+			fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
+					getAnnualChangePercentage());
 		}
 	}
 
@@ -109,18 +114,15 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		LocalDateTime startTime = EssimTime.dateToLocalDateTime(from);
 		LocalDateTime endTime = EssimTime.dateToLocalDateTime(to);
 
-		EList<ProfileElement> eList = dataCache.get(startTime, endTime, aggregationPrecision);
-		for (ProfileElement profileElement : eList) {
-			profileElement.setValue(profileElement.getValue() * getMultiplier());
-		}
+		EList<ProfileElement> eList = dataCache.get(startTime, endTime, aggregationPrecision, dataProcessor);
 		return eList;
 	}
 
-	public void fillCache(Object profileType, String startTimeOfDataset, String endTime,
-			EssimDuration simulationStepLength, double multiplier, double annualChange) {
+	public void fillCache(String startTimeOfDataset, String endTime, EssimDuration simulationStepLength,
+			double annualChange) {
 
 		int connectionAttempts = 0;
-		
+
 		String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '" + startTimeOfDataset
 				+ "' AND time <= '" + endTime + "'";
 
@@ -128,11 +130,11 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 			final String filter = this.filters.trim();
 			command += filter.startsWith("AND") ? " " + filter : " AND " + filter;
 		}
-		
+
 		log.debug("Influx Call for: " + command);
 
 		synchronized (profileCache) {
-			if (!profileCache.isCached(command, profileType)) {
+			if (!profileCache.isCached(command)) {
 				log.debug("Profile is not cached! Proceeding to query InfluxDB!");
 
 				influxClient = InfluxDBFactory.connect(getHost() + ":" + getPort()).enableGzip();
@@ -165,13 +167,13 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 					}
 					for (Series series : result.getSeries()) {
 						dataCache = new TimeSeriesDataCache(field, series.getValues(), simStartDate, simEndDate,
-								simulationStepLength, multiplier, annualChange, profileType);
+								simulationStepLength, annualChange);
 					}
 				}
-				profileCache.cache(command, profileType, dataCache);
+				profileCache.cache(command, dataCache);
 			} else {
 				log.debug("Profile is cached! Retrieving from cache!");
-				dataCache = profileCache.getDataCache(command, profileType);
+				dataCache = profileCache.getDataCache(command);
 			}
 		}
 	}
