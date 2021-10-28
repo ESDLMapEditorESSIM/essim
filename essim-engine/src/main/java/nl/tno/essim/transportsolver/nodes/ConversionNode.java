@@ -83,9 +83,9 @@ public class ConversionNode extends Node {
 		this.conversion = (Conversion) asset;
 		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
 		this.efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY : conversion.getEfficiency();
+		this.ratioMap = new HashMap<Port, Double>();
 		this.power = conversion.getPower();
 		this.costInformation = conversion.getCostInformation();
-		this.ratioMap = new HashMap<Port, Double>();
 		this.costProfileMap = new HashMap<Port, GenericProfile>();
 		if (costInformation != null) {
 			marginalCostProfile = costInformation.getMarginalCosts();
@@ -108,7 +108,8 @@ public class ConversionNode extends Node {
 			if (port instanceof InPort) {
 				inputPort = (InPort) port;
 				inputCarrier = inputPort.getCarrier();
-				costProfileMap.put(port, inputCarrier.getCost());
+				costProfile = inputCarrier.getCost();
+				costProfileMap.put(port, costProfile);
 			} else {
 				outputPort = (OutPort) port;
 				outputCarrier = outputPort.getCarrier();
@@ -162,7 +163,7 @@ public class ConversionNode extends Node {
 		double energyValue = Commons.aggregateEnergy(Commons.readProfile(connectedPort, now));
 		if (marginalCostProfile != null) {
 			setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
-		} else if (costProfileMap != null && !costProfileMap.isEmpty()) {
+		} else if (costProfileMap != null && !costProfileMap.isEmpty() && ratioMap != null && !ratioMap.isEmpty()) {
 			double costSum = 0.0;
 			for (Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
 				Port inPort = portCostPair.getKey();
@@ -171,7 +172,7 @@ public class ConversionNode extends Node {
 				double ratio = 1.0;
 				if (costProfile != null) {
 					cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
-					if (ratioMap != null) {
+					if (inPort != null) {
 						ratio = ratioMap.get(inPort);
 					}
 				}
@@ -194,8 +195,46 @@ public class ConversionNode extends Node {
 				// Read connected port's profile for this timestep into val.
 				if (Double.isNaN(energyValue)) {
 					// if val is Double.NaN, this is the first time:
-					// Make flexible production curve(power/ratio)
-					makeAdjustableProductionFunction(power * timeStep / ratioMap.get(connectedPort));
+					// Check if DrivenByProfile,
+					if (controlStrategy instanceof DrivenByProfile) {
+						if (dbpPort == null) {
+							throw new IllegalArgumentException("Conversion " + getConversionName()
+									+ "'s Driven By Profile control strategy has no port defined!!");
+						}
+						if (dbpProfile == null) {
+							throw new IllegalArgumentException("Conversion " + getConversionName()
+									+ "'s Driven By Profile control strategy has no profile defined!!");
+						}
+						if (Commons.isPowerProfile(dbpProfile)) {
+							energyValue = timeStep * Commons.aggregatePower(Commons.readProfile(dbpProfile, now));
+						} else if (Commons.isEnergyProfile(dbpProfile)) {
+							energyValue = Commons.aggregateEnergy(Commons.readProfile(dbpProfile, now));
+						} else if (Commons.isPercentageProfile(dbpProfile)) {
+							energyValue = timeStep
+									* Commons.aggregatePower(Commons.readProfile(dbpProfile, dbpPort, now));
+						}
+						if (Double.isNaN(energyValue)) {
+							energyValue = 0.0;
+						}
+						if (dbpPort.equals(connectedPort)) {
+							// DBP Profile is production profile. So simply read and make inflexible curve.
+							makeInflexibleProductionFunction(energyValue);
+						} else {
+							// DBP Profile is some other profile. So read and make inflexible curve after
+							// modifying by port ratio. The calculation is as below:
+							// Main Port = P_main
+							// P_out = x_out (To be calculated here)
+							// P_dbP = x_dbp (Port with DrivenByProfile profile)
+							// => P_out = P_main/x_out; P_dbP = P_main/x_dbp
+							// => P_out*x_out = P_dbp*x_dbP
+							// => P_out = P_dbP*(x_dbp/x_out)
+							makeInflexibleProductionFunction(
+									energyValue * (ratioMap.get(dbpPort) / ratioMap.get(connectedPort)));
+						}
+					} else {
+						// Make flexible production curve(power/ratio)
+						makeAdjustableProductionFunction(power * timeStep / ratioMap.get(connectedPort));
+					}
 				} else {
 					// else:
 					// Make inflexible production curve(energy from this port's profile)
@@ -225,7 +264,7 @@ public class ConversionNode extends Node {
 					if (!Double.isNaN(energyValue)) {
 						// if val is not Double.NaN:
 						// Make inflexible production curve(energy from this port's profile)
-						makeInflexibleProductionFunction(energyValue);
+						makeInflexibleProductionFunction(-energyValue);
 					} else {
 						// else:
 						// Something went wrong in process allocation. Throw an exception until found.
@@ -235,26 +274,27 @@ public class ConversionNode extends Node {
 				} else if (controlStrategy instanceof DrivenByProfile) {
 					// else if(driven by profile):
 					// Either one of the ports were previously solved or this is the first time.
+					if (Commons.isPowerProfile(dbpProfile)) {
+						energyValue = timeStep * Commons.aggregatePower(Commons.readProfile(dbpProfile, now));
+					} else if (Commons.isEnergyProfile(dbpProfile)) {
+						energyValue = Commons.aggregateEnergy(Commons.readProfile(dbpProfile, now));
+					} else if (Commons.isPercentageProfile(dbpProfile)) {
+						energyValue = timeStep * Commons.aggregatePower(Commons.readProfile(dbpProfile, dbpPort, now));
+					}
+					if (Double.isNaN(energyValue)) {
+						energyValue = 0.0;
+					}
 					if (dbpPort != null && dbpPort.equals(connectedPort)) {
 						// if driven-by-profile port is the connected port:
 						// This is the first time computation will occur.
 						// Read driven-by-profile's profile and make inflexible production curve
-						double energyProfileValue = Commons.aggregateEnergy(Commons.readProfile(dbpProfile, now));
-						makeInflexibleProductionFunction(energyProfileValue);
+						makeInflexibleProductionFunction(energyValue);
 					} else {
 						// else:
-						// Computation happened already and there is allocation on this port.
-						// Read connected port's profile for this time step into val.
-						if (!Double.isNaN(energyValue)) {
-							// if val is not Double.NaN:
-							// Make inflexible production curve(energy from this port's profile)
-							makeInflexibleProductionFunction(energyValue);
-						} else {
-							// else:
-							// Something went wrong in process allocation. Throw an exception until found.
-							throw new IllegalStateException("Conversion asset " + conversionName
-									+ " has no profile on port " + connectedPort + "! Check previous allocation step!");
-						}
+						// This is a production network and DBP profile is a consumption profile.
+						// Read driven-by-profile's profile and make inflexible production curve after
+						// multiplying with efficiency.
+						makeInflexibleProductionFunction(energyValue * efficiency);
 					}
 				}
 			}
@@ -267,8 +307,46 @@ public class ConversionNode extends Node {
 				// Read connected port's profile for this time step into val.
 				if (Double.isNaN(energyValue)) {
 					// if val is Double.NaN, this is the first time:
-					// Make flexible consumption curve(power/ratio)
-					makeAdjustableConsumptionFunction(power * timeStep / ratioMap.get(connectedPort));
+					// Check if DrivenByProfile,
+					if (controlStrategy instanceof DrivenByProfile) {
+						if (dbpPort == null) {
+							throw new IllegalArgumentException("Conversion " + getConversionName()
+									+ "'s Driven By Profile control strategy has no port defined!!");
+						}
+						if (dbpProfile == null) {
+							throw new IllegalArgumentException("Conversion " + getConversionName()
+									+ "'s Driven By Profile control strategy has no profile defined!!");
+						}
+						if (Commons.isPowerProfile(dbpProfile)) {
+							energyValue = timeStep * Commons.aggregatePower(Commons.readProfile(dbpProfile, now));
+						} else if (Commons.isEnergyProfile(dbpProfile)) {
+							energyValue = Commons.aggregateEnergy(Commons.readProfile(dbpProfile, now));
+						} else if (Commons.isPercentageProfile(dbpProfile)) {
+							energyValue = timeStep
+									* Commons.aggregatePower(Commons.readProfile(dbpProfile, dbpPort, now));
+						}
+						if (Double.isNaN(energyValue)) {
+							energyValue = 0.0;
+						}
+						if (dbpPort.equals(connectedPort)) {
+							// DBP Profile is consumption profile. So simply read and make inflexible curve.
+							makeInflexibleConsumptionFunction(energyValue);
+						} else {
+							// DBP Profile is some other profile. So read and make inflexible curve after
+							// modifying by port ratio. The calculation is as below:
+							// Main Port = P_main
+							// P_in = x_in (To be calculated here)
+							// P_dbP = x_dbp (Port with DrivenByProfile profile)
+							// => P_in = P_main/x_in; P_dbP = P_main/x_dbp
+							// => P_in*x_in = P_dbp*x_dbP
+							// => P_in = P_dbP*(x_dbp/x_in)
+							makeInflexibleConsumptionFunction(
+									energyValue * (ratioMap.get(dbpPort) / ratioMap.get(connectedPort)));
+						}
+					} else {
+						// Make flexible consumption curve(power/ratio)
+						makeAdjustableConsumptionFunction(power * timeStep / ratioMap.get(connectedPort));
+					}
 				} else {
 					// else:
 					// Make inflexible consumption curve(energy from this port's profile)
@@ -295,8 +373,8 @@ public class ConversionNode extends Node {
 					// else if(driven by supply):
 					/// if(driven by demand output port is the same as connected port):
 					if (dbsPort != null && dbsPort.equals(connectedPort)) {
-						// Make flexible consumption curve(power/ratio)
-						makeAdjustableConsumptionFunction(power / ratioMap.get(connectedPort));
+						// Make flexible consumption curve(power)
+						makeAdjustableConsumptionFunction(power / efficiency);
 					} else {
 						// else:
 						// Make inflexible consumption curve(energy from this port's profile)
@@ -305,25 +383,26 @@ public class ConversionNode extends Node {
 				} else if (controlStrategy instanceof DrivenByProfile) {
 					// else if(driven by profile):
 					// Either one of the ports were previously solved or this is the first time.
+					if (Commons.isPowerProfile(dbpProfile)) {
+						energyValue = timeStep * Commons.aggregatePower(Commons.readProfile(dbpProfile, now));
+					} else if (Commons.isEnergyProfile(dbpProfile)) {
+						energyValue = Commons.aggregateEnergy(Commons.readProfile(dbpProfile, now));
+					} else if (Commons.isPercentageProfile(dbpProfile)) {
+						energyValue = timeStep * Commons.aggregatePower(Commons.readProfile(dbpProfile, dbpPort, now));
+					}
+					if (Double.isNaN(energyValue)) {
+						energyValue = 0.0;
+					}
 					if (dbpPort != null && dbpPort.equals(connectedPort)) {
 						// if driven-by-profile port is the connected port:
 						// This is the first time computation will occur.
 						// Read driven-by-profile's profile and make inflexible production curve
-						double energyProfileValue = Commons.aggregateEnergy(Commons.readProfile(dbpProfile, now));
-						makeInflexibleProductionFunction(energyProfileValue);
+						makeInflexibleConsumptionFunction(energyValue);
 					} else {
-						// else:
-						// Computation happened already and there is allocation on this port.
-						if (!Double.isNaN(energyValue)) {
-							// if val is not Double.NaN:
-							// Make inflexible consumption curve(energy from this port's profile)
-							makeInflexibleConsumptionFunction(energyValue);
-						} else {
-							// else:
-							// Something went wrong in process allocation. Throw an exception until found.
-							throw new IllegalStateException("Conversion asset " + conversionName
-									+ " has no profile on port " + connectedPort + "! Check previous allocation step!");
-						}
+						// This is a consumption network and DBP profile is a production profile.
+						// Read driven-by-profile's profile and make inflexible consumption curve after
+						// dividing with efficiency.
+						makeInflexibleConsumptionFunction(energyValue / efficiency);
 					}
 				}
 			}
@@ -351,11 +430,8 @@ public class ConversionNode extends Node {
 				}
 			} else if (controlStrategy instanceof DrivenByProfile) {
 				// else if(driven by profile):
-				if (!dbpPort.equals(connectedPort)) {
-					// if driven-by-profile port is NOT the same as the connected port:
-					// Don't do anything
-					return;
-				}
+				// Don't do anything
+				return;
 			}
 			// if input-output relation table is defined:
 			double mainPortEnergy = ratioMap.get(connectedPort) * energy;

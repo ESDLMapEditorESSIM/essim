@@ -105,6 +105,9 @@ public class ProducerNode extends Node {
 					} else if (Commons.isEnergyProfile(producerProfile)) {
 						energyOutput = Commons.aggregateEnergy(Commons.readProfile(producerProfile, now));
 						break;
+					} else if (Commons.isPercentageProfile(producerProfile)) {
+						energyOutput = timeStep
+								* Commons.aggregatePower(Commons.readProfile(producerProfile, port, now));
 					}
 				}
 			}

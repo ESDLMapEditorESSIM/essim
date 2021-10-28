@@ -26,6 +26,7 @@ import org.json.JSONObject;
 import esdl.AbstractBuilding;
 import esdl.Area;
 import esdl.Carrier;
+import esdl.Conversion;
 import esdl.EnergyAsset;
 import esdl.Port;
 import esdl.Sector;
@@ -279,9 +280,16 @@ public abstract class Node implements INode {
 	}
 
 	public JSONObject getJSONString() {
-		JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")");
+		String ctrlStrategy = "";
+		if (getAsset() instanceof Conversion) {
+			if (getAsset().getControlStrategy() != null) {
+				ctrlStrategy = "[" + getAsset().getControlStrategy().getClass().getInterfaces()[0].getSimpleName()
+						+ "]";
+			}
+		}
+		JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")" + ctrlStrategy);
 		if (parent != null) {
-			nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")");
+			nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")" + ctrlStrategy);
 		} else {
 			nodeObj.put("parent", "null");
 		}

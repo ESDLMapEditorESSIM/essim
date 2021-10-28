@@ -33,6 +33,7 @@ import com.google.common.collect.RangeMap;
 
 import esdl.AbstractQuantityAndUnit;
 import esdl.Carrier;
+import esdl.Consumer;
 import esdl.Conversion;
 import esdl.EnergyAsset;
 import esdl.EssimESDLFactory;
@@ -42,6 +43,7 @@ import esdl.MultiplierEnum;
 import esdl.OutPort;
 import esdl.PhysicalQuantityEnum;
 import esdl.Port;
+import esdl.Producer;
 import esdl.ProfileElement;
 import esdl.ProfileReference;
 import esdl.ProfileTypeEnum;
@@ -64,6 +66,7 @@ public class Commons {
 	public static final String RESOURCE = ".";
 	public static RangeMap<Double, String> thresholdMap;
 	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
+	private static HashMap<GenericProfile, Double> profilePowerMap = new HashMap<GenericProfile, Double>();
 
 	public static enum Role {
 		TRANSPORT, PRODUCER, CONSUMER, BOTH
@@ -91,7 +94,7 @@ public class Commons {
 	}
 
 	public static List<Double> readProfile(Port port, Horizon horizon) {
-		return readProfile(getEnergyProfile(port), horizon);
+		return readProfile(getEnergyProfile(port), port, horizon);
 	}
 
 	public static GenericProfile getEnergyProfile(Port port) {
@@ -100,7 +103,7 @@ public class Commons {
 				if (profile instanceof ProfileReference) {
 					profile = ((ProfileReference) profile).getReference();
 				}
-				if (isEnergyProfile(profile) || isPowerProfile(profile)) {
+				if (isEnergyProfile(profile) || isPowerProfile(profile) || isPercentageProfile(profile)) {
 					portProfileMap.put(port, profile);
 					return profile;
 				}
@@ -108,6 +111,39 @@ public class Commons {
 		}
 		GenericProfile energyProfile = portProfileMap.get(port);
 		return energyProfile;
+	}
+
+	public static List<Double> readProfile(GenericProfile profile, Port port, Horizon horizon) {
+		if (profile != null) {
+			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
+			Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
+
+			if (!profilePowerMap.containsKey(profile)) {
+				EnergyAsset energyAsset = port.getEnergyasset();
+				double ratedPower = 1.0;
+				if (energyAsset instanceof Producer) {
+					Producer producer = (Producer) energyAsset;
+					ratedPower = producer.getPower();
+				} else if (energyAsset instanceof Consumer) {
+					Consumer consumer = (Consumer) energyAsset;
+					ratedPower = consumer.getPower();
+				} else if (energyAsset instanceof Conversion) {
+					Conversion conversion = (Conversion) energyAsset;
+					ratedPower = conversion.getPower();
+				}
+				if (!isPercentageProfile(profile)) {
+					ratedPower = 1.0;
+				}
+				profilePowerMap.put(profile, ratedPower);
+			}
+			double multiplier = profilePowerMap.get(profile);
+
+			EList<ProfileElement> profileElements = profile.getProfile(from, to,
+					Converter.toESDLDuration(horizon.getPeriod()));
+			return profileElements.stream().mapToDouble(s -> s.getValue() * multiplier).boxed()
+					.collect(Collectors.toList());
+		}
+		return null;
 	}
 
 	public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
@@ -228,6 +264,22 @@ public class Commons {
 
 		return (profile.getProfileType().getValue() <= ProfileTypeEnum.ENERGY_IN_PJ_VALUE)
 				&& (profile.getProfileType().getValue() >= ProfileTypeEnum.ENERGY_IN_WH_VALUE);
+	}
+
+	public static boolean isPercentageProfile(GenericProfile profile) {
+		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
+		if (profileQandU != null) {
+			QuantityAndUnitType qu = null;
+			if (profileQandU instanceof QuantityAndUnitType) {
+				qu = (QuantityAndUnitType) profileQandU;
+			} else if (profileQandU instanceof QuantityAndUnitReference) {
+				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
+				qu = reference.getReference();
+			}
+			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.COEFFICIENT);
+		}
+
+		return (profile.getProfileType().getValue() == ProfileTypeEnum.PERCENTAGE_VALUE);
 	}
 
 	public static boolean isSoCProfile(GenericProfile profile) {

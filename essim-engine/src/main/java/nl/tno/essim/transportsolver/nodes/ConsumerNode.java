@@ -76,7 +76,7 @@ public class ConsumerNode extends Node {
 	@Override
 	public void createBidCurve(long timeStep, Horizon now) {
 		double energyOutput = Double.NaN;
-		GenericProfile convProfile = Commons.getEnergyProfile(inputPort);
+		GenericProfile consumerProfile = Commons.getEnergyProfile(inputPort);
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
@@ -84,11 +84,13 @@ public class ConsumerNode extends Node {
 			makeInflexibleConsumptionFunction(0);
 			return;
 		}
-		if (convProfile != null) {
-			if (Commons.isPowerProfile(convProfile)) {
-				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
-			} else if (Commons.isEnergyProfile(convProfile)) {
-				energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
+		if (consumerProfile != null) {
+			if (Commons.isPowerProfile(consumerProfile)) {
+				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(consumerProfile, now));
+			} else if (Commons.isEnergyProfile(consumerProfile)) {
+				energyOutput = Commons.aggregateEnergy(Commons.readProfile(consumerProfile, now));
+			} else if (Commons.isPercentageProfile(consumerProfile)) {
+				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(consumerProfile, inputPort, now));
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {

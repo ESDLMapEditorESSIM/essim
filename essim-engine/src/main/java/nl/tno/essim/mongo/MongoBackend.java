@@ -23,6 +23,7 @@ import java.util.List;
 import org.bson.types.ObjectId;
 import org.mongojack.DBQuery;
 import org.mongojack.DBQuery.Query;
+import org.mongojack.DBUpdate;
 import org.mongojack.JacksonDBCollection;
 import org.mongojack.WriteResult;
 import org.slf4j.LoggerFactory;
@@ -151,14 +152,10 @@ public class MongoBackend {
 			statusObj.setDescription(status);
 
 			Query query = DBQuery.is("_id", new ObjectId(simulationId));
-			EssimSimulation simulation = essimCollection.findOne(query);
-			if (simulation != null) {
-				simulation.getAdditionalProperties().clear();
-				simulation.setStatus(statusObj);
-				essimCollection.update(query, simulation);
-			}
+			essimCollection.update(query, DBUpdate.set("status", statusObj));
 		} catch (MongoException e) {
 			log.error("MongoException occurred: {}", e.getMessage());
+			e.printStackTrace();
 		}
 	}
 

@@ -283,7 +283,7 @@ public class Converter {
 		case NONE:
 			return 1;
 		case PERCENT:
-			return 0.01;
+			return 1;
 		case PSI:
 			return 6894.76; // Pa
 		case QUARTER:
