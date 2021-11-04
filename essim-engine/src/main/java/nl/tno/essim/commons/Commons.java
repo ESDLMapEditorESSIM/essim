@@ -114,6 +114,9 @@ public class Commons {
 	}
 
 	public static List<Double> readProfile(GenericProfile profile, Port port, Horizon horizon) {
+		if (profile instanceof ProfileReference) {
+			profile = ((ProfileReference) profile).getReference();
+		}
 		if (profile != null) {
 			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
 			Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
