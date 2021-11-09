@@ -18,8 +18,6 @@ package nl.tno.essim;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,6 +25,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -76,7 +75,6 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.model.TransportNetworkImpl;
-import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
@@ -321,8 +319,8 @@ public class ESSimEngine implements IStatusProvider {
 						String networkDiag = solver.getNetworkDiag();
 						if (networkDiag != null) {
 							try {
-								networkDiags.put(solverId, URLEncoder.encode(networkDiag, "UTF-8"));
-							} catch (UnsupportedEncodingException e) {
+								networkDiags.put(solverId, Base64.getEncoder().encodeToString(networkDiag.getBytes()));
+							} catch (Exception e) {
 								log.error("Error while creating network diagram for {}", solverId);
 								networkDiags.put(solverId, "");
 							}
@@ -342,8 +340,9 @@ public class ESSimEngine implements IStatusProvider {
 
 		log.debug(solversList.toString());
 
-		simulation.setTransport(getNetworkDiags());
-		MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
+//      WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
+//		simulation.setTransport(getNetworkDiags());
+//		MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
 
 		// Find all Conversion assets and their solver orders
 		convAssets = findAllConversionAssets();

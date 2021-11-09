@@ -173,10 +173,10 @@ public class ConversionNode extends Node {
 				if (costProfile != null) {
 					cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
 					if (inPort != null) {
-						ratio = ratioMap.get(inPort);
+						ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
 					}
 				}
-				costSum += cost / ratio;
+				costSum += cost * ratio;
 			}
 			setCost(costSum);
 		} else if (costProfile != null) {
