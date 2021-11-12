@@ -115,7 +115,6 @@ public class ESSimEngine implements IStatusProvider {
 	private double status;
 	private String statusDescription = "";
 	private HashMap<Conversion, Solvers> convAssets;
-	private EssimSimulation simulation;
 
 	private IObservationProvider generalObservationProvider = new IObservationProvider() {
 		@Override
@@ -135,7 +134,6 @@ public class ESSimEngine implements IStatusProvider {
 	};
 
 	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
-		this.simulation = simulation;
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -347,7 +345,8 @@ public class ESSimEngine implements IStatusProvider {
 		// Find all Conversion assets and their solver orders
 		convAssets = findAllConversionAssets();
 
-		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
+//		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
+		HashMap<String, Integer[]> constrIndices = new HashMap<String, Integer[]>();
 		for (Conversion convAsset : convAssets.keySet()) {
 			Solvers solverOrder = convAssets.get(convAsset);
 			if (solverOrder.getFirst().isEmpty()) {
@@ -355,7 +354,8 @@ public class ESSimEngine implements IStatusProvider {
 			}
 			for (TransportSolver first : solverOrder.getFirst()) {
 				for (TransportSolver later : solverOrder.getLater()) {
-					constrIndices.add(new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
+					constrIndices.put(convAsset.getName(),
+							new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
 				}
 			}
 			log.debug(convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));

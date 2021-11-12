@@ -150,6 +150,9 @@ public class Commons {
 	}
 
 	public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
+		if (profile instanceof ProfileReference) {
+			profile = ((ProfileReference) profile).getReference();
+		}
 		if (profile != null) {
 			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
 			Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
@@ -236,6 +239,9 @@ public class Commons {
 	}
 
 	public static boolean isPowerProfile(GenericProfile profile) {
+		if (profile instanceof ProfileReference) {
+			profile = ((ProfileReference) profile).getReference();
+		}
 		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
 		if (profileQandU != null) {
 			QuantityAndUnitType qu = null;
@@ -253,6 +259,9 @@ public class Commons {
 	}
 
 	public static boolean isEnergyProfile(GenericProfile profile) {
+		if (profile instanceof ProfileReference) {
+			profile = ((ProfileReference) profile).getReference();
+		}
 		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
 		if (profileQandU != null) {
 			QuantityAndUnitType qu = null;
@@ -270,6 +279,9 @@ public class Commons {
 	}
 
 	public static boolean isPercentageProfile(GenericProfile profile) {
+		if (profile instanceof ProfileReference) {
+			profile = ((ProfileReference) profile).getReference();
+		}
 		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
 		if (profileQandU != null) {
 			QuantityAndUnitType qu = null;
@@ -286,6 +298,9 @@ public class Commons {
 	}
 
 	public static boolean isSoCProfile(GenericProfile profile) {
+		if (profile instanceof ProfileReference) {
+			profile = ((ProfileReference) profile).getReference();
+		}
 		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
 		if (profileQandU != null) {
 			QuantityAndUnitType qu = null;

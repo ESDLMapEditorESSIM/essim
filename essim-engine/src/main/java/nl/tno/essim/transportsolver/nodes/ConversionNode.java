@@ -124,6 +124,10 @@ public class ConversionNode extends Node {
 				if (behaviour instanceof InputOutputRelation) {
 					InputOutputRelation conversionTable = (InputOutputRelation) behaviour;
 					mainPort = conversionTable.getMainPort();
+					if (mainPort == null) {
+						throw new IllegalArgumentException(
+								"No main port defined in InputOutputRelation of asset " + conversionName + "!");
+					}
 					boolean mainPortFound = false;
 					for (Port port : conversion.getPort()) {
 						if (port.equals(mainPort)) {
@@ -143,6 +147,14 @@ public class ConversionNode extends Node {
 								+ conversion.getPort().size() + "!");
 					}
 					for (PortRelation portRelation : conversionTable.getMainPortRelation()) {
+						if (portRelation.getPort() == null) {
+							throw new IllegalArgumentException(
+									"InputOutputRelation defined for asset " + conversionName + " has a missing port!");
+						}
+						if (portRelation.getRatio() == 0.0) {
+							throw new IllegalArgumentException("InputOutputRelation defined for asset " + conversionName
+									+ " has ratio 0.0 for port " + portRelation.getPort().getId() + "!");
+						}
 						ratioMap.put(portRelation.getPort(), portRelation.getRatio());
 					}
 				}
