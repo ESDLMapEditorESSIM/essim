@@ -154,7 +154,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		return null;
 	}
 
-	public List<EnergyAsset> createTree() {
+	public List<EnergyAsset> createTree() throws Exception {
 		EnergyAsset rootAsset = null;
 		double maxCapacity = Double.NEGATIVE_INFINITY;
 		Role rootRole = Role.TRANSPORT;
@@ -231,7 +231,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		return assetList;
 	}
 
-	public void makeTree(Node parentNode) {
+	public void makeTree(Node parentNode) throws Exception {
 		// if (!(Commons.isConversionToSameCarrier(parentNode.getAsset()))) {
 		HashMap<EnergyAsset, Port> assetConnections = Commons.findAllConnectedAssets(parentNode.getAsset());
 		for (EnergyAsset connectedAsset : assetConnections.keySet()) {

@@ -291,7 +291,7 @@ public class ESSimEngine implements IStatusProvider {
 		 */
 	}
 
-	public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) {
+	public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) throws Exception {
 
 		// Create all Transport Solvers based on carriers.
 		// There could be isolated networks also. So repeat this process till we get a

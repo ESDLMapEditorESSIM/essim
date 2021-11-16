@@ -86,7 +86,7 @@ public abstract class Node implements INode {
 			return this;
 		}
 
-		public Node build() {
+		public Node build() throws Exception {
 			Node node = null;
 			if (this.config != null && this.config.getRemoteNodeLogic()) {
 				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, directionFactor, role,
@@ -118,7 +118,7 @@ public abstract class Node implements INode {
 										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
 										timeStep, now, connectedPort);
 					} catch (Exception e) {
-						e.printStackTrace();
+						throw e;
 					}
 				}
 			}
