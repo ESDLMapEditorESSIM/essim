@@ -24,6 +24,7 @@ import esdl.Carrier;
 import esdl.ControlStrategy;
 import esdl.EnergyAsset;
 import esdl.GenericProfile;
+import esdl.Port;
 import esdl.Storage;
 import esdl.StorageStrategy;
 import lombok.Builder;
@@ -32,7 +33,6 @@ import lombok.EqualsAndHashCode;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -52,9 +52,9 @@ public class StorageNode extends Node {
 	@Builder(builderMethodName = "storageNodeBuilder")
 	public StorageNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now);
+				parent, carrier, children, timeStep, now, connectedPort);
 		this.storage = (Storage) asset;
 		this.timeStepinDT = EssimDuration.of(timeStep, ChronoUnit.SECONDS);
 		this.maxChargeRate = storage.getMaxChargeRate();
@@ -124,9 +124,9 @@ public class StorageNode extends Node {
 		builder.tag("capability", "Storage");
 		builder.value("soc", storage.getFillLevel());
 		if (energy > 0) {
-			EmissionManager.getInstance(simulationId).addConsumer(networkId, storage, Math.abs(energy));
+//			EmissionManager.getInstance(simulationId).addConsumer(networkId, storage, Math.abs(energy));
 		} else {
-			EmissionManager.getInstance(simulationId).addProducer(networkId, storage, Math.abs(energy));
+//			EmissionManager.getInstance(simulationId).addProducer(networkId, storage, Math.abs(energy));
 		}
 	}
 }

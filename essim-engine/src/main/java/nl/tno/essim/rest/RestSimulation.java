@@ -69,7 +69,7 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public PostSimulationResponse postSimulation(EssimSimulation simulation) {
-		if(mongo.getStatus().equals("Busy")) {
+		if (mongo.getStatus().equals("Busy")) {
 			return PostSimulationResponse.respond503WithApplicationJson("Busy");
 		}
 		mongo.updateStatus("Busy");
@@ -77,6 +77,7 @@ public class RestSimulation implements Simulation {
 		error.setStatus(Status.ERROR);
 
 		String esdlContents = simulation.getEsdlContents();
+		simulation.setEsdlContents("");
 		FileWriter fw = null;
 		File esdlFile = null;
 		if (esdlContents == null || esdlContents.isEmpty()) {
@@ -122,11 +123,14 @@ public class RestSimulation implements Simulation {
 				} else {
 					simulation.setDashboardURL("*headless simulation*");
 				}
-				simulation.setTransport(engine.getNetworkDiags());
+//				simulation.setTransport(engine.getNetworkDiags());
 
 				mongo.updateSimulationData(simId, simulation);
 
-				Thread thread = new Thread(() -> engine.startSimulation(), simId);
+				Thread thread = new Thread(() -> {
+					engine.startSimulation();
+					Thread.currentThread().interrupt();
+				}, simId);
 				thread.setUncaughtExceptionHandler(essimExceptionHandler);
 				thread.start();
 

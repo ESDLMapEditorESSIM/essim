@@ -43,10 +43,10 @@
 	"steppedLine": true,
 	"targets": [
 		{
-			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
+			"alias": "$tag_assetClass ($tag_assetId, $tag_address)",
 			"groupBy": [{
 				"params": [
-					"assetName"
+					"assetId"
 				],
 				"type": "tag"
 			},

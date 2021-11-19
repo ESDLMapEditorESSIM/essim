@@ -18,8 +18,6 @@ package nl.tno.essim;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,6 +25,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -69,7 +68,6 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.grafana.GrafanaClient;
 import nl.tno.essim.kpi.KPIModuleClient;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.EssimSimulation;
@@ -152,7 +150,7 @@ public class ESSimEngine implements IStatusProvider {
 		simulationStepLength = SIMULATION_STEP;
 
 		// Initialise SimulationManager
-		simulationManager = new SimulationManager(this, simulationId, simulationStartTime, simulationEndTime,
+		simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
 				simulationStepLength);
 
 		// Initialise ObservationManager
@@ -255,10 +253,6 @@ public class ESSimEngine implements IStatusProvider {
 						solver.setObservationManager(observationManager);
 					}
 				}
-
-				EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
-				emissionManager.setObservationManager(observationManager);
-				simulationManager.addOtherSimulatable(emissionManager);
 			} else {
 				// TODO: no carriers defined - going with copperplate
 			}
@@ -297,7 +291,7 @@ public class ESSimEngine implements IStatusProvider {
 		 */
 	}
 
-	public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) {
+	public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) throws Exception {
 
 		// Create all Transport Solvers based on carriers.
 		// There could be isolated networks also. So repeat this process till we get a
@@ -323,8 +317,8 @@ public class ESSimEngine implements IStatusProvider {
 						String networkDiag = solver.getNetworkDiag();
 						if (networkDiag != null) {
 							try {
-								networkDiags.put(solverId, URLEncoder.encode(networkDiag, "UTF-8"));
-							} catch (UnsupportedEncodingException e) {
+								networkDiags.put(solverId, Base64.getEncoder().encodeToString(networkDiag.getBytes()));
+							} catch (Exception e) {
 								log.error("Error while creating network diagram for {}", solverId);
 								networkDiags.put(solverId, "");
 							}
@@ -344,10 +338,15 @@ public class ESSimEngine implements IStatusProvider {
 
 		log.debug(solversList.toString());
 
+//      WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
+//		simulation.setTransport(getNetworkDiags());
+//		MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
+
 		// Find all Conversion assets and their solver orders
 		convAssets = findAllConversionAssets();
 
-		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
+//		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
+		HashMap<String, Integer[]> constrIndices = new HashMap<String, Integer[]>();
 		for (Conversion convAsset : convAssets.keySet()) {
 			Solvers solverOrder = convAssets.get(convAsset);
 			if (solverOrder.getFirst().isEmpty()) {
@@ -355,7 +354,8 @@ public class ESSimEngine implements IStatusProvider {
 			}
 			for (TransportSolver first : solverOrder.getFirst()) {
 				for (TransportSolver later : solverOrder.getLater()) {
-					constrIndices.add(new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
+					constrIndices.put(convAsset.getName(),
+							new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
 				}
 			}
 			log.debug(convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
@@ -491,16 +491,6 @@ public class ESSimEngine implements IStatusProvider {
 		xmiResource.save(opts);
 	}
 
-	// public static void main(String[] args) throws IOException {
-	// ESSimEngine engine;
-	// if (args.length > 0) {
-	// engine = new ESSimEngine(args[0]);
-	// } else {
-	// engine = new ESSimEngine(PROJECT_FILE_NAME);
-	// }
-	// engine.createGrafanaDashboard();
-	// }
-
 	private List<List<String>> printableSolversList(Solvers x) {
 		List<String> firsts = printableSolverList(x.getFirst());
 		List<String> laters = printableSolverList(x.getLater());
@@ -523,7 +513,7 @@ public class ESSimEngine implements IStatusProvider {
 			for (Port port : energyAsset.getPort()) {
 				Carrier portCarrier = port.getCarrier();
 				if (portCarrier != null) {
-					if (portCarrier.getId().equals(carrier.getId())) {
+					if (portCarrier.getId().equals(carrier.getId()) && !filteredAssets.contains(energyAsset)) {
 						filteredAssets.add(energyAsset);
 						if (energyAsset instanceof Transport) {
 							energyAssetRoles.put(energyAsset, Role.TRANSPORT);
@@ -621,32 +611,6 @@ public class ESSimEngine implements IStatusProvider {
 			}
 		}
 		return convAssets;
-	}
-
-	public void setFeatureCollections() {
-		// log.debug("Going to persist geoJSON animation data..");
-		// JSONObject featureCollection = new JSONObject();
-		// featureCollection.put("type", "FeatureCollection");
-		// JSONArray features = new JSONArray();
-		// for (ITransportSolver solver : solversList) {
-		// for (Object feature : solver.getFeatureCollection()) {
-		// if (feature != null) {
-		// features.put(feature);
-		// }
-		// }
-		// }
-		// featureCollection.put("features", features);
-		// String originalFeatColl = featureCollection.toString();
-		//
-		// try (ZipOutputStream zos = new ZipOutputStream(new
-		// FileOutputStream(simulationId + ".zip"))) {
-		// ZipEntry zipEntry = new ZipEntry(simulationId + ".geojson");
-		// zos.putNextEntry(zipEntry);
-		// zos.write(originalFeatColl.getBytes("UTF-8"));
-		// } catch (Exception e) {
-		// log.error("Cannot write geojson information due to {}", e.getMessage());
-		// }
-		// log.debug("Done!");
 	}
 
 	public List<TransportNetwork> getNetworkDiags() {

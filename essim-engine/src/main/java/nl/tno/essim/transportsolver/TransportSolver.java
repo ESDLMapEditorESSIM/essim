@@ -52,7 +52,6 @@ import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.commons.SimulationStatus;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
@@ -155,14 +154,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		return null;
 	}
 
-	public List<EnergyAsset> createTree() {
+	public List<EnergyAsset> createTree() throws Exception {
 		EnergyAsset rootAsset = null;
 		double maxCapacity = Double.NEGATIVE_INFINITY;
 		Role rootRole = Role.TRANSPORT;
-
-		if (assetList.size() <= 1) {
-			return null;
-		}
 
 		// Choose the biggest producer as the root node
 		for (EnergyAsset asset : assetList) {
@@ -188,8 +183,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		}
 
 		if (rootAsset == null) {
-			log.warn("A network for carrier {} has no energy producers in it! Please check if this was intentional!",
-					carrier);
+			log.warn(
+					"Network {} for carrier {} ({}) has no energy producers in it! Please check if this was intentional!",
+					getId(), carrier.getId(), carrier.getName());
 			for (EnergyAsset asset : assetList) {
 				if (roleMap.get(asset).equals(Role.CONSUMER)) {
 					rootAsset = asset;
@@ -204,8 +200,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
 						+ roleMap.get(asset));
 			}
-			throw new IllegalStateException("Cannot find a producer or consumer in the network for carrier: "
+			log.error("Cannot find a producer or consumer in network " + getId() + " for carrier: "
 					+ getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
+			log.error("This network ({}) will not be created!", getId());
+			return null;
 		}
 
 		rootRole = roleMap.get(rootAsset);
@@ -219,26 +217,38 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			transportCount += 1;
 		}
 		makeTree(tree);
-		printTree(getId());
-
 		tree.findDeviceNodes(deviceNodes);
+
+		if (deviceNodes.size() <= 1) {
+			log.error("Only one asset in network " + getId() + " for carrier: " + getCarrier().getId() + "!! : "
+					+ deviceNodes.get(0));
+			log.error("This network ({}) will not be created!", getId());
+			return assetList;
+		}
+
+		printTree(getId());
 
 		return assetList;
 	}
 
-	public void makeTree(Node parentNode) {
+	public void makeTree(Node parentNode) throws Exception {
 		// if (!(Commons.isConversionToSameCarrier(parentNode.getAsset()))) {
-		for (EnergyAsset connectedAsset : Commons.findAllConnectedAssets(parentNode.getAsset())) {
-
+		HashMap<EnergyAsset, Port> assetConnections = Commons.findAllConnectedAssets(parentNode.getAsset());
+		for (EnergyAsset connectedAsset : assetConnections.keySet()) {
 			if (assetList.contains(connectedAsset) && !processedList.contains(connectedAsset)) {
-				final String nodeId = connectedAsset.getId();
-				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).simulationId(simulationId).asset(connectedAsset)
-						.parent(parentNode).networkId(getId()).carrier(carrier);
+				String nodeId = connectedAsset.getId();
+				Port connectedPort = assetConnections.get(connectedAsset);
+				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).connectedPort(connectedPort)
+						.simulationId(simulationId).asset(connectedAsset).parent(parentNode).networkId(getId())
+						.carrier(carrier);
 				for (Port myPort : connectedAsset.getPort()) {
 					if (myPort instanceof InPort) {
 						InPort myInPort = (InPort) myPort;
 						for (OutPort outPort : myInPort.getConnectedTo()) {
 							if (outPort.getEnergyasset().equals(parentNode.getAsset())) {
+								if (parentNode.getConnectedPort() == null) {
+									parentNode.setConnectedPort(outPort);
+								}
 								nodeBuilder.directionFactor(1);
 								break;
 							}
@@ -247,6 +257,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						OutPort myOutPort = (OutPort) myPort;
 						for (InPort inPort : myOutPort.getConnectedTo()) {
 							if (inPort.getEnergyasset().equals(parentNode.getAsset())) {
+								if (parentNode.getConnectedPort() == null) {
+									parentNode.setConnectedPort(inPort);
+								}
 								nodeBuilder.directionFactor(-1);
 								break;
 							}
@@ -411,7 +424,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			}
 		}
 
-		EmissionManager.getInstance(simulationId).organiseNetwork(getId());
 	}
 
 	@Override

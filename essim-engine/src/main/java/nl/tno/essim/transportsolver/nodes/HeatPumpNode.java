@@ -38,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -58,9 +57,9 @@ public class HeatPumpNode extends ConversionNode {
 	@Builder(builderMethodName = "heatPumpNodeBuilder")
 	public HeatPumpNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now);
+				parent, carrier, children, timeStep, now, connectedPort);
 		this.heatPump = (HeatPump) asset;
 		this.hpName = heatPump.getName() == null ? heatPump.getId() : heatPump.getName();
 		costInformation = heatPump.getCostInformation();
@@ -364,7 +363,7 @@ public class HeatPumpNode extends ConversionNode {
 		builder.tag("capability", "Conversion");
 
 		if (getRole().equals(Role.PRODUCER)) {
-			EmissionManager.getInstance(simulationId).addProducer(networkId, heatPump, Math.abs(energy));
+//			EmissionManager.getInstance(simulationId).addProducer(networkId, heatPump, Math.abs(energy));
 			// PRODUCER
 			if (controlStrategy instanceof DrivenByDemand) {
 				// PRODUCER + DRIVENBYDEMAND
@@ -460,7 +459,7 @@ public class HeatPumpNode extends ConversionNode {
 			}
 		} else {
 			// CONSUMER
-			EmissionManager.getInstance(simulationId).addConsumer(networkId, heatPump, Math.abs(energy));
+//			EmissionManager.getInstance(simulationId).addConsumer(networkId, heatPump, Math.abs(energy));
 			if (controlStrategy instanceof DrivenByDemand) {
 				// CONSUMER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;

@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.commons.Simulatable;
@@ -64,7 +63,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	public String description;
 	private List<IObservationConsumer> observationConsumers;
 	private Month currentMonth;
-	private ESSimEngine engine;
 	private HashMap<Integer, List<TransportSolver>> solverBlock;
 	private List<Simulatable> otherSims;
 	@Getter
@@ -72,14 +70,13 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private MongoBackend mongo;
 	private ScheduledExecutorService statusUpdater;
 
-	public SimulationManager(ESSimEngine engine, String simulationId, LocalDateTime startDateTime,
-			LocalDateTime endDateTime, EssimDuration simStepLength) {
+	public SimulationManager(String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
+			EssimDuration simStepLength) {
 		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
-		if(timeout == null) {
+		if (timeout == null) {
 			timeout = "45";
 		}
 		TIME_OUT_IN_SEC = Long.parseLong(timeout);
-		this.engine = engine;
 		this.simulationId = simulationId;
 		this.startDateTime = startDateTime;
 		this.endDateTime = endDateTime;
@@ -228,7 +225,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			statusUpdater.shutdownNow();
 			mongo.updateSimulationStatus(simulationId, Status.COMPLETE, "Finished in " + simDuration);
 			mongo.updateStatus("Ready");
-			engine.setFeatureCollections();
 			statusUpdater.shutdownNow();
 			simulationExecutor.shutdownNow();
 		} catch (Exception e) {
@@ -244,7 +240,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		}
 
 	}
-	
+
 	public void shutdown() {
 		statusUpdater.shutdownNow();
 		simulationExecutor.shutdownNow();

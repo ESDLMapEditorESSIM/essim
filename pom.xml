@@ -30,7 +30,7 @@
 		<emfecore.version>2.18.0</emfecore.version>
 		<esdl.version>2.21.9</esdl.version>
 	</properties>
-	
+
 	<repositories>
 		<repository>
 			<id>hesi-snapshots</id>
@@ -63,7 +63,7 @@
 			<url>https://ci.hesi.energy/artifactory/libs-snapshot-local</url>
 		</snapshotRepository>
 	</distributionManagement>
-	
+
 
 	<dependencyManagement>
 		<dependencies>
@@ -96,6 +96,12 @@
 				<groupId>org.eclipse.emf</groupId>
 				<artifactId>org.eclipse.emf.ecore</artifactId>
 				<version>${emfecore.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.12</version>
+				<scope>test</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

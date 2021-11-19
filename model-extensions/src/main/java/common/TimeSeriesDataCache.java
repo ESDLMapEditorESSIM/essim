@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package common;
 
 import java.time.LocalDateTime;
@@ -27,7 +28,6 @@ import esdl.EsdlFactory;
 import esdl.ProfileElement;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.util.Converter;
 
 public class TimeSeriesDataCache {
 
@@ -41,8 +41,7 @@ public class TimeSeriesDataCache {
 	private int totalSize;
 
 	public TimeSeriesDataCache(String name, List<List<Object>> influxDBSeriesData, LocalDateTime startDate,
-			LocalDateTime endDate, EssimDuration simulationStep, double multiplier, double annualChange,
-			Object profileType) {
+			LocalDateTime endDate, EssimDuration simulationStep, double annualChange) {
 		this.name = name;
 		int size = influxDBSeriesData.size();
 		totalSize = size * YEARS;
@@ -54,14 +53,14 @@ public class TimeSeriesDataCache {
 				List<Object> list = influxDBSeriesData.get(i);
 				timestamps[j * size + i] = LocalDateTime.parse((String) list.get(TIMESTAMP),
 						DateTimeFormatter.ISO_DATE_TIME);
-				values[j * size + i] = Converter
-						.toStandardizedUnits(((double) list.get(DATA)) * (1 + (annualChange / 100) * j), profileType);
+				values[j * size + i] = ((double) list.get(DATA)) * (1 + (annualChange / 100) * j);
 			}
 		}
 
 	}
 
-	public EList<ProfileElement> get(LocalDateTime start, LocalDateTime end, Duration aggregationPrecision) {
+	public EList<ProfileElement> get(LocalDateTime start, LocalDateTime end, Duration aggregationPrecision,
+			DataProcessor dataProcessor) {
 		EList<ProfileElement> item = ECollections.newBasicEList();
 
 		for (int i = 0; (i < totalSize - 1) && (timestamps[i].isBefore(end)); i++) {
@@ -69,7 +68,7 @@ public class TimeSeriesDataCache {
 				ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
 				profileElement.setFrom(EssimTime.localDateTimeToDate(timestamps[i]));
 				profileElement.setTo(EssimTime.localDateTimeToDate(timestamps[i + 1]));
-				profileElement.setValue(values[i]);
+				profileElement.setValue(dataProcessor.process(values[i]));
 				item.add(profileElement);
 			}
 		}

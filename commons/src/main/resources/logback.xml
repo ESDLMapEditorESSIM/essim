@@ -2,26 +2,15 @@
 <configuration>
    <!-- send everything below WARN and ERROR to STDOUT (formats nicely in eclipse, 
 		as eclipse's console does not support ANSI coloring) -->
+   <timestamp key="startTimestamp" datePattern="yyyy-MM-dd'T'HH_mm_ss_SSS" />
    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
       <target>System.out</target>
       <encoder>
          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
       </encoder>
-      <filter class="ch.qos.logback.classic.filter.LevelFilter">
-         <level>TRACE</level>
-         <onMatch>ACCEPT</onMatch>
-         <onMismatch>NEUTRAL</onMismatch>
-      </filter>
-      <filter class="ch.qos.logback.classic.filter.LevelFilter">
-         <level>DEBUG</level>
-         <onMatch>ACCEPT</onMatch>
-         <onMismatch>NEUTRAL</onMismatch>
-      </filter>
-      <filter class="ch.qos.logback.classic.filter.LevelFilter">
-         <level>INFO</level>
-         <onMatch>ACCEPT</onMatch>
-         <onMismatch>DENY</onMismatch>
-      </filter>
+      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+         <level>${CONSOLE_LOG_LEVEL}</level>
+      </filter>      
    </appender>
    <!-- send WARN and ERROR to STDERR (formats nicely in eclipse) -->
    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
@@ -30,29 +19,27 @@
          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
       </encoder>
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-         <level>WARN</level>
+         <level>error</level>
       </filter>
    </appender>
-   <appender name="SIFTER" class="ch.qos.logback.classic.sift.SiftingAppender">
-      <discriminator>
-         <key>testName</key>
-         <defaultValue>ALL</defaultValue>
-      </discriminator>
-      <sift>
-         <appender name="FILE-${testName}" class="ch.qos.logback.core.FileAppender">
-            <file>src/main/resources/log_${testName}.log</file>
-            <encoder>
-               <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
-            </encoder>
-         </appender>
-      </sift>
+   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">'
+	  <file>${LOG_FILE_LOCATION}/log.log</file>
+	  <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+	    <!-- rollover daily -->
+	    <fileNamePattern>${LOG_FILE_LOCATION}/log_%d{yyyy-MM-dd'T'HH_mm}.%i.log</fileNamePattern>
+	     <!-- each file should be at most 10MB, keep 60 days worth of history, but at most 2GB -->
+	     <maxFileSize>${MAX_LOG_FILE_SIZE}</maxFileSize>    
+	     <maxHistory>${MAX_LOG_HISTORY_DAYS}</maxHistory>
+	     <totalSizeCap>${LOG_FILES_SIZE_CAP}</totalSizeCap>
+	  </rollingPolicy>
+      <encoder>
+         <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %-36.36logger{36} - %msg (%file:%line\)%n</pattern>
+      </encoder>
    </appender>
-   <logger name="nl.tno.essim.managers" level="debug" />   
-   <logger name="nl.tno.essim.transportsolver.nodes" level="error" />
-   <logger name="org.apache.kafka" level="error" />
-   <root level="debug">
-      <appender-ref ref="STDOUT" />
-      <appender-ref ref="STDERR" />
-	  <!-- appender-ref ref="SIFTER" / -->
+   <logger name="nl.tno.essim.transportsolver.nodes" level="ERROR"/>
+   <root level="${FILE_LOG_LEVEL}">
+      <appender-ref ref="FILE" />
+      <appender-ref ref="STDOUT" />      
+      <appender-ref ref="STDERR" />      
    </root>
 </configuration>

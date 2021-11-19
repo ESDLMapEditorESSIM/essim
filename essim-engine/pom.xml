@@ -2,10 +2,10 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
+
 	<artifactId>essim-engine</artifactId>
 	<name>ESSIM Engine</name>
-	
+
 	<properties>
 		<base.package.name>nl.tno.essim</base.package.name>
 	</properties>
@@ -16,20 +16,6 @@
 		<version>0.0.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
-
-	<!--repositories>
-		<repository>
-			<id>hesi-snapshots</id>
-			<name>HESI snapshot artifactory</name>
-			<url>http://ci.hesi.energy:8081/artifactory/libs-snapshot-local</url>
-			<snapshots>
-				<enabled>true</enabled>
-			</snapshots>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
-		</repository>
-	</repositories -->
 
 	<dependencyManagement>
 		<dependencies>
@@ -61,7 +47,6 @@
 			<artifactId>jul-to-slf4j</artifactId>
 			<version>1.7.28</version>
 		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver -->
 		<dependency>
 			<groupId>org.mongodb</groupId>
@@ -84,7 +69,10 @@
 			<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
 			<version>1.2.1</version>
 		</dependency>
-
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
 
 		<!-- runtime dependencies -->
 		<dependency>
@@ -114,7 +102,6 @@
 			<artifactId>jersey-media-multipart</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>nl.tno.essim</groupId>
 			<artifactId>model-extensions</artifactId>
@@ -129,11 +116,13 @@
 				<artifactId>raml-to-jaxrs-maven-plugin</artifactId>
 				<version>3.0.4</version>
 				<configuration>
-					<ramlFile>${project.basedir}/src/main/resources/raml/essim.raml</ramlFile>
+					<ramlFile>${project.basedir}/src/main/resources/raml/essim.raml
+					</ramlFile>
 					<resourcePackage>${base.package.name}</resourcePackage>
 					<modelPackage>${base.package.name}.model</modelPackage>
 					<supportPackage>${base.package.name}.support</supportPackage>
-					<outputDirectory>${project.build.directory}/generated-sources/java</outputDirectory>
+					<outputDirectory>${project.build.directory}/generated-sources/java
+					</outputDirectory>
 					<generateTypesWith>jackson</generateTypesWith>
 					<jsonMapper>jackson2</jsonMapper>
 					<jsonMapperConfiguration>

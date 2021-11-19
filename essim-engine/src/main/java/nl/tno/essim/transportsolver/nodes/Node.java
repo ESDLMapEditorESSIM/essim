@@ -26,7 +26,9 @@ import org.json.JSONObject;
 import esdl.AbstractBuilding;
 import esdl.Area;
 import esdl.Carrier;
+import esdl.Conversion;
 import esdl.EnergyAsset;
+import esdl.Port;
 import esdl.Sector;
 import esdl.Transport;
 import esdl.impl.ItemImpl;
@@ -65,6 +67,7 @@ public abstract class Node implements INode {
 	protected List<Node> children;
 	protected long timeStep;
 	protected Horizon now;
+	protected Port connectedPort;
 
 	public static class NodeBuilder {
 		private static final String NODE = "Node";
@@ -83,11 +86,11 @@ public abstract class Node implements INode {
 			return this;
 		}
 
-		public Node build() {
+		public Node build() throws Exception {
 			Node node = null;
 			if (this.config != null && this.config.getRemoteNodeLogic()) {
 				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, directionFactor, role,
-						demandFunction, energy, cost, parent, carrier, children, timeStep, now, config);
+						demandFunction, energy, cost, parent, carrier, children, timeStep, now, config, connectedPort);
 			} else if (asset != null) {
 				Class<?> assetNodeClass = null;
 				classSearch: for (Class<?> clazz = asset.getClass(); !clazz.equals(ItemImpl.class); clazz = clazz
@@ -108,14 +111,14 @@ public abstract class Node implements INode {
 
 				if (assetNodeClass != null) {
 					try {
-						node = (Node) assetNodeClass
-								.getConstructor(String.class, String.class, String.class, String.class,
-										EnergyAsset.class, int.class, Role.class, BidFunction.class, double.class,
-										double.class, Node.class, Carrier.class, List.class, long.class, Horizon.class)
-								.newInstance(simulationId, nodeId, address, networkId, asset, directionFactor, role,
-										demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
+								String.class, EnergyAsset.class, int.class, Role.class, BidFunction.class, double.class,
+								double.class, Node.class, Carrier.class, List.class, long.class, Horizon.class,
+								Port.class).newInstance(simulationId, nodeId, address, networkId, asset,
+										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
+										timeStep, now, connectedPort);
 					} catch (Exception e) {
-						e.printStackTrace();
+						throw e;
 					}
 				}
 			}
@@ -277,9 +280,16 @@ public abstract class Node implements INode {
 	}
 
 	public JSONObject getJSONString() {
-		JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")");
+		String ctrlStrategy = "";
+		if (getAsset() instanceof Conversion) {
+			if (getAsset().getControlStrategy() != null) {
+				ctrlStrategy = "[" + getAsset().getControlStrategy().getClass().getInterfaces()[0].getSimpleName()
+						+ "]";
+			}
+		}
+		JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")" + ctrlStrategy);
 		if (parent != null) {
-			nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")");
+			nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")" + ctrlStrategy);
 		} else {
 			nodeObj.put("parent", "null");
 		}

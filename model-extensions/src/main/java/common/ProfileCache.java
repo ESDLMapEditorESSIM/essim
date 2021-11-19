@@ -13,6 +13,7 @@
  *  Manager:
  *      TNO
  */
+
 package common;
 
 import java.util.Timer;
@@ -59,25 +60,20 @@ public class ProfileCache extends TimerTask {
 		}
 	}
 
-	public synchronized void cache(String query, Object profileType, TimeSeriesDataCache dataCache) {
-		dataCaches.put(getQueryHash(query, profileType), dataCache);
+	public synchronized void cache(String query, TimeSeriesDataCache dataCache) {
+		dataCaches.put(getQueryHash(query), dataCache);
 	}
 
-	public synchronized boolean isCached(String query, Object profileType) {
-		return dataCaches.containsKey(getQueryHash(query, profileType));
+	public synchronized boolean isCached(String query) {
+		return dataCaches.containsKey(getQueryHash(query));
 	}
 
-	public synchronized TimeSeriesDataCache getDataCache(String query, Object profileType) {
-		return dataCaches.get(getQueryHash(query, profileType));
+	public synchronized TimeSeriesDataCache getDataCache(String query) {
+		return dataCaches.get(getQueryHash(query));
 	}
 
-	private int getQueryHash(String query, Object profileType) {
-		int hash = Hashing.murmur3_32()
-				.newHasher()
-				.putString(query, Charsets.UTF_8)
-				.putInt(profileType.hashCode())
-				.hash()
-				.asInt();
+	private int getQueryHash(String query) {
+		int hash = Hashing.murmur3_32().newHasher().putString(query, Charsets.UTF_8).hash().asInt();
 		return hash;
 	}
 

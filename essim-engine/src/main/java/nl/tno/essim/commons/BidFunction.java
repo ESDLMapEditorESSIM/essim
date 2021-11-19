@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class BidFunction {
-	private static final double eps = 1e-3;
+	private static final double eps = 1e-22;
 	private static final double pmin = 0.0;
 	private static final double pmax = 1.0;
 
@@ -166,14 +166,17 @@ public class BidFunction {
 		if (marginalCostSum - marginalCost < eps) {
 			return;
 		}
-		TreeMap<Double, Double> duplicateCurve = new TreeMap<Double, Double>(curve);
+
+		TreeMap<Double, Double> duplicateCurve = new TreeMap<Double, Double>();
+
 		for (double p : curve.keySet()) {
 			double e = curve.get(p);
-			if (p != pmin && p != pmax) {
-				duplicateCurve.remove(p);
-				duplicateCurve.put(p / marginalCostSum, e);
+			duplicateCurve.put(Math.min(Math.max(p / marginalCostSum, pmin), pmax), e);
+			if (duplicateCurve.containsKey(pmax)) {
+				break;
 			}
 		}
+
 		curve = duplicateCurve;
 	}
 
