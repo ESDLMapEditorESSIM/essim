@@ -50,6 +50,7 @@ import esdl.CostInformation;
 import esdl.DrivenByDemand;
 import esdl.DrivenBySupply;
 import esdl.EnergyAsset;
+import esdl.EnergyCarrier;
 import esdl.EnergySystem;
 import esdl.EnergySystemInformation;
 import esdl.EsdlFactory;
@@ -68,6 +69,7 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.grafana.GrafanaClient;
 import nl.tno.essim.kpi.KPIModuleClient;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.EssimSimulation;
@@ -253,6 +255,9 @@ public class ESSimEngine implements IStatusProvider {
 						solver.setObservationManager(observationManager);
 					}
 				}
+				EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
+				emissionManager.setObservationManager(observationManager);
+				simulationManager.addOtherSimulatable(emissionManager);
 			} else {
 				// TODO: no carriers defined - going with copperplate
 			}
@@ -346,7 +351,7 @@ public class ESSimEngine implements IStatusProvider {
 		convAssets = findAllConversionAssets();
 
 //		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
-		HashMap<String, Integer[]> constrIndices = new HashMap<String, Integer[]>();
+		HashMap<String, List<Integer[]>> constrIndices = new HashMap<String, List<Integer[]>>();
 		for (Conversion convAsset : convAssets.keySet()) {
 			Solvers solverOrder = convAssets.get(convAsset);
 			if (solverOrder.getFirst().isEmpty()) {
@@ -354,8 +359,11 @@ public class ESSimEngine implements IStatusProvider {
 			}
 			for (TransportSolver first : solverOrder.getFirst()) {
 				for (TransportSolver later : solverOrder.getLater()) {
-					constrIndices.put(convAsset.getName(),
-							new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
+					if (constrIndices.get(convAsset.getName()) == null) {
+						constrIndices.put(convAsset.getName(), new ArrayList<Integer[]>());
+					}
+					List<Integer[]> constraintList = constrIndices.get(convAsset.getName());
+					constraintList.add(new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
 				}
 			}
 			log.debug(convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
@@ -397,8 +405,23 @@ public class ESSimEngine implements IStatusProvider {
 			timeString = DateTimeFormatter.ISO_DATE_TIME
 					.format(LocalDateTime.ofInstant(simRunTime.toInstant(), ZoneId.of("UTC")));
 		}
+		boolean emissionRow = false;
+		EnergySystemInformation esi = energySystem.getEnergySystemInformation();
+		if (esi != null) {
+			Carriers carriers = esi.getCarriers();
+			if (carriers != null) {
+				for (Carrier carrier : carriers.getCarrier()) {
+					if (carrier instanceof EnergyCarrier) {
+						EnergyCarrier energyCarrier = (EnergyCarrier) carrier;
+						if (energyCarrier.getEmission() - 0.0 > 1e-15) {
+							emissionRow = true;
+						}
+					}
+				}
+			}
+		}
 		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
-				scenarioName, simulationId, simulationStartTime, simulationEndTime);
+				scenarioName, simulationId, simulationStartTime, simulationEndTime, emissionRow);
 		return grafanaClient.getDashboardUrl();
 	}
 

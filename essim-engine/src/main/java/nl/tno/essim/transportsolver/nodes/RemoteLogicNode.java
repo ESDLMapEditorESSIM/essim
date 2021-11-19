@@ -38,6 +38,7 @@ import esdl.Port;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
@@ -146,9 +147,9 @@ public class RemoteLogicNode extends Node {
 		}
 
 		if (role.equals(Role.CONSUMER)) {
-//			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
 		} else {
-//			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
 		}
 	}
 

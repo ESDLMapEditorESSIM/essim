@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -140,44 +141,13 @@ public class ProducerNode extends Node {
 
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-//		EnergyCarrier outputCarrier = null;
-//
-//		for (Port port : producer.getPort()) {
-//			if (port instanceof OutPort) {
-//				Carrier carrier = port.getCarrier();
-//				if (carrier instanceof EnergyCarrier) {
-//					outputCarrier = (EnergyCarrier) carrier;
-//				}
-//			}
-//		}
-//
-//		if (outputCarrier != null) {
-//
-//			double carrierEnergyContent = Commons.toStandardizedUnits(outputCarrier.getEnergyContent(),
-//					outputCarrier.getEnergyContentUnit());
-//			double carrierEmission = Commons.toStandardizedUnits(outputCarrier.getEmission(),
-//					outputCarrier.getEmissionUnit());
-//
-//			double outputCarrierQuantity = -energy / carrierEnergyContent;
-//			double currentOutputCarrierCost = Commons.aggregateCost(Commons.readProfile(outputCarrier.getCost(), now));
-//			double outputCarrierCost = outputCarrierQuantity * currentOutputCarrierCost;
-//			double emission = outputCarrierQuantity * carrierEmission;
-//
-//			if (isRenewable()) {
-//				emission = 0;
-//			}
-//
-//			builder.value("emission", emission);
-//			builder.value("fuelConsumption", outputCarrierQuantity);
-//			builder.value("cost", outputCarrierCost);
-//		}
 		builder.tag("capability", "Producer");
 		if (this.producerType != null) {
 			builder.tag("energyType", this.producerType.toString());
 		} else {
 			builder.tag("energyType", RenewableTypeEnum.UNDEFINED.toString());
 		}
-//		EmissionManager.getInstance(simulationId).addProducer(networkId, producer, Math.abs(energy));
+		EmissionManager.getInstance(simulationId).addProducer(networkId, producer, Math.abs(energy));
 	}
 
 }

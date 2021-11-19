@@ -33,6 +33,7 @@ import lombok.EqualsAndHashCode;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -124,9 +125,9 @@ public class StorageNode extends Node {
 		builder.tag("capability", "Storage");
 		builder.value("soc", storage.getFillLevel());
 		if (energy > 0) {
-//			EmissionManager.getInstance(simulationId).addConsumer(networkId, storage, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, storage, Math.abs(energy));
 		} else {
-//			EmissionManager.getInstance(simulationId).addProducer(networkId, storage, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addProducer(networkId, storage, Math.abs(energy));
 		}
 	}
 }

@@ -31,6 +31,7 @@ import org.eclipse.emf.common.util.EList;
 
 import com.google.common.collect.RangeMap;
 
+import esdl.AbstractBasicConversion;
 import esdl.AbstractQuantityAndUnit;
 import esdl.Carrier;
 import esdl.Consumer;
@@ -130,8 +131,8 @@ public class Commons {
 				} else if (energyAsset instanceof Consumer) {
 					Consumer consumer = (Consumer) energyAsset;
 					ratedPower = consumer.getPower();
-				} else if (energyAsset instanceof Conversion) {
-					Conversion conversion = (Conversion) energyAsset;
+				} else if (energyAsset instanceof AbstractBasicConversion) {
+					AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
 					ratedPower = conversion.getPower();
 				}
 				if (!isPercentageProfile(profile)) {

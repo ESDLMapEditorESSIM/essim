@@ -34,9 +34,9 @@ import lombok.extern.slf4j.Slf4j;
 public class ChocoOptimiser {
 
 	private List<TransportSolver> networks;
-	private HashMap<String, Integer[]> orders;
+	private HashMap<String, List<Integer[]>> orders;
 
-	public ChocoOptimiser(List<TransportSolver> networks, HashMap<String, Integer[]> orders) {
+	public ChocoOptimiser(List<TransportSolver> networks, HashMap<String, List<Integer[]>> orders) {
 		this.networks = networks;
 		this.orders = orders;
 	}
@@ -55,18 +55,20 @@ public class ChocoOptimiser {
 				.toArray(IntVar[]::new);
 
 		StringBuilder sb = new StringBuilder();
-		for (Entry<String, Integer[]> constraintSet : orders.entrySet()) {
-			Integer[] constraint = constraintSet.getValue();
+		for (Entry<String, List<Integer[]>> constraintSet : orders.entrySet()) {
+			List<Integer[]> constraints = constraintSet.getValue();
 			String responsible = constraintSet.getKey();
-			sb.append(responsible);
-			sb.append(" enforced ");
-			sb.append(w[constraint[0]]);
-			sb.append(" < ");
-			sb.append(w[constraint[1]]);
-			sb.append("\n");
+			for (Integer[] constraint : constraints) {
+				sb.append(responsible);
+				sb.append(" enforced ");
+				sb.append(w[constraint[0]]);
+				sb.append(" < ");
+				sb.append(w[constraint[1]]);
+				sb.append("\n");
 //			System.out.println(w[constraint[0]].getName() + " < " + w[constraint[1]].getName() + " - "
 //					+ w[constraint[0]].getId() + " < " + w[constraint[1]].getId());
-			model.arithm(w[constraint[0]], "<", w[constraint[1]]).post();
+				model.arithm(w[constraint[0]], "<", w[constraint[1]]).post();
+			}
 		}
 
 		Solver solver = model.getSolver();

@@ -22,10 +22,10 @@ import java.util.Map.Entry;
 
 import org.eclipse.emf.common.util.EList;
 
+import esdl.AbstractBasicConversion;
 import esdl.AbstractBehaviour;
 import esdl.Carrier;
 import esdl.ControlStrategy;
-import esdl.Conversion;
 import esdl.CostInformation;
 import esdl.DrivenByDemand;
 import esdl.DrivenByProfile;
@@ -44,6 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -51,9 +52,9 @@ import nl.tno.essim.time.Horizon;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class ConversionNode extends Node {
+public class AbstractBasicConversionNode extends Node {
 
-	protected Conversion conversion;
+	protected AbstractBasicConversion conversion;
 	protected double efficiency;
 	protected double power;
 	protected CostInformation costInformation;
@@ -75,12 +76,12 @@ public class ConversionNode extends Node {
 	private InPort dbsPort;
 
 	@Builder(builderMethodName = "conversionNodeBuilder")
-	public ConversionNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+	public AbstractBasicConversionNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
 			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
 				parent, carrier, children, timeStep, now, connectedPort);
-		this.conversion = (Conversion) asset;
+		this.conversion = (AbstractBasicConversion) asset;
 		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
 		this.efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY : conversion.getEfficiency();
 		this.ratioMap = new HashMap<Port, Double>();
@@ -424,6 +425,12 @@ public class ConversionNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Conversion");
+
+		if (getRole().equals(Role.PRODUCER)) {
+			EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));
+		} else {
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, conversion, Math.abs(energy));
+		}
 
 		if (mainPort != null) {
 			if (controlStrategy instanceof DrivenByDemand) {

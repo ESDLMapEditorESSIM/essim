@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -45,7 +46,7 @@ import nl.tno.essim.time.Horizon;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class HeatPumpNode extends ConversionNode {
+public class HeatPumpNode extends AbstractBasicConversionNode {
 
 	protected static final double DEFAULT_HP_COP = 3.5;
 	protected double cop;
@@ -363,7 +364,7 @@ public class HeatPumpNode extends ConversionNode {
 		builder.tag("capability", "Conversion");
 
 		if (getRole().equals(Role.PRODUCER)) {
-//			EmissionManager.getInstance(simulationId).addProducer(networkId, heatPump, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addProducer(networkId, heatPump, Math.abs(energy));
 			// PRODUCER
 			if (controlStrategy instanceof DrivenByDemand) {
 				// PRODUCER + DRIVENBYDEMAND
@@ -459,7 +460,7 @@ public class HeatPumpNode extends ConversionNode {
 			}
 		} else {
 			// CONSUMER
-//			EmissionManager.getInstance(simulationId).addConsumer(networkId, heatPump, Math.abs(energy));
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, heatPump, Math.abs(energy));
 			if (controlStrategy instanceof DrivenByDemand) {
 				// CONSUMER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;

@@ -1,136 +1,134 @@
 {
-	"aliasColors": {
-	},
-	"bars": false,
-	"dashLength": 10,
-	"dashes": false,
-	"datasource": "${DS_ESSIM}",
-	"fill": 1,
-	"gridPos": {
-		"h": 8,
-		"w": 24,
-		"x": 0,
-		"y": 9
-	},
-	"id": 5,
-	"legend": {
-		"alignAsTable": true,
-		"avg": false,
-		"current": false,
-		"max": false,
-		"min": false,
-		"rightSide": true,
-		"show": true,
-		"total": true,
-		"values": true
-	},
-	"lines": true,
-	"linewidth": 1,
-	"links": [
-	],
-	"nullPointMode": "null",
-	"percentage": false,
-	"pointradius": 5,
-	"points": false,
-	"renderer": "flot",
-	"seriesOverrides": [
-	],
-	"spaceLength": 10,
-	"stack": false,
-	"steppedLine": false,
-	"targets": [
-		{
-			"alias": "$tag_assetClass ($tag_assetName)",
-			"groupBy": [
-				{
-					"params": [
-						"assetName"
-					],
-					"type": "tag"
-				},
-				{
-					"params": [
-						"assetClass"
-					],
-					"type": "tag"
-				}
-			],
-			"measurement": "ESSIM",
-			"orderByTime": "ASC",
-			"policy": "default",
-			"refId": "A",
-			"resultFormat": "time_series",
-			"select": [
-				[
-					{
-						"params": [
-							"emission"
-						],
-						"type": "field"
-					},
-					{
-						"params": [
-							" / 1000"
-						],
-						"type": "math"
-					}
-				]
-			],
-			"tags": [
-				{
-					"key": "simulationRun",
-					"operator": "=",
-					"value": "$$SimulationRunName$$"
-				},
-				{
-					"condition": "AND",
-					"key": "capability",
-					"operator": "=",
-					"value": "Producer"
-				}
-			]
-		}
-	],
-	"thresholds": [
-	],
-	"timeFrom": null,
-	"timeShift": null,
-	"title": "Hourly Emission (in tonnes CO₂) per Producer",
-	"tooltip": {
-		"shared": true,
-		"sort": 0,
-		"value_type": "individual"
-	},
-	"type": "graph",
-	"xaxis": {
-		"buckets": null,
-		"mode": "time",
-		"name": null,
-		"show": true,
-		"values": [
-		]
-	},
-	"yaxes": [
-		{
-			"decimals": 2,
-			"format": "masst",
-			"label": "",
-			"logBase": 1,
-			"max": null,
-			"min": null,
-			"show": true
-		},
-		{
-			"format": "short",
-			"label": null,
-			"logBase": 1,
-			"max": null,
-			"min": null,
-			"show": true
-		}
-	],
-	"yaxis": {
-		"align": false,
-		"alignLevel": null
-	}
+  "id": 5,
+  "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 9
+  },
+  "type": "timeseries",
+  "title": "Hourly Emission (in tonnes CO₂) per Producer",
+  "datasource": "${DS_ESSIM}",
+  "links": [],
+  "targets": [
+    {
+      "alias": "$tag_assetClass ($tag_assetName)",
+      "groupBy": [
+        {
+          "params": [
+            "assetName"
+          ],
+          "type": "tag"
+        },
+        {
+          "params": [
+            "assetClass"
+          ],
+          "type": "tag"
+        }
+      ],
+      "measurement": "ESSIM",
+      "orderByTime": "ASC",
+      "policy": "default",
+      "refId": "A",
+      "resultFormat": "time_series",
+      "select": [
+        [
+          {
+            "params": [
+              "emission"
+            ],
+            "type": "field"
+          },
+          {
+            "params": [
+              " / 1000"
+            ],
+            "type": "math"
+          }
+        ]
+      ],
+      "tags": [
+        {
+          "key": "simulationRun",
+          "operator": "=",
+          "value": "$$SimulationRunName$$"
+        },
+        {
+          "condition": "AND",
+          "key": "capability",
+          "operator": "=",
+          "value": "Producer"
+        }
+      ]
+    }
+  ],
+  "transparent": true,
+  "options": {
+    "tooltip": {
+      "mode": "single"
+    },
+    "legend": {
+      "displayMode": "table",
+      "placement": "right",
+      "calcs": [
+        "sum"
+      ]
+    }
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "lineInterpolation": "linear",
+        "barAlignment": 0,
+        "lineWidth": 1,
+        "fillOpacity": 10,
+        "gradientMode": "none",
+        "spanNulls": true,
+        "showPoints": "never",
+        "pointSize": 5,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        },
+        "axisPlacement": "auto",
+        "axisLabel": "",
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "mappings": [],
+      "unit": "masst",
+      "decimals": 2
+    },
+    "overrides": []
+  },
+  "pluginVersion": "8.2.5",
+  "timeFrom": null,
+  "timeShift": null
 }

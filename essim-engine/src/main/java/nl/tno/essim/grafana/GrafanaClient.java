@@ -75,19 +75,19 @@ public class GrafanaClient {
 	private String grafanaAdminPassword;
 	private String grafanaAdminAuthorisation;
 
-	public GrafanaClient(String user, String timeString, String influxDBURL,
-			List<TransportSolver> solversList, String energySystemId, String scenarioName, String simulationRunName,
-			LocalDateTime simStartDate, LocalDateTime simEndDate) {
-		
+	public GrafanaClient(String user, String timeString, String influxDBURL, List<TransportSolver> solversList,
+			String energySystemId, String scenarioName, String simulationRunName, LocalDateTime simStartDate,
+			LocalDateTime simEndDate, boolean emissionRow) {
+
 		grafanaInternalUrl = System.getenv(GRAFANA_INTERNAL_URL_ENV);
 		grafanaExternalUrl = System.getenv(GRAFANA_EXTERNAL_URL_ENV);
-		
-		if(grafanaInternalUrl == null) {
+
+		if (grafanaInternalUrl == null) {
 			log.warn("No internal Grafana URL defined! Dashboard will not be created!");
 			return;
 		}
-		
-		if(grafanaExternalUrl == null) {
+
+		if (grafanaExternalUrl == null) {
 			log.warn("No external Grafana URL defined! Going to use " + grafanaInternalUrl + " in dashboard URL!");
 			grafanaExternalUrl = grafanaInternalUrl;
 		}
@@ -190,24 +190,27 @@ public class GrafanaClient {
 		}
 		panelArray.put(netBalPanel);
 
-		// 5
-		producerEmissionPanelString = producerEmissionPanelString.replace("$$SimulationRunName$$", simulationRunName)
-				.replace("$$DBName$$", scenarioName).replace("$$InfluxDBURL$$", influxDBURL)
-				.replace("$$ESID$$", energySystemId);
-		JSONObject prodEmissionsPanel = new JSONObject(producerEmissionPanelString);
-		if (prodEmissionsPanel.has("datasource")) {
-			prodEmissionsPanel.put("datasource", databaseLabel);
-		}
-		panelArray.put(prodEmissionsPanel);
+		if (emissionRow) {
+			// 5
+			producerEmissionPanelString = producerEmissionPanelString
+					.replace("$$SimulationRunName$$", simulationRunName).replace("$$DBName$$", scenarioName)
+					.replace("$$InfluxDBURL$$", influxDBURL).replace("$$ESID$$", energySystemId);
+			JSONObject prodEmissionsPanel = new JSONObject(producerEmissionPanelString);
+			if (prodEmissionsPanel.has("datasource")) {
+				prodEmissionsPanel.put("datasource", databaseLabel);
+			}
+			panelArray.put(prodEmissionsPanel);
 
-		// 6
-		consumerEmissionPanelString = consumerEmissionPanelString.replace("$$SimulationRunName$$", simulationRunName)
-				.replace("$$DBName$$", scenarioName).replace("$$InfluxDBURL$$", influxDBURL);
-		JSONObject consEmissionsPanel = new JSONObject(consumerEmissionPanelString);
-		if (consEmissionsPanel.has("datasource")) {
-			consEmissionsPanel.put("datasource", databaseLabel);
+			// 6
+			consumerEmissionPanelString = consumerEmissionPanelString
+					.replace("$$SimulationRunName$$", simulationRunName).replace("$$DBName$$", scenarioName)
+					.replace("$$InfluxDBURL$$", influxDBURL);
+			JSONObject consEmissionsPanel = new JSONObject(consumerEmissionPanelString);
+			if (consEmissionsPanel.has("datasource")) {
+				consEmissionsPanel.put("datasource", databaseLabel);
+			}
+			panelArray.put(consEmissionsPanel);
 		}
-		panelArray.put(consEmissionsPanel);
 
 		int i = 0;
 		for (ITransportSolver solver : solversList) {
@@ -243,7 +246,7 @@ public class GrafanaClient {
 			if (solver.hasAnyTransportAsset()) {
 
 				JSONObject jloadPanel = new JSONObject(tpSolverJLoadPanelString);
-				jloadPanel.put("title", solverId + " Transport loads (in J)");
+				jloadPanel.put("title", solverId + " Transport flows (in J)");
 				jloadPanel.put("datasource", databaseLabel);
 
 				gridPos = jloadPanel.getJSONObject("gridPos");
@@ -269,32 +272,35 @@ public class GrafanaClient {
 				panelArray.put(jloadPanel);
 				i++;
 
-				JSONObject ploadPanel = new JSONObject(tpSolverPLoadPanelString);
-				ploadPanel.put("title", solverId + " Transport loads (in percentage)");
-				ploadPanel.put("datasource", databaseLabel);
+				if (solver.hasAnyTransportAssetWithCapacity()) {
 
-				gridPos = ploadPanel.getJSONObject("gridPos");
-				int ploadPanelY = 25 + i * gridPos.getInt("h");
-				int ploadPanelId = 7 + i;
+					JSONObject ploadPanel = new JSONObject(tpSolverPLoadPanelString);
+					ploadPanel.put("title", solverId + " Transport loads (in %)");
+					ploadPanel.put("datasource", databaseLabel);
 
-				gridPos.put("y", ploadPanelY);
-				ploadPanel.put("id", ploadPanelId);
+					gridPos = ploadPanel.getJSONObject("gridPos");
+					int ploadPanelY = 25 + i * gridPos.getInt("h");
+					int ploadPanelId = 7 + i;
 
-				for (Object targetObj : ploadPanel.getJSONArray("targets")) {
-					JSONObject target = (JSONObject) targetObj;
-					target.put("measurement", solverId);
-					for (Object tagObj : target.getJSONArray("tags")) {
-						JSONObject tag = (JSONObject) tagObj;
-						if (tag.has("key")) {
-							if (tag.getString("key").equals("simulationRun")) {
-								tag.put("value", simulationRunName);
+					gridPos.put("y", ploadPanelY);
+					ploadPanel.put("id", ploadPanelId);
+
+					for (Object targetObj : ploadPanel.getJSONArray("targets")) {
+						JSONObject target = (JSONObject) targetObj;
+						target.put("measurement", solverId);
+						for (Object tagObj : target.getJSONArray("tags")) {
+							JSONObject tag = (JSONObject) tagObj;
+							if (tag.has("key")) {
+								if (tag.getString("key").equals("simulationRun")) {
+									tag.put("value", simulationRunName);
+								}
 							}
 						}
 					}
-				}
 
-				panelArray.put(ploadPanel);
-				i++;
+					panelArray.put(ploadPanel);
+					i++;
+				}
 			}
 		}
 

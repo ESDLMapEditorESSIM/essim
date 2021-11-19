@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.json.JSONArray;
 
+import esdl.AbstractBasicConversion;
 import esdl.Asset;
 import esdl.Carrier;
 import esdl.Consumer;
@@ -52,6 +53,7 @@ import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.commons.SimulationStatus;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
@@ -69,6 +71,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private static final String D3_TREE_PAGE_TEMPLATE = "tree/tree.html.template";
 	private static final String D3_TREEDATA_VAR_PLACEHOLDER = "$$TREEDATA$$";
 	private static final String D3_HEADER_PLACEHOLDER = "$$HEADER$$";
+	private static final double eps = 1e-4;
 	@Getter
 	private String id;
 	@Getter
@@ -88,6 +91,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private EssimDuration simulationStepLength;
 	private HashMap<EnergyAsset, Role> roleMap;
 	private int transportCount;
+	private int transportWithCapacityCount;
 	private Collection<NodeConfiguration> nodeConfig;
 	private String simulationId;
 
@@ -167,8 +171,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 					rootAsset = producer;
 					maxCapacity = producer.getPower();
 				}
-			} else if (asset instanceof Conversion && roleMap.get(asset).equals(Role.PRODUCER)) {
-				Conversion conversion = (Conversion) asset;
+			} else if (asset instanceof AbstractBasicConversion && roleMap.get(asset).equals(Role.PRODUCER)) {
+				AbstractBasicConversion conversion = (AbstractBasicConversion) asset;
 				if (conversion.getPower() > maxCapacity) {
 					rootAsset = conversion;
 					maxCapacity = conversion.getPower();
@@ -215,6 +219,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		assetList.remove(rootAsset);
 		if (rootAsset instanceof Transport) {
 			transportCount += 1;
+			if (((Transport) rootAsset).getCapacity() - 0.0 > eps) {
+				transportWithCapacityCount += 1;
+			}
 		}
 		makeTree(tree);
 		tree.findDeviceNodes(deviceNodes);
@@ -287,6 +294,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 				if (connectedAsset instanceof Transport) {
 					transportCount += 1;
+					if (((Transport) connectedAsset).getCapacity() - 0.0 > eps) {
+						transportWithCapacityCount += 1;
+					}
 				}
 
 				if (nodeConfig != null) {
@@ -424,6 +434,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			}
 		}
 
+		EmissionManager.getInstance(simulationId).organiseNetwork(getId());
+
 	}
 
 	@Override
@@ -513,6 +525,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	@Override
 	public boolean hasAnyTransportAsset() {
 		return transportCount >= 1;
+	}
+
+	@Override
+	public boolean hasAnyTransportAssetWithCapacity() {
+		return transportWithCapacityCount >= 1;
 	}
 
 	@Override

@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -113,7 +114,7 @@ public class ConsumerNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Consumer");
-//		EmissionManager.getInstance(simulationId).addConsumer(networkId, consumer, Math.abs(energy));
+		EmissionManager.getInstance(simulationId).addConsumer(networkId, consumer, Math.abs(energy));
 	}
 
 }

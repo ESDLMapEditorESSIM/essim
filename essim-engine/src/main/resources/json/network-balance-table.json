@@ -1,131 +1,268 @@
 {
-	"columns": [
-	],
-	"datasource": "${DS_ESSIM}",
-	"fontSize": "100%",
-	"gridPos": {
-		"h": 9,
-		"w": 9,
-		"x": 15,
-		"y": 0
-	},
-	"id": 4,
-	"links": [
-	],
-	"pageSize": null,
-	"scroll": true,
-	"showHeader": true,
-	"sort": {
-		"col": 0,
-		"desc": true
-	},
-	"styles": [
-		{
-			"alias": "Time",
-			"dateFormat": "YYYY-MM-DD HH:mm:ss",
-			"pattern": "Time",
-			"type": "hidden"
-		},
-		{
-			"alias": "Network",
-			"colorMode": null,
-			"colors": [
-				"rgba(50, 172, 45, 0.97)",
-				"rgb(255,255,255)",
-				"rgba(245, 54, 54, 0.9)"
-			],
-			"decimals": 2,
-			"mappingType": 1,
-			"pattern": "Metric",
-			"preserveFormat": false,
-			"sanitize": false,
-			"thresholds": [
-				""
-			],
-			"type": "string",
-			"unit": "joule",
-			"valueMaps": [
-			]
-		},
-		{
-			"alias": "Balance",
-			"colorMode": "cell",
-			"colors": [
-				"rgba(245, 54, 54, 0.9)",
-				"rgba(50, 172, 45, 0.97)",
-				"rgba(245, 54, 54, 0.9)"
-			],
-			"dateFormat": "YYYY-MM-DD HH:mm:ss",
-			"decimals": 2,
-			"mappingType": 2,
-			"pattern": "Value",
-			"preserveFormat": false,
-			"rangeMaps": [
-				{
-					"from": "-1000000000000000000000000000000",
-					"text": "NOT OK",
-					"to": "-1000"
-				},
-				{
-					"from": "-1000",
-					"text": "OK",
-					"to": "1000"
-				},
-				{
-					"from": "1000",
-					"text": "NOT OK",
-					"to": "1000000000000000000000000000000"
-				}
-			],
-			"thresholds": [
-				"-1000",
-				"1000"
-			],
-			"type": "string",
-			"unit": "joule"
-		}
-	],
-	"targets": [
-		{
-			"alias": "$tag_transportNetworkId",
-			"groupBy": [
-				{
-					"params": [
-						"transportNetworkId"
-					],
-					"type": "tag"
-				}
-			],
-			"measurement": "/EnergySystem_(.*)/",
-			"orderByTime": "ASC",
-			"policy": "default",
-			"refId": "A",
-			"resultFormat": "time_series",
-			"select": [
-				[
-					{
-						"params": [
-							"imbalanceEnergy"
-						],
-						"type": "field"
-					},
-					{
-						"params": [
-						],
-						"type": "mean"
-					}
-				]
-			],
-			"tags": [
-				{
-					"key": "simulationRun",
-					"operator": "=",
-					"value": "/^$SimulationRun$/"
-				}
-			]
-		}
-	],
-	"title": "Network Balances",
-	"transform": "timeseries_to_rows",
-	"type": "table"
+  "id": 4,
+  "gridPos": {
+    "h": 9,
+    "w": 9,
+    "x": 15,
+    "y": 0
+  },
+  "type": "table",
+  "title": "Network Balances",
+  "datasource": "essim_es",
+  "links": [],
+  "targets": [
+    {
+      "alias": "$tag_transportNetworkId",
+      "groupBy": [
+        {
+          "params": [
+            "transportNetworkId"
+          ],
+          "type": "tag"
+        }
+      ],
+      "measurement": "",
+      "orderByTime": "ASC",
+      "policy": "default",
+      "refId": "A",
+      "resultFormat": "time_series",
+      "select": [
+        [
+          {
+            "params": [
+              "imbalanceEnergy"
+            ],
+            "type": "field"
+          },
+          {
+            "params": [],
+            "type": "mean"
+          }
+        ]
+      ],
+      "tags": [
+        {
+          "key": "simulationRun",
+          "operator": "=",
+          "value": "/^$SimulationRun$/"
+        }
+      ]
+    }
+  ],
+  "options": {
+    "showHeader": true,
+    "sortBy": []
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "align": "auto",
+        "displayMode": "auto"
+      },
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "mappings": [
+        {
+          "type": "range",
+          "options": {
+            "from": -1000,
+            "to": 1000,
+            "result": {
+              "text": "OK",
+              "color": "green",
+              "index": 0
+            }
+          }
+        },
+        {
+          "type": "range",
+          "options": {
+            "from": -1e+142,
+            "to": -1000,
+            "result": {
+              "text": "NOT OK",
+              "color": "red",
+              "index": 1
+            }
+          }
+        },
+        {
+          "type": "range",
+          "options": {
+            "from": 1000,
+            "to": 1e+142,
+            "result": {
+              "text": "NOT OK",
+              "color": "red",
+              "index": 2
+            }
+          }
+        }
+      ],
+      "color": {
+        "mode": "thresholds"
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Time"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Time"
+          },
+          {
+            "id": "custom.align",
+            "value": null
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Metric"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Network"
+          },
+          {
+            "id": "unit",
+            "value": "joule"
+          },
+          {
+            "id": "decimals",
+            "value": 2
+          },
+          {
+            "id": "custom.align",
+            "value": null
+          },
+          {
+            "id": "thresholds",
+            "value": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "rgba(50, 172, 45, 0.97)",
+                  "value": null
+                },
+                {
+                  "color": "rgb(255,255,255)",
+                  "value": null
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Value"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "Balance"
+          },
+          {
+            "id": "unit",
+            "value": "joule"
+          },
+          {
+            "id": "decimals",
+            "value": 2
+          },
+          {
+            "id": "custom.displayMode",
+            "value": "color-background"
+          },
+          {
+            "id": "custom.align",
+            "value": null
+          },
+          {
+            "id": "thresholds",
+            "value": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "rgba(245, 54, 54, 0.9)",
+                  "value": null
+                },
+                {
+                  "color": "rgba(50, 172, 45, 0.97)",
+                  "value": -1000
+                },
+                {
+                  "color": "rgba(245, 54, 54, 0.9)",
+                  "value": 1000
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Network"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 437
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Balance"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 87
+          }
+        ]
+      }
+    ]
+  },
+  "transformations": [
+    {
+      "id": "seriesToRows",
+      "options": {
+        "reducers": []
+      }
+    },
+    {
+      "id": "organize",
+      "options": {
+        "excludeByName": {
+          "Time": true
+        },
+        "indexByName": {},
+        "renameByName": {}
+      }
+    }
+  ],
+  "pluginVersion": "8.2.5",
+  "transparent": true
 }

@@ -26,4 +26,6 @@ public interface ITransportSolver extends Simulatable {
 
 	public boolean hasAnyTransportAsset();
 
+	public boolean hasAnyTransportAssetWithCapacity();
+
 }

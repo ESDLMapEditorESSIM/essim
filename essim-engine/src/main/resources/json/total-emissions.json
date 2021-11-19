@@ -65,7 +65,7 @@
     {
       "value": "null",
       "op": "=",
-      "text": "N/A"
+      "text": "No carrier with emissions defined!"
     }
   ],
   "mappingTypes": [
@@ -114,5 +114,6 @@
     "thresholdMarkers": true,
     "thresholdLabels": false
   },
-  "tableColumn": ""
+  "tableColumn": "",
+  "transparent": true
 }
