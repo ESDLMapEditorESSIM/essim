@@ -71,7 +71,7 @@
 					"type": "tag"
 				}
 			],
-			"measurement": "ESSIM",
+			"measurement": "/.*/",
 			"orderByTime": "ASC",
 			"policy": "default",
 			"refId": "A",
