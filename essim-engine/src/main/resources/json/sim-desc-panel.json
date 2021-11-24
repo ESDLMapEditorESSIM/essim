@@ -6,7 +6,7 @@
     "x": 7,
     "y": 0
   },
-  "type": "singlestat",
+  "type": "stat",
   "title": "Simulation Description",
   "datasource": "${DS_ESSIM}",
   "pluginVersion": "8.2.5",

@@ -26,7 +26,7 @@
           "condition": "AND",
           "key": "capability",
           "operator": "=",
-          "value": "Consumer"
+          "value": "Producer"
         }
       ],
       "groupBy": [],
