@@ -55,6 +55,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	private ConcurrentHashMap<AssetEnergyPair, List<AssetEnergyPair>> consumerProducerMap;
 	private HashMap<String, Boolean> networkError;
 	private boolean overallError;
+	private boolean enable;
 
 	public synchronized static EmissionManager getInstance(String simulationId) {
 		if (instanceMap.containsKey(simulationId)) {
@@ -66,6 +67,14 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	}
 
 	private EmissionManager() {
+		String enableString = System.getenv("EMISSION_MANAGER_ENABLE");
+		if (enableString == null) {
+			enable = false;
+		} else if (enableString.trim().equalsIgnoreCase("true")) {
+			enable = true;
+		} else {
+			enable = false;
+		}
 		initialise();
 	}
 
@@ -78,6 +87,10 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	}
 
 	public synchronized void addConsumer(String networkId, EnergyAsset asset, double energy) {
+		if (!enable) {
+			return;
+		}
+
 		List<ConsumerProducerPair> cppList = consumerMap.get(networkId);
 
 		if (cppList == null) {
@@ -92,6 +105,10 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	}
 
 	public synchronized void addProducer(String networkId, EnergyAsset asset, double energy) {
+		if (!enable) {
+			return;
+		}
+
 		List<AssetEnergyPair> list = producerMap.get(networkId);
 		if (list == null) {
 			list = new ArrayList<AssetEnergyPair>();
@@ -101,6 +118,10 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	}
 
 	public synchronized void organiseNetwork(String networkId) {
+		if (!enable) {
+			return;
+		}
+
 		List<AssetEnergyPair> listOfProducers = producerMap.get(networkId);
 		List<ConsumerProducerPair> listOfConsumers = consumerMap.get(networkId);
 
@@ -141,6 +162,10 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	}
 
 	public synchronized void remapProducers() {
+		if (!enable) {
+			return;
+		}
+
 		for (List<ConsumerProducerPair> list : consumerMap.values()) {
 			for (ConsumerProducerPair cpp : list) {
 				consumerProducerMap.put(cpp.getConsumer(), cpp.getProducers());
@@ -218,12 +243,11 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		}
 	}
 
-	public List<ConsumerProducerPair> getMap(String networkId) {
-		return consumerMap.get(networkId);
-	}
-
 	@Override
 	public synchronized void step(EssimTime timestamp) {
+		if (!enable) {
+			return;
+		}
 
 		if (overallError) {
 			return;

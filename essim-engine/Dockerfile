@@ -5,6 +5,7 @@ WORKDIR /opt
 COPY target/essim.jar /opt
 COPY src/main/resources/json /opt/json
 COPY src/main/resources/tree /opt/tree
+COPY version.txt /opt
 
 ENV HTTP_SERVER_SCHEME http
 ENV HTTP_SERVER_HOSTNAME localhost
@@ -23,4 +24,4 @@ ENV MAX_LOG_FILE_SIZE 10MB
 ENV MAX_LOG_HISTORY_DAYS 60
 ENV LOG_FILES_SIZE_CAP 2GB
 
-CMD java -Xms2G -jar essim.jar
+CMD java -Xms8G -jar essim.jar

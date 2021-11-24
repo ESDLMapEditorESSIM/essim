@@ -23,6 +23,7 @@ import esdl.ControlStrategy;
 import esdl.CostInformation;
 import esdl.CurtailmentStrategy;
 import esdl.EnergyAsset;
+import esdl.EnergyCarrier;
 import esdl.GenericProfile;
 import esdl.OutPort;
 import esdl.Port;
@@ -142,10 +143,30 @@ public class ProducerNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Producer");
-		if (this.producerType != null) {
-			builder.tag("energyType", this.producerType.toString());
+		if (producerType != null) {
+			builder.tag("energyType", producerType.toString());
 		} else {
 			builder.tag("energyType", RenewableTypeEnum.UNDEFINED.toString());
+		}
+
+		if (carrier instanceof EnergyCarrier) {
+			EnergyCarrier energyCarrier = (EnergyCarrier) carrier;
+
+			if (energyCarrier != null) {
+				double carrierEnergyContent = Commons.toStandardizedUnits(energyCarrier.getEnergyContent(),
+						energyCarrier.getEnergyContentUnit());
+				double carrierEmission = Commons.toStandardizedUnits(energyCarrier.getEmission(),
+						energyCarrier.getEmissionUnit());
+
+				double outputCarrierQuantity = energy / carrierEnergyContent;
+				double emission = outputCarrierQuantity * carrierEmission;
+
+				if (producer.getProdType().equals(RenewableTypeEnum.RENEWABLE)) {
+					emission = 0;
+				}
+				builder.value("emission", emission);
+			}
+
 		}
 		EmissionManager.getInstance(simulationId).addProducer(networkId, producer, Math.abs(energy));
 	}

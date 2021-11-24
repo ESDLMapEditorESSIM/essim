@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+        <listEntry value="/essim-engine/src/main/java/nl/tno/essim/ESSimMain.java"/>
+    </listAttribute>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+        <listEntry value="1"/>
+    </listAttribute>
+    <mapAttribute key="org.eclipse.debug.core.environmentVariables">
+        <mapEntry key="CONSOLE_LOG_LEVEL" value="debug"/>
+        <mapEntry key="EMISSION_MANAGER_ENABLE" value="false"/>
+        <mapEntry key="FILE_LOG_LEVEL" value="debug"/>
+        <mapEntry key="GRAFANA_ADMIN_PASSWORD" value="e$$im4life"/>
+        <mapEntry key="GRAFANA_ADMIN_USER" value="admin"/>
+        <mapEntry key="GRAFANA_EXTERNAL_URL" value="http://localhost:3000"/>
+        <mapEntry key="GRAFANA_INTERNAL_URL" value="http://localhost:3000"/>
+        <mapEntry key="HTTP_SERVER_HOSTNAME" value="localhost"/>
+        <mapEntry key="HTTP_SERVER_PATH" value="essim"/>
+        <mapEntry key="HTTP_SERVER_PORT" value="8081"/>
+        <mapEntry key="HTTP_SERVER_SCHEME" value="http"/>
+        <mapEntry key="LOG_FILES_SIZE_CAP" value="2GB"/>
+        <mapEntry key="LOG_FILE_LOCATION" value="logs"/>
+        <mapEntry key="MAX_LOG_FILE_SIZE" value="10MB"/>
+        <mapEntry key="MAX_LOG_HISTORY_DAYS" value="60"/>
+        <mapEntry key="MONGODB_HOST" value="localhost"/>
+        <mapEntry key="MONGODB_PORT" value="27017"/>
+        <mapEntry key="PROFILE_QUERY_TIMEOUT" value="120"/>
+    </mapAttribute>
+    <mapAttribute key="org.eclipse.debug.core.preferred_launchers">
+        <mapEntry key="[debug]" value="org.eclipse.jdt.launching.localJavaApplication"/>
+        <mapEntry key="[run]" value="org.eclipse.jdt.launching.localJavaApplication"/>
+    </mapAttribute>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_CLASSPATH_ONLY_JAR" value="false"/>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+    <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="nl.tno.essim.ESSimMain"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="essim-engine"/>
+    <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="essim-engine"/>
+    <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.m2e.launchconfig.sourcepathProvider"/>
+</launchConfiguration>

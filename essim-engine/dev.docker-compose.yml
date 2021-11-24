@@ -1,0 +1,51 @@
+version: '3'
+
+networks:
+  essim_net:
+
+services:
+  mongo:
+    image: mvertes/alpine-mongo
+    ports:
+      - 0.0.0.0:27017:27017
+    volumes:
+      - mongo-storage:/data/db
+    networks:
+     - essim_net
+
+  influxdb:
+    image: influxdb:1.7
+    ports:
+      - 8086:8086
+      - 8998:8088
+    volumes:
+      - influxdb-storage:/var/lib/influxdb
+    networks:
+     - essim_net
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    environment:
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=e$$$$im4life
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+     - essim_net
+
+  nats:
+    image: ci.hesi.energy:5000/nats-server:latest
+    ports:
+      - 4222:4222
+      - 8222:8222
+      - 6222:6222
+    networks:
+     - essim_net
+
+volumes:
+  grafana-storage:
+  influxdb-storage:
+  mongo-storage:

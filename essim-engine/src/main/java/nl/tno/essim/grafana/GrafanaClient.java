@@ -50,7 +50,7 @@ public class GrafanaClient {
 	private static final String GRAFANA_SIM_DESC_PANEL = JSON_RESOURCES + "sim-desc-panel.json";
 	private static final String GRAFANA_NETWORK_BALANCE_TABLE = JSON_RESOURCES + "network-balance-table.json";
 	private static final String GRAFANA_PROD_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-prod.json";
-	private static final String GRAFANA_CONS_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-cons.json";
+//	private static final String GRAFANA_CONS_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-cons.json";
 	private static final String GRAFANA_SOLVER_PANEL = JSON_RESOURCES + "tp-solver-panel.json";
 	private static final String GRAFANA_JLOAD_PANEL = JSON_RESOURCES + "transport-loads-joule.json";
 	private static final String GRAFANA_PLOAD_PANEL = JSON_RESOURCES + "transport-loads-percent.json";
@@ -108,7 +108,7 @@ public class GrafanaClient {
 		String simDescPanelString = null;
 		String networkBalanceTableString = null;
 		String producerEmissionPanelString = null;
-		String consumerEmissionPanelString = null;
+//		String consumerEmissionPanelString = null;
 		String tpSolverPanelString = null;
 		String tpSolverJLoadPanelString = null;
 		String tpSolverPLoadPanelString = null;
@@ -119,7 +119,7 @@ public class GrafanaClient {
 			simDescPanelString = Commons.readFileIntoString(GRAFANA_SIM_DESC_PANEL);
 			networkBalanceTableString = Commons.readFileIntoString(GRAFANA_NETWORK_BALANCE_TABLE);
 			producerEmissionPanelString = Commons.readFileIntoString(GRAFANA_PROD_EMISSIONS_PANEL);
-			consumerEmissionPanelString = Commons.readFileIntoString(GRAFANA_CONS_EMISSIONS_PANEL);
+//			consumerEmissionPanelString = Commons.readFileIntoString(GRAFANA_CONS_EMISSIONS_PANEL);
 			tpSolverPanelString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL);
 			tpSolverJLoadPanelString = Commons.readFileIntoString(GRAFANA_JLOAD_PANEL);
 			tpSolverPLoadPanelString = Commons.readFileIntoString(GRAFANA_PLOAD_PANEL);
@@ -200,18 +200,17 @@ public class GrafanaClient {
 				prodEmissionsPanel.put("datasource", databaseLabel);
 			}
 			panelArray.put(prodEmissionsPanel);
-
-			// 6
-			consumerEmissionPanelString = consumerEmissionPanelString
-					.replace("$$SimulationRunName$$", simulationRunName).replace("$$DBName$$", scenarioName)
-					.replace("$$InfluxDBURL$$", influxDBURL);
-			JSONObject consEmissionsPanel = new JSONObject(consumerEmissionPanelString);
-			if (consEmissionsPanel.has("datasource")) {
-				consEmissionsPanel.put("datasource", databaseLabel);
-			}
-			panelArray.put(consEmissionsPanel);
 		}
-
+			// 6
+//			consumerEmissionPanelString = consumerEmissionPanelString
+//					.replace("$$SimulationRunName$$", simulationRunName).replace("$$DBName$$", scenarioName)
+//					.replace("$$InfluxDBURL$$", influxDBURL);
+//			JSONObject consEmissionsPanel = new JSONObject(consumerEmissionPanelString);
+//			if (consEmissionsPanel.has("datasource")) {
+//				consEmissionsPanel.put("datasource", databaseLabel);
+//			}
+//			panelArray.put(consEmissionsPanel);
+		
 		int i = 0;
 		for (ITransportSolver solver : solversList) {
 			String solverId = solver.getId();

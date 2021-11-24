@@ -15,6 +15,9 @@
  */
 package nl.tno.essim;
 
+import java.io.FileReader;
+import java.io.IOException;
+
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
@@ -40,13 +43,24 @@ public class ESSimMain {
 	@Getter
 	private EssimHttpServer ramlServer;
 	private MongoBackend mongoBackend;
-	
+
 	public static void main(String[] args) {
 		new ESSimMain();
 	}
 
 	public ESSimMain() {
-		
+
+		String version = "local";
+
+		try (FileReader fr = new FileReader("version.txt")) {
+			char[] versionText = new char[10];
+			fr.read(versionText);
+			version = new String(versionText);
+		} catch (IOException e) {
+		}
+
+		log.debug("ESSIM version: {}", version);
+
 		// Setup MongoDB server
 		log.debug("Connecting to Mongo Backend");
 		mongoBackend = new MongoBackend(System.getenv(MONGODB_HOST), System.getenv(MONGODB_PORT));
