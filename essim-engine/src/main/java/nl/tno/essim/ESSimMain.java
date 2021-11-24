@@ -53,13 +53,13 @@ public class ESSimMain {
 		String version = "local";
 
 		try (FileReader fr = new FileReader("version.txt")) {
-			char[] versionText = new char[10];
+			char[] versionText = new char[7];
 			fr.read(versionText);
 			version = new String(versionText);
 		} catch (IOException e) {
 		}
 
-		log.debug("ESSIM version: {}", version);
+		log.debug("ESSIM revision: {}", version);
 
 		// Setup MongoDB server
 		log.debug("Connecting to Mongo Backend");
