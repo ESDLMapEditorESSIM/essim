@@ -158,7 +158,7 @@ public class ProducerNode extends Node {
 				double carrierEmission = Commons.toStandardizedUnits(energyCarrier.getEmission(),
 						energyCarrier.getEmissionUnit());
 
-				double outputCarrierQuantity = energy / carrierEnergyContent;
+				double outputCarrierQuantity = -energy / carrierEnergyContent;
 				double emission = outputCarrierQuantity * carrierEmission;
 
 				if (producer.getProdType().equals(RenewableTypeEnum.RENEWABLE)) {
