@@ -78,6 +78,7 @@ import nl.tno.essim.model.TransportNetworkImpl;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.consumers.CSVObservationConsumer;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KafkaObservationConsumer;
 import nl.tno.essim.observation.consumers.MQTTObservationConsumer;
@@ -165,6 +166,13 @@ public class ESSimEngine implements IStatusProvider {
 				observationManager.registerConsumer(influxObservationConsumer);
 				simulationManager.addObservationConsumer(influxObservationConsumer);
 				log.debug("Registering InfluxDB Observation Consumer");
+			}
+			if (simulation.getCsvObservationConfig() != null) {
+				CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
+						simulation.getCsvObservationConfig());
+				observationManager.registerConsumer(csvObservationConsumer);
+				simulationManager.addObservationConsumer(csvObservationConsumer);
+				log.debug("Registering CSV Observation Consumer");
 			}
 			if (simulation.getKafkaURL() != null) {
 				KafkaObservationConsumer kafkaObservationConsumer = new KafkaObservationConsumer(
@@ -346,7 +354,7 @@ public class ESSimEngine implements IStatusProvider {
 		convAssets = findAllConversionAssets();
 
 //		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
-		HashMap<String, Integer[]> constrIndices = new HashMap<String, Integer[]>();
+		HashMap<String, List<Integer[]>> constrIndices = new HashMap<String, List<Integer[]>>();
 		for (Conversion convAsset : convAssets.keySet()) {
 			Solvers solverOrder = convAssets.get(convAsset);
 			if (solverOrder.getFirst().isEmpty()) {
@@ -354,8 +362,11 @@ public class ESSimEngine implements IStatusProvider {
 			}
 			for (TransportSolver first : solverOrder.getFirst()) {
 				for (TransportSolver later : solverOrder.getLater()) {
-					constrIndices.put(convAsset.getName(),
-							new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
+					if (constrIndices.get(convAsset.getName()) == null) {
+						constrIndices.put(convAsset.getName(), new ArrayList<Integer[]>());
+					}
+					List<Integer[]> constraintList = constrIndices.get(convAsset.getName());
+					constraintList.add(new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
 				}
 			}
 			log.debug(convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
