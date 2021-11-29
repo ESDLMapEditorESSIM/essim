@@ -404,13 +404,20 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 		// Create Bid Curves.
 		double marginalCostSum = 0.0;
+		boolean normalise = false;
 		for (Node deviceNode : deviceNodes) {
 			deviceNode.createBidCurve(timeStep, now);
-			marginalCostSum += deviceNode.getDemandFunction().getMarginalCost();
+			double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
+			if (marginalCost > 1.0) {
+				normalise = true;
+			}
+			marginalCostSum += marginalCost;
 		}
 
-		for (Node deviceNode : deviceNodes) {
-			deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
+		if (normalise) {
+			for (Node deviceNode : deviceNodes) {
+				deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
+			}
 		}
 
 		// Send demand functions upwards

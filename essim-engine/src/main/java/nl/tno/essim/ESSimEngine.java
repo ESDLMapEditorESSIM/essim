@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.emf.common.util.EList;
@@ -148,8 +150,11 @@ public class ESSimEngine implements IStatusProvider {
 
 		simulationStartTime = EssimTime.dateFromGUI(simulation.getStartDate());
 		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
-		// TODO: Add this to ESSIM Configuration
 		simulationStepLength = SIMULATION_STEP;
+		String timeStep = simulation.getTimeStep();
+		if (timeStep != null) {
+			simulationStepLength = parseTimeStep(timeStep);
+		}
 
 		// Initialise SimulationManager
 		simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
@@ -647,6 +652,39 @@ public class ESSimEngine implements IStatusProvider {
 		}
 
 		return list;
+	}
+
+	private EssimDuration parseTimeStep(String timeStep) {
+		String regex = "([0-9]+)([smhdMy]{1})";
+		Pattern p = Pattern.compile(regex);
+		Matcher matcher = p.matcher(timeStep);
+		if (matcher.matches()) {
+			int amount = Integer.parseInt(matcher.group(1));
+			ChronoUnit unit = null;
+			switch (matcher.group(2)) {
+			case "s":
+				unit = ChronoUnit.SECONDS;
+				break;
+			case "m":
+				unit = ChronoUnit.MINUTES;
+				break;
+			case "h":
+				unit = ChronoUnit.HOURS;
+				break;
+			case "d":
+				unit = ChronoUnit.DAYS;
+				break;
+			case "M":
+				unit = ChronoUnit.MONTHS;
+				break;
+			case "y":
+				unit = ChronoUnit.YEARS;
+				break;
+			}
+			return EssimDuration.of(amount, unit);
+		}
+		log.error("Unsupported time step notation : {}. Defaulting to 1h.", timeStep);
+		return SIMULATION_STEP;
 	}
 
 }
