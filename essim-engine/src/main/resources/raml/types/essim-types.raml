@@ -66,6 +66,7 @@ types:
       influxURL?: string
       natsURL?: string
       mqttURL?: string
+      mso: MSOConfiguration
       kafkaURL?: string
       externalSolvers?: ExternalSolver[]
       kpiModule?: RemoteKPIModule
@@ -74,6 +75,12 @@ types:
       dashboardURL?: string
       loadAnimationJSON?: string
       nodeConfig?: NodeConfiguration[]
+
+  MSOConfiguration:
+    type: object
+    properties:
+      mqttHost: string
+      mqttPort: integer
 
   NodeConfiguration:
     type: object

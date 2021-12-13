@@ -29,7 +29,6 @@ import esdl.AbstractBuilding;
 import esdl.Area;
 import esdl.Carrier;
 import esdl.EnergyAsset;
-import esdl.EnergySystem;
 import esdl.Sector;
 import esdl.Transport;
 import esdl.impl.ItemImpl;

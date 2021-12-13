@@ -40,6 +40,7 @@ import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.MongoBackend;
+import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -64,22 +65,25 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	public String description;
 	private List<IObservationConsumer> observationConsumers;
 	private Month currentMonth;
-	private ESSimEngine engine;
 	private HashMap<Integer, List<TransportSolver>> solverBlock;
 	private List<Simulatable> otherSims;
 	@Getter
 	private boolean started;
 	private MongoBackend mongo;
+	private String interruptedCause;
 	private ScheduledExecutorService statusUpdater;
+	private boolean interrupted;
+	private MSOClient msoClient;
+	private CountDownLatch msoBarrier;
+	private long modelDeployTimeout;
 
 	public SimulationManager(ESSimEngine engine, String simulationId, LocalDateTime startDateTime,
 			LocalDateTime endDateTime, EssimDuration simStepLength) {
 		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
-		if(timeout == null) {
+		if (timeout == null) {
 			timeout = "45";
 		}
 		TIME_OUT_IN_SEC = Long.parseLong(timeout);
-		this.engine = engine;
 		this.simulationId = simulationId;
 		this.startDateTime = startDateTime;
 		this.endDateTime = endDateTime;
@@ -87,8 +91,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		solverBlock = new HashMap<Integer, List<TransportSolver>>();
 		otherSims = new ArrayList<Simulatable>();
 		time = new EssimTime(startDateTime, endDateTime, simStepLength);
-		this.precheckTime = Duration.of(0, ChronoUnit.SECONDS);
-		this.mongo = MongoBackend.getInstance();
+		precheckTime = Duration.of(0, ChronoUnit.SECONDS);
+		mongo = MongoBackend.getInstance();
+		interrupted = false;
+		interruptedCause = "";
 
 		simulationExecutor = (ThreadPoolExecutor) Executors
 				.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -145,9 +151,22 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		}
 	}
 
+	public void interrupt(String cause) {
+		interrupted = true;
+		interruptedCause = cause;
+	}
+
 	public void startSimulation() {
-		started = true;
 		try {
+			if (msoClient != null) {
+				log.debug("Waiting for {} seconds for external models to be deployed.", modelDeployTimeout);
+				boolean result = msoBarrier.await(modelDeployTimeout, TimeUnit.SECONDS);
+				if (!result) {
+					throw new IllegalStateException("Error in Simulation Init: " + description);
+				}
+			}
+
+			started = true;
 			// Run init() for all simulatables
 			barrier = new CountDownLatch(numOfSolvers);
 			for (List<TransportSolver> simulatables : solverBlock.values()) {
@@ -170,6 +189,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			long start = time.getTime().toEpochSecond(ZoneOffset.UTC);
 			long end = endDateTime.toEpochSecond(ZoneOffset.UTC);
 			while (time.getTime().isBefore(endDateTime) || time.getTime().isEqual(endDateTime)) {
+				if (interrupted) {
+					throw new InterruptedException(interruptedCause);
+				}
+
 				Month thisMonth = time.getTime().getMonth();
 				if (thisMonth != currentMonth) {
 					log.debug("Next timestep {}", time.getTime().toString());
@@ -220,17 +243,17 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				}
 			}
 
+			if (msoClient != null) {
+				log.debug("Simulation done. Waiting for external models to terminate.");
+				msoClient.simulationDone();
+			}
+
 			Instant endTime = Instant.now();
 			String simDuration = Duration.between(startTime, endTime).plus(precheckTime).toString();
 			log.debug("Simulation finished and took {}", simDuration);
-
-			log.debug("Done!");
-			statusUpdater.shutdownNow();
 			mongo.updateSimulationStatus(simulationId, Status.COMPLETE, "Finished in " + simDuration);
 			mongo.updateStatus("Ready");
-			engine.setFeatureCollections();
-			statusUpdater.shutdownNow();
-			simulationExecutor.shutdownNow();
+			shutdown();
 		} catch (Exception e) {
 			statusUpdater.shutdownNow();
 			log.error("Error in scheduled runnable", e);
@@ -238,16 +261,21 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			description = e.getMessage();
 			mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
 			mongo.updateStatus("Ready");
-			statusUpdater.shutdownNow();
-			simulationExecutor.shutdownNow();
+			shutdown();
 			Thread.currentThread().interrupt();
 		}
 
 	}
-	
+
 	public void shutdown() {
 		statusUpdater.shutdownNow();
 		simulationExecutor.shutdownNow();
+	}
+
+	public void setMSOClient(MSOClient msoClient, CountDownLatch msoBarrier, long modelDeployTimeout) {
+		this.msoClient = msoClient;
+		this.msoBarrier = msoBarrier;
+		this.modelDeployTimeout = modelDeployTimeout;
 	}
 
 	/**

@@ -82,6 +82,7 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.model.TransportNetworkImpl;
+import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
@@ -121,6 +122,7 @@ public class ESSimEngine implements IStatusProvider {
 	private RemoteKPIModule kpiModules;
 	private double status;
 	private String statusDescription = "";
+	private String esdlString;
 	private HashMap<Conversion, Solvers> convAssets;
 
 	private IObservationProvider generalObservationProvider = new IObservationProvider() {
@@ -139,9 +141,10 @@ public class ESSimEngine implements IStatusProvider {
 			return "ESSIM";
 		}
 	};
-	private String esdlString;
 
-	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
+	public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, File esdlFile)
+			throws Exception {
+		log.debug("ESSIM ID: {}", essimId);
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -156,7 +159,7 @@ public class ESSimEngine implements IStatusProvider {
 		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
 		// TODO: Add this to ESSIM Configuration
 		simulationStepLength = SIMULATION_STEP;
-		
+
 		esdlString = new String(Files.readAllBytes(esdlFile.getAbsoluteFile().toPath()), StandardCharsets.UTF_8);
 
 		// Initialise SimulationManager
@@ -284,6 +287,11 @@ public class ESSimEngine implements IStatusProvider {
 
 		if (kpiModules != null) {
 			new KPIModuleClient(simulationId, simulation, messages);
+		}
+
+		if (simulation.getMso() != null) {
+			MSOClient msoClient = new MSOClient(essimId, simulationId, simulation.getMso(), nodeConfig, energySystem, simulationManager);
+			msoClient.deployModels();
 		}
 
 		/*
@@ -619,12 +627,12 @@ public class ESSimEngine implements IStatusProvider {
 								drivenByDemand.setOutPort(outport);
 								conversion.setControlStrategy(drivenByDemand);
 								Services services = energySystem.getServices();
-								if(services == null) {
+								if (services == null) {
 									services = EsdlFactory.eINSTANCE.createServices();
 								}
 								EList<Service> serviceList = services.getService();
 								serviceList.add(drivenByDemand);
-								
+
 								if (solver.getRole(conversion).equals(Role.PRODUCER)) {
 									solvers.addFirst(solver);
 								} else {

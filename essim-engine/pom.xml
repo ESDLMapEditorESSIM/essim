@@ -52,7 +52,11 @@
 			<artifactId>jul-to-slf4j</artifactId>
 			<version>1.7.28</version>
 		</dependency>
-
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>3.7.0</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver -->
 		<dependency>
 			<groupId>org.mongodb</groupId>
@@ -120,6 +124,27 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>com.github.os72</groupId>
+				<artifactId>protoc-jar-maven-plugin</artifactId>
+				<version>3.11.4</version>
+				<executions>
+					<execution>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<addProtoSources>all</addProtoSources>
+							<protocVersion>3.7.0</protocVersion>
+							<inputDirectories>
+								<include>src/main/resources/protobuf</include>
+							</inputDirectories>
+							<outputDirectory>target/generated-sources/java</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.raml.jaxrs</groupId>
 				<artifactId>raml-to-jaxrs-maven-plugin</artifactId>

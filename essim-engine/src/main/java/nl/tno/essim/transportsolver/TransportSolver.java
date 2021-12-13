@@ -268,7 +268,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 
 				if (nodeConfig != null) {
-					this.nodeConfig.stream().filter(n -> nodeId.equals(n.getEsdlNodeId())).findFirst()
+					this.nodeConfig.stream().filter(n -> nodeId.matches(n.getEsdlNodeId())).findFirst()
 							.ifPresent(nodeBuilder::config);
 				}
 
