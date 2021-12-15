@@ -201,7 +201,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
 				if (status >= log_stat) {
-					log.debug("Next timestep {} [{}%]", time.getTime().toString(), String.format("%.2f", status * 100));
+					log.debug("Next timestep {} [{} %]", time.getTime().toString(), String.format("%.0f", status * 100));
 					log_stat = log_stat + 0.1;
 				}
 
