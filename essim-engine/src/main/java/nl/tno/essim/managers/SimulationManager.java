@@ -19,7 +19,6 @@ package nl.tno.essim.managers;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -64,7 +63,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	@Getter
 	public String description;
 	private List<IObservationConsumer> observationConsumers;
-	private Month currentMonth;
 	private HashMap<Integer, List<TransportSolver>> solverBlock;
 	private List<Simulatable> otherSims;
 	@Getter
@@ -188,19 +186,24 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			// Step through until end of simulation
 			long start = time.getTime().toEpochSecond(ZoneOffset.UTC);
 			long end = endDateTime.toEpochSecond(ZoneOffset.UTC);
+			double log_stat = 0.0;
 			while (time.getTime().isBefore(endDateTime) || time.getTime().isEqual(endDateTime)) {
 				if (interrupted) {
 					throw new InterruptedException(interruptedCause);
 				}
 
-				Month thisMonth = time.getTime().getMonth();
-				if (thisMonth != currentMonth) {
-					log.debug("Next timestep {}", time.getTime().toString());
-					currentMonth = thisMonth;
-				}
+//				Month thisMonth = time.getTime().getMonth();
+//				if (thisMonth != currentMonth) {
+//					log.debug("Next timestep {}", time.getTime().toString());
+//					currentMonth = thisMonth;
+//				}
 
 				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
+				if (status >= log_stat) {
+					log.debug("Next timestep {} [{}%]", time.getTime().toString(), String.format("%.2f", status * 100));
+					log_stat = log_stat + 0.1;
+				}
 
 				for (Integer simulatableType : solverBlock.keySet()) {
 					List<TransportSolver> simulatablesOfSameType = solverBlock.get(simulatableType);

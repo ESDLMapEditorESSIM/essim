@@ -2,7 +2,6 @@ package nl.tno.essim.mso;
 
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +46,8 @@ public class MSOClient {
 	private static final String SIMULATION_DONE_TOPIC_TEMPLATE = PUBLISH_TOPIC_PREFIX + "SimulationDone";
 	private static final String PING_TOPIC_TEMPLATE = PUBLISH_TOPIC_PREFIX + "PingHealthESSIMToMSO";
 	private static final String MODEL_DOCKER_IMAGE = "ci.tno.nl/heatlosscalculation/essim-building-model:latest";
+	private static final String MQTT_USERNAME = "essim-mso";
+	private static final String MQTT_PASSWORD = "Who Does Not Like Essim!?";
 	private String simulationId;
 	private List<NodeConfiguration> nodeConfigurations;
 	private EnergySystem energySystem;
@@ -80,7 +81,6 @@ public class MSOClient {
 				log.debug("Model has terminated : {}", topic);
 			} else if (topic.contains("AllModelsHaveTerminated")) {
 				log.debug("All models have terminated! MSOClient shutting down.");
-				shutdown();
 				modelBarrier.countDown();
 			} else if (topic.contains("PongHealthMSOToEssim")) {
 				msoTimeoutCounter.set(msoTimeout);
@@ -91,9 +91,19 @@ public class MSOClient {
 			}
 		}
 	};
+	private EnvironmentVariable bidPriceEPSEnvVar;
+	private EnvironmentVariable maxIterationsEnvVar;
+	private EnvironmentVariable printIterationsEnvVar;
+	private EnvironmentVariable controllerHorizonEnvVar;
+	private EnvironmentVariable log4pJsonEnvVar;
+	private EnvironmentVariable essimIdEnvVar;
+	private EnvironmentVariable mqttPassEnvVar;
+	private EnvironmentVariable mqttUserEnvVar;
+	private EnvironmentVariable influxCredentialsEnvVar;
 
 	public MSOClient(String essimId, String simulationId, MSOConfiguration msoConfig,
-			List<NodeConfiguration> nodeConfig, EnergySystem energySystem, SimulationManager simulationManager) {
+			List<NodeConfiguration> nodeConfig, EnergySystem energySystem, SimulationManager simulationManager)
+			throws InterruptedException {
 		this.essimId = essimId;
 		this.simulationId = simulationId;
 		this.nodeConfigurations = nodeConfig;
@@ -108,41 +118,63 @@ public class MSOClient {
 		if (modelDeployTimeoutStr == null) {
 			modelDeployTimeoutStr = DEFAULT_MODEL_DEPLOY_TIMEOUT;
 		}
-		String msoTimeoutStr = System.getenv("MSO_HEALTH_TIMEOUT_SEC");
-		if (msoTimeoutStr == null) {
-			msoTimeoutStr = DEFAULT_MSO_HEALTH_TIMEOUT;
-		}
-		msoTimeout = Integer.parseInt(msoTimeoutStr);
-		msoTimeoutCounter = new AtomicInteger(msoTimeout);
-		timer = new Timer(true);
-		timer.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				if (msoTimeoutCounter.getAndDecrement() == 1) {
-					try {
-						shutdown();
-					} catch (MqttException e) {
-						e.printStackTrace();
-					}
-					simulationManager.interrupt("Unresponsive MSO");
-				}
-			}
-		}, 0l, MSO_HEALTHCHECK_COUNTER_INTERVAL);
+		// MSO HEALTH CHECK DISABLED FOR NOW!
+//		String msoTimeoutStr = System.getenv("MSO_HEALTH_TIMEOUT_SEC");
+//		if (msoTimeoutStr == null) {
+//			msoTimeoutStr = DEFAULT_MSO_HEALTH_TIMEOUT;
+//		}
+//		msoTimeout = Integer.parseInt(msoTimeoutStr);
+//		msoTimeoutCounter = new AtomicInteger(msoTimeout);
+//		timer = new Timer(true);
+//		timer.scheduleAtFixedRate(new TimerTask() {
+//			@Override
+//			public void run() {
+//				if (msoTimeoutCounter.getAndDecrement() == 1) {
+//					try {
+//						shutdown();
+//					} catch (MqttException e) {
+//						e.printStackTrace();
+//					}
+//					simulationManager.interrupt("Unresponsive MSO");
+//				}
+//			}
+//		}, 0l, MSO_HEALTHCHECK_COUNTER_INTERVAL);
 
-		String url = String.format("%s:%s", msoConfig.getMqttHost(), msoConfig.getMqttPort());
+		String url = String.format("tcp://%s:%s", msoConfig.getMqttHost(), msoConfig.getMqttPort());
 		mqttHostEnvVar = EnvironmentVariable.newBuilder().setName("MQTT_HOST").setValue(msoConfig.getMqttHost())
 				.build();
 		mqttPortEnvVar = EnvironmentVariable.newBuilder().setName("MQTT_PORT")
 				.setValue(String.valueOf(msoConfig.getMqttPort())).build();
-		simulationIdEnvVar = EnvironmentVariable.newBuilder().setName("SIMULATION_ID")
-				.setValue(String.valueOf(simulationId)).build();
+		mqttUserEnvVar = EnvironmentVariable.newBuilder().setName("MQTT_USERNAME").setValue(MQTT_USERNAME).build();
+		mqttPassEnvVar = EnvironmentVariable.newBuilder().setName("MQTT_PASSWORD").setValue(MQTT_PASSWORD).build();
+		simulationIdEnvVar = EnvironmentVariable.newBuilder().setName("SIMULATION_ID").setValue(simulationId).build();
+		essimIdEnvVar = EnvironmentVariable.newBuilder().setName("ESSIM_ID").setValue(essimId).build();
+		bidPriceEPSEnvVar = EnvironmentVariable.newBuilder().setName("BID_PRICE_EPS").setValue("0.1").build();
+		maxIterationsEnvVar = EnvironmentVariable.newBuilder().setName("MAX_ITERATIONS").setValue("100000").build();
+		printIterationsEnvVar = EnvironmentVariable.newBuilder().setName("PRINT_ITERATIONS").setValue("False").build();
+		controllerHorizonEnvVar = EnvironmentVariable.newBuilder().setName("CONTROLLER_HORIZON").setValue("4").build();
+		log4pJsonEnvVar = EnvironmentVariable.newBuilder().setName("LOG4P_JSON_LOCATION")
+				.setValue("tno/shared/log4p.json").build();
+		influxCredentialsEnvVar = EnvironmentVariable.newBuilder().setName("INFLUXDB_CREDENTIALS")
+				.setValue("https://warmingup:warmingup@wu-profiles.esdl-beta.hesi.energy:443").build();
 
 		try {
 			client = new MqttAsyncClient(url, ESSIM_MSO_MQTT_CLIENT_ID);
 			MqttConnectOptions connOpts = new MqttConnectOptions();
 			connOpts.setMaxInflight(50000);
 			connOpts.setCleanSession(true);
+
+			connOpts.setUserName(MQTT_USERNAME);
+			connOpts.setPassword(MQTT_PASSWORD.toCharArray());
+
 			client.connect(connOpts);
+
+			while (!client.isConnected()) {
+				log.debug("Waiting to connect to MQTT Server");
+				Thread.sleep(1000);
+			}
+			log.debug("Connected to MQTT Server!");
+
 			client.subscribe(subscribeTopic, AT_LEAST_ONCE, messageProcessor);
 		} catch (MqttException e) {
 			e.printStackTrace();
@@ -184,18 +216,26 @@ public class MSOClient {
 				EnergyAsset energyAsset = (EnergyAsset) eObject;
 				if (energyAsset.getId().matches(regex)) {
 					EnvironmentVariable modelIdEnvVar = EnvironmentVariable.newBuilder().setName("MODEL_ID")
-							.setValue(String.valueOf(energyAsset.getId())).build();
+							.setValue(energyAsset.getId()).build();
+
 					ModelConfiguration modelConfiguration = ModelConfiguration.newBuilder()
 							.setModelID(energyAsset.getId()).setContainerURL(MODEL_DOCKER_IMAGE)
 							.addEnvironmentVariables(mqttHostEnvVar).addEnvironmentVariables(mqttPortEnvVar)
-							.addEnvironmentVariables(simulationIdEnvVar).addEnvironmentVariables(modelIdEnvVar).build();
+							.addEnvironmentVariables(mqttUserEnvVar).addEnvironmentVariables(mqttPassEnvVar)
+							.addEnvironmentVariables(essimIdEnvVar).addEnvironmentVariables(simulationIdEnvVar)
+							.addEnvironmentVariables(modelIdEnvVar).addEnvironmentVariables(bidPriceEPSEnvVar)
+							.addEnvironmentVariables(maxIterationsEnvVar).addEnvironmentVariables(printIterationsEnvVar)
+							.addEnvironmentVariables(controllerHorizonEnvVar).addEnvironmentVariables(log4pJsonEnvVar)
+							.addEnvironmentVariables(influxCredentialsEnvVar).build();
 					deployModelsBuilder.addModelConfigurations(modelConfiguration);
 				} else {
-					System.out.println("Ignored asset : " + energyAsset.getId());
+					log.warn("Ignored asset : " + energyAsset.getId());
 				}
 			}
 		}
-		byte[] deployModelsPayload = deployModelsBuilder.build().toByteArray();
+		DeployModels deployModelsObject = deployModelsBuilder.build();
+		log.debug("Publishing to {} message: {}", deployModelsTopic, deployModelsObject);
+		byte[] deployModelsPayload = deployModelsObject.toByteArray();
 		MqttMessage deployModelsMessage = new MqttMessage(deployModelsPayload);
 		client.publish(deployModelsTopic, deployModelsMessage);
 	}
@@ -204,15 +244,16 @@ public class MSOClient {
 		byte[] simulationDonePayload = SimulationDone.newBuilder().build().toByteArray();
 		MqttMessage simulationDoneMessage = new MqttMessage(simulationDonePayload);
 		client.publish(simulationDoneTopic, simulationDoneMessage);
-		
+
 		boolean await = modelBarrier.await(MODEL_TERMINATE_TIMEOUT_SEC, TimeUnit.SECONDS);
 		if (!await) {
 			log.error("Timed out waiting for external models to terminate. Stopping simulation.");
 		}
+		shutdown();
 	}
 
 	private void shutdown() throws MqttException {
-		timer.cancel();
+//		timer.cancel();
 		client.disconnect();
 		client.close();
 	}

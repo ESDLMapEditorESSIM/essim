@@ -344,7 +344,13 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			throw new IllegalStateException("TransportSolver " + getId() + " in init() without creating tree!");
 		}
 
-		for (EnergyAsset asset : deviceNodes.stream().map(x -> x.getAsset()).collect(Collectors.toList())) {
+		for (Node node : deviceNodes) {
+			if (node instanceof RemoteLogicNode) {
+				RemoteLogicNode remoteLogicNode = (RemoteLogicNode) node;
+				remoteLogicNode.init();
+			}
+			
+			EnergyAsset asset = node.getAsset();
 			for (Port port : asset.getPort()) {
 				initialiseProfile(port);
 			}

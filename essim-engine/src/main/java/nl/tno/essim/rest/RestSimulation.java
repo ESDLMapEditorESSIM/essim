@@ -52,7 +52,7 @@ import nl.tno.essim.mongo.MongoBackend;
 public class RestSimulation implements Simulation {
 
 	private MongoBackend mongo;
-	private final String ESSIM_ID = UUID.randomUUID().toString();
+	private final String ESSIM_ID = UUID.randomUUID().toString().substring(0, 8);
 
 	private UncaughtExceptionHandler essimExceptionHandler = new UncaughtExceptionHandler() {
 		@Override

@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
@@ -47,6 +48,8 @@ public class RemoteLogicNode extends Node {
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
 	private JSONObject remoteConfig;
+	private static final String MQTT_USERNAME = "essim-mso";
+	private static final String MQTT_PASSWORD = "Who Does Not Like Essim!?";
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction, double energy,
@@ -83,9 +86,14 @@ public class RemoteLogicNode extends Node {
 			 * 
 			 * } });
 			 */
-			this.client.connect();
-			this.client.subscribe(config.getMqttTopic() + "/simulation/" + nodeId + "/#", this::receiveMessage);
-			this.publishConfig();
+			MqttConnectOptions connOpts = new MqttConnectOptions();
+			connOpts.setMaxInflight(50000);
+			connOpts.setCleanSession(true);
+
+			connOpts.setUserName(MQTT_USERNAME);
+			connOpts.setPassword(MQTT_PASSWORD.toCharArray());
+			this.client.connect(connOpts);
+			this.client.subscribe(config.getMqttTopic() + "/simulation/" + this.nodeId + "/#", this::receiveMessage);
 		} catch (MqttException e) {
 			throw new RuntimeException(e);
 		}
@@ -128,6 +136,11 @@ public class RemoteLogicNode extends Node {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public void init() {
+		System.err.println("init() called...");
+		publishConfig();
 	}
 
 	@Override
