@@ -5,6 +5,8 @@ build:
     - master
   stage: build
   image: $MAVEN_IMAGE-jdk-8
+  before_script:
+    - 'apt-get install libatomic1'
   script:
     - 'mvn package -X'
   artifacts:
