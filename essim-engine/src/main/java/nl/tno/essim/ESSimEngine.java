@@ -18,6 +18,8 @@ package nl.tno.essim;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -31,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -62,6 +65,8 @@ import esdl.InPort;
 import esdl.Instance;
 import esdl.OutPort;
 import esdl.Port;
+import esdl.Service;
+import esdl.Services;
 import esdl.Transport;
 import essim.EssimPackage;
 import lombok.Getter;
@@ -79,6 +84,7 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.model.TransportNetworkImpl;
+import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
@@ -119,6 +125,7 @@ public class ESSimEngine implements IStatusProvider {
 	private RemoteKPIModule kpiModules;
 	private double status;
 	private String statusDescription = "";
+	private String esdlString;
 	private HashMap<Conversion, Solvers> convAssets;
 
 	private IObservationProvider generalObservationProvider = new IObservationProvider() {
@@ -138,7 +145,9 @@ public class ESSimEngine implements IStatusProvider {
 		}
 	};
 
-	public ESSimEngine(String simulationId, EssimSimulation simulation, File esdlFile) throws Exception {
+	public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, File esdlFile)
+			throws Exception {
+		log.debug("ESSIM ID: {}", essimId);
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -156,6 +165,8 @@ public class ESSimEngine implements IStatusProvider {
 		if (timeStep != null) {
 			simulationStepLength = parseTimeStep(timeStep);
 		}
+
+		esdlString = new String(Files.readAllBytes(esdlFile.getAbsoluteFile().toPath()), StandardCharsets.UTF_8);
 
 		// Initialise SimulationManager
 		simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
@@ -290,6 +301,11 @@ public class ESSimEngine implements IStatusProvider {
 			new KPIModuleClient(simulationId, simulation, messages);
 		}
 
+		if (simulation.getMso() != null) {
+			MSOClient msoClient = new MSOClient(essimId, simulationId, simulation.getMso(), nodeConfig, energySystem, simulationManager);
+			msoClient.deployModels();
+		}
+
 		/*
 		 * String newFileName = energySystemFileName.split(".esdl")[0] + "_" +
 		 * simulationEndTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".esdl";
@@ -323,7 +339,7 @@ public class ESSimEngine implements IStatusProvider {
 				String solverId = energySystemId + " "
 						+ (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
 				TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
-						energyAssetRoles);
+						energyAssetRoles, esdlString);
 				solver.setSimulationManager(simulationManager);
 				for (EnergyAsset filteredAsset : filteredAssets) {
 					solver.addToNetwork(filteredAsset);
@@ -632,8 +648,17 @@ public class ESSimEngine implements IStatusProvider {
 												: (" with name " + conversion.getName()))
 										+ " has no control strategy defined! Defaulting to DrivenByDemand.");
 								DrivenByDemand drivenByDemand = EsdlFactory.eINSTANCE.createDrivenByDemand();
+								drivenByDemand.setId(UUID.randomUUID().toString());
+								drivenByDemand.setName("DrivenByDemand for " + conversion.getName());
 								drivenByDemand.setOutPort(outport);
 								conversion.setControlStrategy(drivenByDemand);
+								Services services = energySystem.getServices();
+								if (services == null) {
+									services = EsdlFactory.eINSTANCE.createServices();
+								}
+								EList<Service> serviceList = services.getService();
+								serviceList.add(drivenByDemand);
+
 								if (solver.getRole(conversion).equals(Role.PRODUCER)) {
 									solvers.addFirst(solver);
 								} else {

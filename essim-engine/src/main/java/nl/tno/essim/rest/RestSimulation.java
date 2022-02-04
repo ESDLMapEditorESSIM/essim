@@ -26,6 +26,7 @@ import java.net.URLDecoder;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,6 +52,7 @@ import nl.tno.essim.mongo.MongoBackend;
 public class RestSimulation implements Simulation {
 
 	private MongoBackend mongo;
+	private final String ESSIM_ID = UUID.randomUUID().toString().substring(0, 8);
 
 	private UncaughtExceptionHandler essimExceptionHandler = new UncaughtExceptionHandler() {
 		@Override
@@ -116,7 +118,7 @@ public class RestSimulation implements Simulation {
 
 				Date now = new Date();
 				simulation.setSimRunDate(now);
-				ESSimEngine engine = new ESSimEngine(simId, simulation, esdlFile);
+				ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, esdlFile);
 				String grafanaDashboard = engine.createGrafanaDashboard();
 				if (grafanaDashboard != null) {
 					simulation.setDashboardURL(grafanaDashboard);

@@ -16,21 +16,19 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.eclipse.emf.ecore.xmi.XMIResource;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONObject;
 
 import esdl.Carrier;
 import esdl.EnergyAsset;
@@ -50,15 +48,25 @@ public class RemoteLogicNode extends Node {
 	private final NodeConfiguration remoteLogicConfig;
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
+	private JSONObject remoteConfig;
+	private static final String MQTT_USERNAME = "essim-mso";
+	private static final String MQTT_PASSWORD = "Who Does Not Like Essim!?";
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config,
+
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config,
 			Port connectedPort) {
-		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now, connectedPort);
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
+		@SuppressWarnings("unchecked")
+		HashMap<String, ?> remoteConfigMap = (HashMap<String, ?>) config.getConfig();
+		remoteConfig = new JSONObject(remoteConfigMap);
+
+		log.debug("Creating Remote Logic Node for asset : {} ({})", asset.getId(),
+				asset.getClass().getInterfaces()[0].getSimpleName());
 
 		String serverURI = "tcp://" + config.getMqttHost() + ":" + config.getMqttPort();
 		try {
@@ -80,43 +88,43 @@ public class RemoteLogicNode extends Node {
 			 * 
 			 * } });
 			 */
-			this.client.connect();
-			this.client.subscribe(config.getMqttTopic() + "/simulation/" + nodeId + "/#", this::receiveMessage);
-			this.publishConfig();
+			MqttConnectOptions connOpts = new MqttConnectOptions();
+			connOpts.setMaxInflight(50000);
+			connOpts.setCleanSession(true);
+
+			connOpts.setUserName(MQTT_USERNAME);
+			connOpts.setPassword(MQTT_PASSWORD.toCharArray());
+			this.client.connect(connOpts);
+			this.client.subscribe(config.getMqttTopic() + "/simulation/" + this.nodeId + "/#", this::receiveMessage);
 		} catch (MqttException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	private void publishConfig() {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-			serializeESDLNode(bos);
-			MqttMessage msg = new MqttMessage(bos.toByteArray());
+		try {
+			JSONObject message = new JSONObject()
+					.put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
+					.put("simulationId", simulationId).put("config", remoteConfig);
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
-		} catch (MqttException | IOException e) {
+		} catch (MqttException e) {
 			// FIXME this is now the default behavior
 			log.warn("Unable to send node asset info");
+			e.printStackTrace();
 		}
 	}
 
-	private void serializeESDLNode(ByteArrayOutputStream bos) throws IOException {
-		XMIResource xmiResource = new XMIResourceImpl();
-		xmiResource.getContents().add(asset);
-		xmiResource.save(bos, new HashMap<String, Object>());
-	}
-
 	@Override
-	public void createBidCurve(long timeStep, Horizon now) {
-		super.createBidCurve(timeStep, now);
+	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
-		ByteBuffer buf = ByteBuffer.allocate(32);
-		buf.order(ByteOrder.BIG_ENDIAN);
-		buf.putLong(t);
-		buf.putLong(now.getPeriod().getSeconds());
 
+		JSONObject message = new JSONObject().put("timeStamp", t).put("timeStepInSeconds", now.getPeriod().getSeconds())
+				.put("minPrice", minPrice).put("maxPrice", maxPrice).put("carrierId", carrier.getId());
 		try {
-			MqttMessage msg = new MqttMessage(buf.array());
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/createBid", msg);
 		} catch (MqttException e) {
 			e.printStackTrace();
@@ -132,15 +140,18 @@ public class RemoteLogicNode extends Node {
 		}
 	}
 
+	public void init() {
+		System.err.println("init() called...");
+		publishConfig();
+	}
+
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-		ByteBuffer buf = ByteBuffer.allocate(16);
-		buf.order(ByteOrder.BIG_ENDIAN);
-		buf.putLong(timestamp.getTime().toEpochSecond(ZoneOffset.UTC));
-		buf.putDouble(price);
+		JSONObject message = new JSONObject().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
+				.put("price", price).put("carrierId", carrier.getId());
 
 		try {
-			MqttMessage msg = new MqttMessage(buf.array());
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/allocate", msg);
 		} catch (MqttException e) {
 			e.printStackTrace();
@@ -150,6 +161,17 @@ public class RemoteLogicNode extends Node {
 			EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
 		} else {
 			EmissionManager.getInstance(simulationId).addProducer(networkId, asset, Math.abs(energy));
+		}
+	}
+
+	public void stop() {
+		JSONObject message = new JSONObject().put("carrierId", carrier.getId());
+
+		try {
+			MqttMessage msg = new MqttMessage(message.toString().getBytes());
+			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/stop", msg);
+		} catch (MqttException e) {
+			e.printStackTrace();
 		}
 	}
 

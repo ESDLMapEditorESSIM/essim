@@ -19,7 +19,6 @@ package nl.tno.essim.managers;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -39,6 +38,7 @@ import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.MongoBackend;
+import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -62,13 +62,17 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	@Getter
 	public String description;
 	private List<IObservationConsumer> observationConsumers;
-	private Month currentMonth;
 	private HashMap<Integer, List<TransportSolver>> solverBlock;
 	private List<Simulatable> otherSims;
 	@Getter
 	private boolean started;
 	private MongoBackend mongo;
+	private String interruptedCause;
 	private ScheduledExecutorService statusUpdater;
+	private boolean interrupted;
+	private MSOClient msoClient;
+	private CountDownLatch msoBarrier;
+	private long modelDeployTimeout;
 
 	public SimulationManager(String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
 			EssimDuration simStepLength) {
@@ -84,8 +88,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		solverBlock = new HashMap<Integer, List<TransportSolver>>();
 		otherSims = new ArrayList<Simulatable>();
 		time = new EssimTime(startDateTime, endDateTime, simStepLength);
-		this.precheckTime = Duration.of(0, ChronoUnit.SECONDS);
-		this.mongo = MongoBackend.getInstance();
+		precheckTime = Duration.of(0, ChronoUnit.SECONDS);
+		mongo = MongoBackend.getInstance();
+		interrupted = false;
+		interruptedCause = "";
 
 		simulationExecutor = (ThreadPoolExecutor) Executors
 				.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -142,9 +148,22 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		}
 	}
 
+	public void interrupt(String cause) {
+		interrupted = true;
+		interruptedCause = cause;
+	}
+
 	public void startSimulation() {
-		started = true;
 		try {
+			if (msoClient != null) {
+				log.debug("Waiting for {} seconds for external models to be deployed.", modelDeployTimeout);
+				boolean result = msoBarrier.await(modelDeployTimeout, TimeUnit.SECONDS);
+				if (!result) {
+					throw new IllegalStateException("Error in Simulation Init: " + description);
+				}
+			}
+
+			started = true;
 			// Run init() for all simulatables
 			barrier = new CountDownLatch(numOfSolvers);
 			for (List<TransportSolver> simulatables : solverBlock.values()) {
@@ -166,15 +185,24 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			// Step through until end of simulation
 			long start = time.getTime().toEpochSecond(ZoneOffset.UTC);
 			long end = endDateTime.toEpochSecond(ZoneOffset.UTC);
+			double log_stat = 0.0;
 			while (time.getTime().isBefore(endDateTime) || time.getTime().isEqual(endDateTime)) {
-				Month thisMonth = time.getTime().getMonth();
-				if (thisMonth != currentMonth) {
-					log.debug("Next timestep {}", time.getTime().toString());
-					currentMonth = thisMonth;
+				if (interrupted) {
+					throw new InterruptedException(interruptedCause);
 				}
+
+//				Month thisMonth = time.getTime().getMonth();
+//				if (thisMonth != currentMonth) {
+//					log.debug("Next timestep {}", time.getTime().toString());
+//					currentMonth = thisMonth;
+//				}
 
 				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
+				if (status >= log_stat) {
+					log.debug("Next timestep {} [{} %]", time.getTime().toString(), String.format("%.0f", status * 100));
+					log_stat = log_stat + 0.1;
+				}
 
 				for (Integer simulatableType : solverBlock.keySet()) {
 					List<TransportSolver> simulatablesOfSameType = solverBlock.get(simulatableType);
@@ -217,16 +245,17 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				}
 			}
 
+			if (msoClient != null) {
+				log.debug("Simulation done. Waiting for external models to terminate.");
+				msoClient.simulationDone();
+			}
+
 			Instant endTime = Instant.now();
 			String simDuration = Duration.between(startTime, endTime).plus(precheckTime).toString();
 			log.debug("Simulation finished and took {}", simDuration);
-
-			log.debug("Done!");
-			statusUpdater.shutdownNow();
 			mongo.updateSimulationStatus(simulationId, Status.COMPLETE, "Finished in " + simDuration);
 			mongo.updateStatus("Ready");
-			statusUpdater.shutdownNow();
-			simulationExecutor.shutdownNow();
+			shutdown();
 		} catch (Exception e) {
 			statusUpdater.shutdownNow();
 			log.error("Error in scheduled runnable", e);
@@ -234,8 +263,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			description = e.getMessage();
 			mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
 			mongo.updateStatus("Ready");
-			statusUpdater.shutdownNow();
-			simulationExecutor.shutdownNow();
+			shutdown();
 			Thread.currentThread().interrupt();
 		}
 
@@ -244,6 +272,12 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	public void shutdown() {
 		statusUpdater.shutdownNow();
 		simulationExecutor.shutdownNow();
+	}
+
+	public void setMSOClient(MSOClient msoClient, CountDownLatch msoBarrier, long modelDeployTimeout) {
+		this.msoClient = msoClient;
+		this.msoBarrier = msoBarrier;
+		this.modelDeployTimeout = modelDeployTimeout;
 	}
 
 	/**

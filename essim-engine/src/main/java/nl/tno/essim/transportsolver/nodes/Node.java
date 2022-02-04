@@ -57,6 +57,7 @@ public abstract class Node implements INode {
 	protected String address;
 	protected String networkId;
 	protected EnergyAsset asset;
+	protected String esdlString;
 	protected int directionFactor;
 	protected Role role;
 	protected BidFunction demandFunction;
@@ -88,9 +89,9 @@ public abstract class Node implements INode {
 
 		public Node build() throws Exception {
 			Node node = null;
-			if (this.config != null && this.config.getRemoteNodeLogic()) {
-				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, directionFactor, role,
-						demandFunction, energy, cost, parent, carrier, children, timeStep, now, config, connectedPort);
+			if (this.config != null) {
+				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor,
+						role, demandFunction, energy, cost, parent, carrier, children, timeStep, now, config, connectedPort);
 			} else if (asset != null) {
 				Class<?> assetNodeClass = null;
 				classSearch: for (Class<?> clazz = asset.getClass(); !clazz.equals(ItemImpl.class); clazz = clazz
@@ -110,13 +111,16 @@ public abstract class Node implements INode {
 						+ assetNodeClass.getSimpleName());
 
 				if (assetNodeClass != null) {
-					node = (Node) assetNodeClass
-							.getConstructor(String.class, String.class, String.class, String.class, EnergyAsset.class,
-									int.class, Role.class, BidFunction.class, double.class, double.class, Node.class,
-									Carrier.class, List.class, long.class, Horizon.class, Port.class)
-							.newInstance(simulationId, nodeId, address, networkId, asset, directionFactor, role,
-									demandFunction, energy, cost, parent, carrier, children, timeStep, now,
-									connectedPort);
+					try {
+						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
+								String.class, EnergyAsset.class, String.class, int.class, Role.class, BidFunction.class,
+								double.class, double.class, Node.class, Carrier.class, List.class, long.class,
+								Horizon.class, Port.class).newInstance(simulationId, nodeId, address, networkId, asset, esdlString,
+										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
+										timeStep, now, connectedPort);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			}
 
@@ -437,7 +441,7 @@ public abstract class Node implements INode {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now) {
+	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
 		if (this.timeStep == 0l) {
 			this.timeStep = timeStep;
 		}

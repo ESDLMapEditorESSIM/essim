@@ -52,10 +52,11 @@ public class StorageNode extends Node {
 
 	@Builder(builderMethodName = "storageNodeBuilder")
 	public StorageNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost, Node parent,
-			Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
-		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction, energy, cost,
-				parent, carrier, children, timeStep, now, connectedPort);
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
+
 		this.storage = (Storage) asset;
 		this.timeStepinDT = EssimDuration.of(timeStep, ChronoUnit.SECONDS);
 		this.maxChargeRate = storage.getMaxChargeRate();
@@ -65,7 +66,7 @@ public class StorageNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now) {
+	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)

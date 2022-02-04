@@ -67,6 +67,7 @@ types:
       csvFilesLocation?: string
       natsURL?: string
       mqttURL?: string
+      mso: MSOConfiguration
       kafkaURL?: string
       externalSolvers?: ExternalSolver[]
       kpiModule?: RemoteKPIModule
@@ -76,11 +77,17 @@ types:
       loadAnimationJSON?: string
       nodeConfig?: NodeConfiguration[]
 
+  MSOConfiguration:
+    type: object
+    properties:
+      mqttHost: string
+      mqttPort: integer
+
   NodeConfiguration:
     type: object
     properties:
       esdlNodeId: string
-      remoteNodeLogic: boolean
+      config: object
       mqttHost: string
       mqttPort: integer
       mqttTopic: string

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
@@ -63,6 +64,7 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
+import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
 import nl.tno.essim.util.Converter;
 
 @Slf4j
@@ -94,12 +96,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private int transportWithCapacityCount;
 	private Collection<NodeConfiguration> nodeConfig;
 	private String simulationId;
+	private String esdlString;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
-			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap) {
+			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem) {
 		this.id = name;
 		this.carrier = carrier;
 		this.nodeConfig = nodeConfig;
+		this.esdlString = energySystem;
 		assetList = new ArrayList<EnergyAsset>();
 		processedList = new ArrayList<EnergyAsset>();
 		deviceNodes = new ArrayList<Node>();
@@ -124,6 +128,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				log.warn("Conversion asset {} has no Control Strategy. Defaulting to DrivenByDemand",
 						asset.getName() == null ? asset.getId() : asset.getName());
 				DrivenByDemand drivenByDemand = EsdlFactory.eINSTANCE.createDrivenByDemand();
+				drivenByDemand.setId(UUID.randomUUID().toString());
+				drivenByDemand.setName("DrivenByDemand for " + asset.getName());
 				OutPort outport = null;
 				for (Port port : asset.getPort()) {
 					if (port instanceof OutPort) {
@@ -212,8 +218,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 		rootRole = roleMap.get(rootAsset);
 
-		tree = Node.builder().nodeId(rootAsset.getId()).simulationId(simulationId).asset(rootAsset).role(rootRole)
-				.parent(null).networkId(getId()).carrier(carrier).build();
+		String rootAssetId = rootAsset.getId();
+		NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
+				.esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
+		if (nodeConfig != null) {
+			this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
+					.ifPresent(nodeBuilder::config);
+		}
+		tree = nodeBuilder.build();
 
 		processedList.add(rootAsset);
 		assetList.remove(rootAsset);
@@ -300,7 +312,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 
 				if (nodeConfig != null) {
-					this.nodeConfig.stream().filter(n -> nodeId.equals(n.getEsdlNodeId())).findFirst()
+					this.nodeConfig.stream().filter(n -> nodeId.matches(n.getEsdlNodeId())).findFirst()
 							.ifPresent(nodeBuilder::config);
 				}
 
@@ -376,7 +388,13 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			throw new IllegalStateException("TransportSolver " + getId() + " in init() without creating tree!");
 		}
 
-		for (EnergyAsset asset : deviceNodes.stream().map(x -> x.getAsset()).collect(Collectors.toList())) {
+		for (Node node : deviceNodes) {
+			if (node instanceof RemoteLogicNode) {
+				RemoteLogicNode remoteLogicNode = (RemoteLogicNode) node;
+				remoteLogicNode.init();
+			}
+
+			EnergyAsset asset = node.getAsset();
 			for (Port port : asset.getPort()) {
 				initialiseProfile(port);
 			}
@@ -406,7 +424,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		double marginalCostSum = 0.0;
 		boolean normalise = false;
 		for (Node deviceNode : deviceNodes) {
-			deviceNode.createBidCurve(timeStep, now);
+			deviceNode.createBidCurve(timeStep, now, Commons.P_MIN, Commons.P_MAX);
 			double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
 			if (marginalCost > 1.0) {
 				normalise = true;
@@ -463,6 +481,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						}
 					}
 				}
+			}
+		}
+		for (Node node : deviceNodes) {
+			if (node instanceof RemoteLogicNode) {
+				((RemoteLogicNode) node).stop();
 			}
 		}
 	}
