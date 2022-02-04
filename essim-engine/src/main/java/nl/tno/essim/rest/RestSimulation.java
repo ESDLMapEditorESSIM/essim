@@ -148,8 +148,8 @@ public class RestSimulation implements Simulation {
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
 			log.error(e.getMessage(), e);
-			error.setDescription("Internal error: " + e.getMessage());
-			mongo.updateSimulationStatus(simId, Status.ERROR, e.getMessage());
+			error.setDescription("Internal error: " + sw.toString());
+			mongo.updateSimulationStatus(simId, Status.ERROR, sw.toString());
 			mongo.updateStatus("Ready");
 		}
 

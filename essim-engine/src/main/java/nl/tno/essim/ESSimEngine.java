@@ -167,9 +167,9 @@ public class ESSimEngine implements IStatusProvider {
 				simulationManager.addObservationConsumer(influxObservationConsumer);
 				log.debug("Registering InfluxDB Observation Consumer");
 			}
-			if (simulation.getCsvObservationConfig() != null) {
+			if (simulation.getCsvFilesLocation() != null) {
 				CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
-						simulation.getCsvObservationConfig());
+						simulation.getCsvFilesLocation());
 				observationManager.registerConsumer(csvObservationConsumer);
 				simulationManager.addObservationConsumer(csvObservationConsumer);
 				log.debug("Registering CSV Observation Consumer");

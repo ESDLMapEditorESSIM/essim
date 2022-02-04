@@ -30,11 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import org.zeroturnaround.zip.ZipUtil;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.model.CSVObservationConsumerConfig;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
@@ -42,23 +39,12 @@ import nl.tno.essim.observation.IObservationProvider;
 @Slf4j
 public class CSVObservationConsumer implements IObservationConsumer {
 
-	private CSVObservationConsumerConfig config;
+	private String csvFilesLocation;
 	private HashMap<String, Table> tables;
 	private ExecutorService pool;
 
-	public CSVObservationConsumer(CSVObservationConsumerConfig csvObservationConsumerConfig) {
-		this.config = csvObservationConsumerConfig;
-		if (config.getEolChar() != "\n" && config.getEolChar() != "\r\n") {
-			log.error("Invalid EOL character ({}) specified. Defaulting to \\r\\n", config.getEolChar());
-			config.setEolChar("\r\n");
-		}
-		try {
-			DateTimeFormatter.ofPattern(config.getTimeFormat());
-		} catch (IllegalArgumentException e) {
-			log.error("Invalid Time Format ({}) specified: {}", config.getTimeFormat(), e.getMessage());
-			log.error("Defaulting to 'yyyy-MM-dd HH:mm:ss'");
-			config.setTimeFormat("yyyy-MM-dd HH:mm:ss");
-		}
+	public CSVObservationConsumer(String csvFilesLocation) {
+		this.csvFilesLocation = csvFilesLocation;
 		tables = new HashMap<String, Table>();
 		pool = Executors.newWorkStealingPool();
 	}
@@ -71,12 +57,13 @@ public class CSVObservationConsumer implements IObservationConsumer {
 	@Override
 	public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
 		String observationSource = observation.getTags().get("assetId");
+		String subFolder = source.getProviderName();
 		if (observationSource == null) {
 			observationSource = source.getProviderName();
 		}
 		Table table = tables.get(observationSource);
 		if (table == null) {
-			table = new Table(config, observationSource);
+			table = new Table(Paths.get(csvFilesLocation, subFolder).toString(), observationSource);
 			tables.put(observationSource, table);
 		}
 		pool.submit(new TableProcessor(table, simulationRunName, observation.getObservedAt(), observation.getValues(),
@@ -94,12 +81,7 @@ public class CSVObservationConsumer implements IObservationConsumer {
 		}
 
 		log.debug("Wrote {} CSV files..", tables.size());
-		String zipFilePath = config.getFolderName() + ".zip";
 
-		if (config.getZip()) {
-			log.debug("Zipping to {}", zipFilePath);
-			ZipUtil.pack(new File(config.getFolderName()), new File(zipFilePath));
-		}
 	}
 
 	@Override
@@ -128,7 +110,9 @@ class TableProcessor implements Runnable {
 	@Override
 	public void run() {
 		try {
-			table.addRow(simulationRunName, time, valueMap, tagMap);
+			synchronized (table) {
+				table.addRow(simulationRunName, time, valueMap, tagMap);
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -136,7 +120,6 @@ class TableProcessor implements Runnable {
 
 }
 
-@Slf4j
 class Table {
 
 	@Getter
@@ -148,10 +131,20 @@ class Table {
 	private String eolChar;
 	private DateTimeFormatter timeFormat;
 
-	public Table(CSVObservationConsumerConfig config, String name) {
-		String folderName = config.getFolderName();
-		delimiter = config.getDelimiter();
-		eolChar = config.getEolChar();
+	public Table(String folderName, String name) {
+		delimiter = System.getenv("CSV_DELIMITER");
+		if (delimiter == null) {
+			delimiter = ",";
+		}
+		eolChar = System.getenv("CSV_EOL_CHAR");
+		if (eolChar == null) {
+			eolChar = "\n";
+		}
+		String timeFormatString = System.getenv("CSV_TIME_FORMAT");
+		if (timeFormatString == null) {
+			timeFormatString = "yyyy-MM-dd HH:mm:ss";
+		}
+		timeFormat = DateTimeFormatter.ofPattern(timeFormatString);
 
 		File file = new File(folderName);
 		if (!file.exists()) {
@@ -172,26 +165,30 @@ class Table {
 			Map<String, String> tagMap) throws IOException {
 
 		if (firstRow) {
-			headers.addAll(tagMap.keySet());
-			headers.addAll(valueMap.keySet());
-			fw.write(String.join(delimiter, headers.stream().collect(Collectors.toList())));
-			fw.write(eolChar);
-			firstRow = false;
+			synchronized (fw) {
+				headers.addAll(tagMap.keySet());
+				headers.addAll(valueMap.keySet());
+				fw.write(String.join(delimiter, headers.stream().collect(Collectors.toList())));
+				fw.write(eolChar);
+				firstRow = false;
+			}
 		}
 
 		HashMap<String, Object> allMap = new HashMap<String, Object>();
 		allMap.putAll(tagMap);
 		allMap.putAll(valueMap);
 		allMap.put("simulationRun", simulationRunName);
-		fw.write(time.atZone(ZoneOffset.UTC).format(timeFormat));
-		fw.write(String.join(delimiter,
-				headers.stream()
-						.map(header -> allMap.get(header) == null ? ""
-								: allMap.get(header).toString().contains(delimiter)
-										? "\"" + allMap.get(header).toString() + "\""
-										: allMap.get(header).toString())
-						.collect(Collectors.toList())));
-		fw.write(eolChar);
+		synchronized (fw) {
+			fw.write(time.atZone(ZoneOffset.UTC).format(timeFormat));
+			fw.write(String.join(delimiter,
+					headers.stream()
+							.map(header -> allMap.get(header) == null ? ""
+									: allMap.get(header).toString().contains(delimiter)
+											? "\"" + allMap.get(header).toString() + "\""
+											: allMap.get(header).toString())
+							.collect(Collectors.toList())));
+			fw.write(eolChar);
+		}
 	}
 
 	public void close() throws IOException {

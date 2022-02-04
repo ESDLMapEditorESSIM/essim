@@ -75,19 +75,24 @@ public class GrafanaClient {
 	private String grafanaAdminPassword;
 	private String grafanaAdminAuthorisation;
 
-	public GrafanaClient(String user, String timeString, String influxDBURL,
-			List<TransportSolver> solversList, String energySystemId, String scenarioName, String simulationRunName,
-			LocalDateTime simStartDate, LocalDateTime simEndDate) {
-		
+	public GrafanaClient(String user, String timeString, String influxDBURL, List<TransportSolver> solversList,
+			String energySystemId, String scenarioName, String simulationRunName, LocalDateTime simStartDate,
+			LocalDateTime simEndDate) {
+
 		grafanaInternalUrl = System.getenv(GRAFANA_INTERNAL_URL_ENV);
 		grafanaExternalUrl = System.getenv(GRAFANA_EXTERNAL_URL_ENV);
-		
-		if(grafanaInternalUrl == null) {
+
+		if (grafanaInternalUrl == null) {
 			log.warn("No internal Grafana URL defined! Dashboard will not be created!");
 			return;
 		}
-		
-		if(grafanaExternalUrl == null) {
+
+		if (influxDBURL == null) {
+			log.warn("No InfluxDB Observation Consumer defined! Dashboard will not be created!");
+			return;
+		}
+
+		if (grafanaExternalUrl == null) {
 			log.warn("No external Grafana URL defined! Going to use " + grafanaInternalUrl + " in dashboard URL!");
 			grafanaExternalUrl = grafanaInternalUrl;
 		}
