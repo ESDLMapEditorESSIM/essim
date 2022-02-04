@@ -87,6 +87,11 @@ public class GrafanaClient {
 			return;
 		}
 
+		if (influxDBURL == null) {
+			log.warn("No InfluxDB Observation Consumer defined! Dashboard will not be created!");
+			return;
+		}
+
 		if (grafanaExternalUrl == null) {
 			log.warn("No external Grafana URL defined! Going to use " + grafanaInternalUrl + " in dashboard URL!");
 			grafanaExternalUrl = grafanaInternalUrl;
@@ -201,7 +206,7 @@ public class GrafanaClient {
 			}
 			panelArray.put(prodEmissionsPanel);
 		}
-			// 6
+		// 6
 //			consumerEmissionPanelString = consumerEmissionPanelString
 //					.replace("$$SimulationRunName$$", simulationRunName).replace("$$DBName$$", scenarioName)
 //					.replace("$$InfluxDBURL$$", influxDBURL);
@@ -210,7 +215,7 @@ public class GrafanaClient {
 //				consEmissionsPanel.put("datasource", databaseLabel);
 //			}
 //			panelArray.put(consEmissionsPanel);
-		
+
 		int i = 0;
 		for (ITransportSolver solver : solversList) {
 			String solverId = solver.getId();

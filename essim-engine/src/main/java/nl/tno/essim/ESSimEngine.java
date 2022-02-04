@@ -82,6 +82,7 @@ import nl.tno.essim.model.TransportNetworkImpl;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.consumers.CSVObservationConsumer;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KafkaObservationConsumer;
 import nl.tno.essim.observation.consumers.MQTTObservationConsumer;
@@ -172,6 +173,13 @@ public class ESSimEngine implements IStatusProvider {
 				observationManager.registerConsumer(influxObservationConsumer);
 				simulationManager.addObservationConsumer(influxObservationConsumer);
 				log.debug("Registering InfluxDB Observation Consumer");
+			}
+			if (simulation.getCsvFilesLocation() != null) {
+				CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
+						simulation.getCsvFilesLocation());
+				observationManager.registerConsumer(csvObservationConsumer);
+				simulationManager.addObservationConsumer(csvObservationConsumer);
+				log.debug("Registering CSV Observation Consumer");
 			}
 			if (simulation.getKafkaURL() != null) {
 				KafkaObservationConsumer kafkaObservationConsumer = new KafkaObservationConsumer(

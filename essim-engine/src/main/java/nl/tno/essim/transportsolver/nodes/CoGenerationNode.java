@@ -358,16 +358,20 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 							double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
 									inputEnergyCarrier.getEmissionUnit());
 
-							double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
-							double currentInputCarrierCost = Commons
-									.aggregateCost(Commons.readProfile(inputCarrier.getCost(),
-											new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
-							double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
-							double emission = inputCarrierQuantity * carrierEmission;
+							if (carrierEnergyContent > Commons.eps) {
+								double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
+								double emission = inputCarrierQuantity * carrierEmission;
+								builder.value("emission", emission);
+								builder.value("fuelConsumption", inputCarrierQuantity);
 
-							builder.value("emission", emission);
-							builder.value("fuelConsumption", inputCarrierQuantity);
-							builder.value("cost", inputCarrierCost);
+								double currentInputCarrierCost = Commons
+										.aggregateCost(Commons.readProfile(inputCarrier.getCost(),
+												new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+								if (!Double.isNaN(currentInputCarrierCost)) {
+									double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
+									builder.value("cost", inputCarrierCost);
+								}
+							}
 						}
 					}
 				} else {
@@ -390,16 +394,20 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 							double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
 									inputEnergyCarrier.getEmissionUnit());
 
-							double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
-							double currentInputCarrierCost = Commons
-									.aggregateCost(Commons.readProfile(inputCarrier.getCost(),
-											new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
-							double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
-							double emission = inputCarrierQuantity * carrierEmission;
+							if (carrierEnergyContent > Commons.eps) {
+								double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
+								double emission = inputCarrierQuantity * carrierEmission;
+								builder.value("emission", emission);
+								builder.value("fuelConsumption", inputCarrierQuantity);
 
-							builder.value("emission", emission);
-							builder.value("fuelConsumption", inputCarrierQuantity);
-							builder.value("cost", inputCarrierCost);
+								double currentInputCarrierCost = Commons
+										.aggregateCost(Commons.readProfile(inputCarrier.getCost(),
+												new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+								if (!Double.isNaN(currentInputCarrierCost)) {
+									double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
+									builder.value("cost", inputCarrierCost);
+								}
+							}
 						}
 					}
 				}

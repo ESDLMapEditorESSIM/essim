@@ -110,16 +110,13 @@ public abstract class Node implements INode {
 						+ assetNodeClass.getSimpleName());
 
 				if (assetNodeClass != null) {
-					try {
-						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
-								String.class, EnergyAsset.class, int.class, Role.class, BidFunction.class, double.class,
-								double.class, Node.class, Carrier.class, List.class, long.class, Horizon.class,
-								Port.class).newInstance(simulationId, nodeId, address, networkId, asset,
-										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
-										timeStep, now, connectedPort);
-					} catch (Exception e) {
-						throw e;
-					}
+					node = (Node) assetNodeClass
+							.getConstructor(String.class, String.class, String.class, String.class, EnergyAsset.class,
+									int.class, Role.class, BidFunction.class, double.class, double.class, Node.class,
+									Carrier.class, List.class, long.class, Horizon.class, Port.class)
+							.newInstance(simulationId, nodeId, address, networkId, asset, directionFactor, role,
+									demandFunction, energy, cost, parent, carrier, children, timeStep, now,
+									connectedPort);
 				}
 			}
 

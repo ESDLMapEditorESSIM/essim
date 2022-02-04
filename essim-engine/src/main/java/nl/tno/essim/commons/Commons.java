@@ -67,7 +67,6 @@ public class Commons {
 	public static final String RESOURCE = ".";
 	public static RangeMap<Double, String> thresholdMap;
 	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
-	private static HashMap<GenericProfile, Double> profilePowerMap = new HashMap<GenericProfile, Double>();
 
 	public static enum Role {
 		TRANSPORT, PRODUCER, CONSUMER, BOTH
@@ -122,30 +121,26 @@ public class Commons {
 			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
 			Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
-			if (!profilePowerMap.containsKey(profile)) {
-				EnergyAsset energyAsset = port.getEnergyasset();
-				double ratedPower = 1.0;
-				if (energyAsset instanceof Producer) {
-					Producer producer = (Producer) energyAsset;
-					ratedPower = producer.getPower();
-				} else if (energyAsset instanceof Consumer) {
-					Consumer consumer = (Consumer) energyAsset;
-					ratedPower = consumer.getPower();
-				} else if (energyAsset instanceof AbstractBasicConversion) {
-					AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
-					ratedPower = conversion.getPower();
-				}
-				if (!isPercentageProfile(profile)) {
-					ratedPower = 1.0;
-				}
-				profilePowerMap.put(profile, ratedPower);
+			EnergyAsset energyAsset = port.getEnergyasset();
+			double ratedPower = 1.0;
+			if (energyAsset instanceof Producer) {
+				Producer producer = (Producer) energyAsset;
+				ratedPower = producer.getPower();
+			} else if (energyAsset instanceof Consumer) {
+				Consumer consumer = (Consumer) energyAsset;
+				ratedPower = consumer.getPower();
+			} else if (energyAsset instanceof AbstractBasicConversion) {
+				AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
+				ratedPower = conversion.getPower();
 			}
-			double multiplier = profilePowerMap.get(profile);
+			if (!isPercentageProfile(profile)) {
+				ratedPower = 1.0;
+			}
+			final double power = ratedPower;
 
 			EList<ProfileElement> profileElements = profile.getProfile(from, to,
 					Converter.toESDLDuration(horizon.getPeriod()));
-			return profileElements.stream().mapToDouble(s -> s.getValue() * multiplier).boxed()
-					.collect(Collectors.toList());
+			return profileElements.stream().mapToDouble(s -> s.getValue() * power).boxed().collect(Collectors.toList());
 		}
 		return null;
 	}
