@@ -1,81 +1,153 @@
 {
-	"aliasColors": {
-		"Imbalance": "#ffffff"
-	},
-	"bars": false,
-	"dashLength": 10,
-	"dashes": false,
 	"datasource": "${DS_ESSIM}",
-	"decimals": 2,
-	"fill": 1,
+	"fieldConfig": {
+		"defaults": {
+			"custom": {
+				"drawStyle": "line",
+				"lineInterpolation": "stepAfter",
+				"barAlignment": 0,
+				"lineWidth": 1,
+				"fillOpacity": 10,
+				"gradientMode": "none",
+				"spanNulls": true,
+				"showPoints": "never",
+				"pointSize": 5,
+				"stacking": {
+					"mode": "none",
+					"group": "A"
+				},
+				"axisPlacement": "auto",
+				"axisLabel": "",
+				"scaleDistribution": {
+					"type": "linear"
+				},
+				"hideFrom": {
+					"tooltip": false,
+					"viz": false,
+					"legend": false
+				},
+				"thresholdsStyle": {
+					"mode": "off"
+				}
+			},
+			"color": {
+				"mode": "palette-classic"
+			},
+			"thresholds": {
+				"mode": "absolute",
+				"steps": [
+					{
+						"value": null,
+						"color": "green"
+					},
+					{
+						"value": 80,
+						"color": "red"
+					}
+				]
+			},
+			"mappings": [],
+			"unit": "joule"
+		},
+		"overrides": [
+			{
+				"matcher": {
+					"id": "byName",
+					"options": "Imbalance"
+				},
+				"properties": [
+					{
+						"id": "color",
+						"value": {
+							"mode": "fixed",
+							"fixedColor": "#ffffff"
+						}
+					}
+				]
+			},
+			{
+				"matcher": {
+					"id": "byName",
+					"options": "SOC"
+				},
+				"properties": [
+					{
+						"id": "unit",
+						"value": "percentunit"
+					},
+					{
+						"id": "min",
+						"value": 0
+					},
+				    {
+  		              "id": "custom.axisPlacement",
+  		              "value": "right"
+  		            }
+				]
+			}
+		]
+	},
 	"gridPos": {
 		"h": 8,
 		"w": 24,
 		"x": 0,
-		"y": 11
+		"y": 25
 	},
-	"id": 8,
-	"legend": {
-		"alignAsTable": true,
-		"avg": false,
-		"current": false,
-		"max": false,
-		"min": false,
-		"rightSide": true,
-		"show": true,
-		"total": true,
-		"values": true
-	},
-	"lines": true,
-	"linewidth": 1,
+	"id": 7,
 	"links": [],
-	"nullPointMode": "null",
-	"percentage": false,
-	"pointradius": 5,
-	"points": false,
-	"renderer": "flot",
-	"seriesOverrides": [{
-		"alias": "SOC",
-		"yaxis": 2
-	}],
-	"spaceLength": 10,
-	"stack": false,
-	"steppedLine": true,
+	"options": {
+		"tooltip": {
+			"mode": "single"
+		},
+		"legend": {
+			"displayMode": "table",
+			"placement": "right",
+			"calcs": [
+				"sum"
+			]
+		}
+	},
+	"pluginVersion": "8.2.5",
 	"targets": [
 		{
 			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
-			"groupBy": [{
-				"params": [
-					"assetName"
-				],
-				"type": "tag"
-			},
-			{
-				"params": [
-					"assetClass"
-				],
-				"type": "tag"
-			},
-			{
-				"params": [
-					"address"
-				],
-				"type": "tag"
-			}],
+			"groupBy": [
+				{
+					"params": [
+						"assetName"
+					],
+					"type": "tag"
+				},
+				{
+					"params": [
+						"assetClass"
+					],
+					"type": "tag"
+				},
+				{
+					"params": [
+						"address"
+					],
+					"type": "tag"
+				}
+			],
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"orderByTime": "ASC",
 			"policy": "default",
 			"refId": "A",
 			"resultFormat": "time_series",
 			"select": [
-				[{
-					"params": [
-						"allocationEnergy"
-					],
-					"type": "field"
-				}]
+				[
+					{
+						"params": [
+							"allocationEnergy"
+						],
+						"type": "field"
+					}
+				]
 			],
-			"tags": [{
+			"tags": [
+				{
 					"key": "simulationRun",
 					"operator": "=",
 					"value": "/^$SimulationRun$/"
@@ -97,7 +169,8 @@
 			"refId": "B",
 			"resultFormat": "time_series",
 			"select": [
-				[{
+				[
+					{
 						"params": [
 							"imbalanceEnergy"
 						],
@@ -111,11 +184,13 @@
 					}
 				]
 			],
-			"tags": [{
-				"key": "simulationRun",
-				"operator": "=",
-				"value": "/^$SimulationRun$/"
-			}]
+			"tags": [
+				{
+					"key": "simulationRun",
+					"operator": "=",
+					"value": "/^$SimulationRun$/"
+				}
+			]
 		},
 		{
 			"alias": "SOC",
@@ -126,14 +201,17 @@
 			"refId": "C",
 			"resultFormat": "time_series",
 			"select": [
-				[{
-					"params": [
-						"soc"
-					],
-					"type": "field"
-				}]
+				[
+					{
+						"params": [
+							"soc"
+						],
+						"type": "field"
+					}
+				]
 			],
-			"tags": [{
+			"tags": [
+				{
 					"key": "simulationRun",
 					"operator": "=",
 					"value": "/^$SimulationRun$/"
@@ -147,43 +225,9 @@
 			]
 		}
 	],
-	"thresholds": [],
 	"timeFrom": null,
 	"timeShift": null,
 	"title": "$$$TRANSPORT-SOLVER-NAME$$$",
-	"tooltip": {
-		"shared": true,
-		"sort": 0,
-		"value_type": "individual"
-	},
 	"transparent": true,
-	"type": "graph",
-	"xaxis": {
-		"buckets": null,
-		"mode": "time",
-		"name": null,
-		"show": true,
-		"values": []
-	},
-	"yaxes": [{
-			"format": "joule",
-			"label": null,
-			"logBase": 1,
-			"max": null,
-			"min": null,
-			"show": true
-		},
-		{
-			"format": "percentunit",
-			"label": null,
-			"logBase": 1,
-			"max": null,
-			"min": "0",
-			"show": true
-		}
-	],
-	"yaxis": {
-		"align": false,
-		"alignLevel": null
-	}
+	"type": "timeseries"
 }

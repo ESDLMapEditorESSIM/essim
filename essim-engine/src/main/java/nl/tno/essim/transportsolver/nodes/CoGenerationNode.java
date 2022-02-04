@@ -13,12 +13,12 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import esdl.Carrier;
 import esdl.CoGeneration;
@@ -37,6 +37,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
@@ -47,7 +48,7 @@ import nl.tno.essim.time.Horizon;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class CoGenerationNode extends ConversionNode {
+public class CoGenerationNode extends AbstractBasicConversionNode {
 
 	private CoGeneration coGenerationPlant;
 	private InPort inputPort;
@@ -56,18 +57,24 @@ public class CoGenerationNode extends ConversionNode {
 	private HashMap<Carrier, OutPort> outputCarriers;
 	private double electricalEfficiency;
 	private double heatEfficiency;
+	private GenericProfile costProfile;
+	private GenericProfile marginalCostProfile;
 
 	@Builder(builderMethodName = "coGenerationNodeBuilder")
 	public CoGenerationNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
-			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now);
 		coGenerationPlant = (CoGeneration) asset;
 		controlStrategy = coGenerationPlant.getControlStrategy();
 		coGenName = (coGenerationPlant.getName() == null ? coGenerationPlant.getId() : coGenerationPlant.getName());
 		power = coGenerationPlant.getPower();
 		costInformation = coGenerationPlant.getCostInformation();
+		if (costInformation != null) {
+			marginalCostProfile = costInformation.getMarginalCosts();
+		}
+
 		heatEfficiency = coGenerationPlant.getHeatEfficiency();
 		if (heatEfficiency < Commons.eps) {
 			heatEfficiency = Commons.DEFAULT_COGEN_H_EFF;
@@ -87,6 +94,7 @@ public class CoGenerationNode extends ConversionNode {
 				}
 			} else {
 				inputPort = (InPort) port;
+				costProfile = port.getCarrier().getCost();
 			}
 		}
 
@@ -115,18 +123,20 @@ public class CoGenerationNode extends ConversionNode {
 						// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
 						// = Make flexible Producer Curve
 						double heatFactor = 1.0;
+						double costFactor = electricalEfficiency;
 						if (carrier instanceof HeatCommodity) {
 							heatFactor = heatEfficiency / electricalEfficiency;
+							costFactor = heatEfficiency;
 						}
 						double energyOutput = timeStep * power * heatFactor;
-						if (costInformation == null) {
-							log.warn("Conversion {} is missing cost information!", coGenName);
-							setCost(0.5);
+						if (marginalCostProfile != null) {
+							setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+						} else if (costProfile != null) {
+							setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) / costFactor);
 						} else {
-							GenericProfile marginalCosts = costInformation.getMarginalCosts();
-							if (marginalCosts != null) {
-								setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-							}
+							log.warn("CoGeneration {} is missing cost information! Defaulting to {}", coGenName,
+									DEFAULT_MARGINAL_COST);
+							setCost(DEFAULT_MARGINAL_COST);
 						}
 						makeAdjustableProductionFunction(energyOutput);
 					} else {
@@ -181,8 +191,7 @@ public class CoGenerationNode extends ConversionNode {
 
 						if (convProfile != null) {
 							if (Commons.isPowerProfile(convProfile)) {
-								energyOutput = timeStep
-										* Commons.aggregatePower(Commons.readProfile(convProfile, now));
+								energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
 							} else if (Commons.isEnergyProfile(convProfile)) {
 								energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 							} else {
@@ -254,15 +263,16 @@ public class CoGenerationNode extends ConversionNode {
 					if (drivingCarrier.equals(carrier)) {
 						// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
 						// = Make Flexible Consumer curve
-						double energyInput = (timeStep * power) / efficiency;
-						if (costInformation == null) {
-							log.warn("Conversion {} is missing cost information!", coGenName);
-							setCost(0.5);
+						double energyInput = (timeStep * power) / electricalEfficiency;
+						if (marginalCostProfile != null) {
+							setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+						} else if (costProfile != null) {
+							setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now))
+									* (electricalEfficiency + heatEfficiency));
 						} else {
-							GenericProfile marginalCosts = costInformation.getMarginalCosts();
-							if (marginalCosts != null) {
-								setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-							}
+							log.warn("CoGeneration {} is missing cost information! Defaulting to {}", coGenName,
+									DEFAULT_MARGINAL_COST);
+							setCost(DEFAULT_MARGINAL_COST);
 						}
 						makeAdjustableConsumptionFunction(energyInput);
 					} else {
@@ -295,6 +305,7 @@ public class CoGenerationNode extends ConversionNode {
 				}
 			}
 		}
+
 	}
 
 	@Override

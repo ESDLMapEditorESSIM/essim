@@ -22,7 +22,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -34,6 +33,7 @@ import org.json.JSONObject;
 import esdl.Carrier;
 import esdl.EnergyAsset;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.NodeConfiguration;
@@ -52,9 +52,8 @@ public class RemoteLogicNode extends Node {
 	private static final String MQTT_PASSWORD = "Who Does Not Like Essim!?";
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction, double energy,
-			double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
-			NodeConfiguration config) {
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config) {
 		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
 				energy, cost, parent, carrier, children, timeStep, now);
 		this.locks = new HashMap<>();
@@ -137,7 +136,7 @@ public class RemoteLogicNode extends Node {
 			}
 		}
 	}
-	
+
 	public void init() {
 		System.err.println("init() called...");
 		publishConfig();
@@ -181,10 +180,10 @@ public class RemoteLogicNode extends Node {
 				long timestep = buf.getLong();
 
 				if (this.locks.containsKey(timestep)) {
-					this.demandFunction = new TreeMap<>();
+					this.demandFunction = new BidFunction();
 
 					while (buf.remaining() >= 16) {
-						this.demandFunction.put(buf.getDouble(), buf.getDouble());
+						this.demandFunction.addPoint(buf.getDouble(), buf.getDouble());
 					}
 
 					// Resume the createBidCurve thread

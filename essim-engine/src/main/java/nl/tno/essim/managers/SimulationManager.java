@@ -299,15 +299,15 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			try {
 				runnable.run();
 				barrier.countDown();
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				statusUpdater.shutdownNow();
 				log.error("Error in scheduled runnable", e);
 				status = -1;
 				description = e.getMessage();
 				mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
-//				mongo.updateStatus("Ready");
-//				simulationExecutor.shutdownNow();
-//				Thread.currentThread().interrupt();
+				mongo.updateStatus("Ready");
+				simulationExecutor.shutdownNow();
+				Thread.currentThread().interrupt();
 			}
 		}
 

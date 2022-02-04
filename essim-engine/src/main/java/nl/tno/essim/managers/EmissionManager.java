@@ -34,6 +34,7 @@ import esdl.Storage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.Simulatable;
@@ -43,6 +44,7 @@ import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimTime;
 
+@Slf4j
 public class EmissionManager implements Simulatable, IObservationProvider {
 
 	private static final double eps = 1.0e-5;
@@ -51,6 +53,8 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	private HashMap<String, List<ConsumerProducerPair>> consumerMap;
 	private HashMap<String, List<AssetEnergyPair>> producerMap;
 	private ConcurrentHashMap<AssetEnergyPair, List<AssetEnergyPair>> consumerProducerMap;
+	private HashMap<String, Boolean> networkError;
+	private boolean overallError;
 
 	public synchronized static EmissionManager getInstance(String simulationId) {
 		if (instanceMap.containsKey(simulationId)) {
@@ -69,6 +73,8 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		consumerMap = new HashMap<String, List<ConsumerProducerPair>>();
 		producerMap = new HashMap<String, List<AssetEnergyPair>>();
 		consumerProducerMap = new ConcurrentHashMap<AssetEnergyPair, List<AssetEnergyPair>>();
+		networkError = new HashMap<String, Boolean>();
+		overallError = false;
 	}
 
 	public synchronized void addConsumer(String networkId, EnergyAsset asset, double energy) {
@@ -99,10 +105,20 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		List<ConsumerProducerPair> listOfConsumers = consumerMap.get(networkId);
 
 		if (listOfConsumers == null) {
-			throw new IllegalStateException("Network " + networkId + " has no producers!");
+			if (networkError.get(networkId) != null && !networkError.get(networkId)) {
+				log.warn("Network {} has no consumers!", networkId);
+			}
+			networkError.put(networkId, true);
+			overallError = true;
+			return;
 		}
 		if (listOfProducers == null) {
-			throw new IllegalStateException("Network " + networkId + " has no consumers!");
+			if (networkError.get(networkId) != null && !networkError.get(networkId)) {
+				log.warn("Network {} has no producers!", networkId);
+			}
+			networkError.put(networkId, true);
+			overallError = true;
+			return;
 		}
 
 		double sumProduction = 0.0;
@@ -208,6 +224,10 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 
 	@Override
 	public synchronized void step(EssimTime timestamp) {
+
+		if (overallError) {
+			return;
+		}
 
 		remapProducers();
 

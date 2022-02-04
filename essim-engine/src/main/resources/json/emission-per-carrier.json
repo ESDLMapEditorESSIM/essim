@@ -14,6 +14,7 @@
 	],
 	"pageSize": null,
 	"scroll": true,
+	"transparent": true,
 	"showHeader": true,
 	"sort": {
 		"col": 0,
@@ -70,7 +71,7 @@
 					"type": "tag"
 				}
 			],
-			"measurement": "ESSIM",
+			"measurement": "/.*/",
 			"orderByTime": "ASC",
 			"policy": "default",
 			"refId": "A",

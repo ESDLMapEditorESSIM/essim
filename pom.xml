@@ -28,7 +28,7 @@
 		<project.version>0.0.1-SNAPSHOT</project.version>
 		<emf.version>2.16.0</emf.version>
 		<emfecore.version>2.18.0</emfecore.version>
-		<esdl.version>2.21.6</esdl.version>
+		<esdl.version>2.21.12</esdl.version>
 	</properties>
 	
 	<repositories>

@@ -13,14 +13,12 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,6 +33,7 @@ import esdl.impl.ItemImpl;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation;
@@ -47,7 +46,6 @@ import nl.tno.essim.time.Horizon;
 @Slf4j
 public abstract class Node implements INode {
 	protected static final double DEFAULT_MARGINAL_COST = 0.5;
-	private static final double eps = 1e-12;
 	private static final double price_delta = 0.01;
 	private static final double pmin = 0.0;
 	private static final double pmax = 1.0;
@@ -60,7 +58,7 @@ public abstract class Node implements INode {
 	protected String esdlString;
 	protected int directionFactor;
 	protected Role role;
-	protected TreeMap<Double, Double> demandFunction;
+	protected BidFunction demandFunction;
 	protected double energy;
 	protected double cost;
 	protected Node parent;
@@ -89,9 +87,8 @@ public abstract class Node implements INode {
 		public Node build() {
 			Node node = null;
 			if (this.config != null) {
-				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, esdlString,
-						directionFactor, role, demandFunction, energy, cost, parent, carrier, children, timeStep, now,
-						config);
+				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor,
+						role, demandFunction, energy, cost, parent, carrier, children, timeStep, now, config);
 			} else if (asset != null) {
 				Class<?> assetNodeClass = null;
 				classSearch: for (Class<?> clazz = asset.getClass(); !clazz.equals(ItemImpl.class); clazz = clazz
@@ -113,11 +110,11 @@ public abstract class Node implements INode {
 				if (assetNodeClass != null) {
 					try {
 						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
-								String.class, EnergyAsset.class, String.class, int.class,
-								Role.class, TreeMap.class, double.class, double.class, Node.class, Carrier.class,
-								List.class, long.class, Horizon.class).newInstance(simulationId, nodeId, address,
-										networkId, asset, esdlString, directionFactor, role,
-										demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+								String.class, EnergyAsset.class, String.class, int.class, Role.class, BidFunction.class,
+								double.class, double.class, Node.class, Carrier.class, List.class, long.class,
+								Horizon.class).newInstance(simulationId, nodeId, address, networkId, asset, esdlString,
+										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
+										timeStep, now);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -210,11 +207,11 @@ public abstract class Node implements INode {
 		}
 	}
 
-	public TreeMap<Double, Double> aggregateDemandFunction() {
+	public BidFunction aggregateDemandFunction() {
 		if (children != null) {
-			TreeMap<Double, Double> aggregatedFunction = new TreeMap<Double, Double>();
+			BidFunction aggregatedFunction = new BidFunction();
 			for (Node child : children) {
-				TreeMap<Double, Double> nodeFunction = child.aggregateDemandFunction();
+				BidFunction nodeFunction = child.aggregateDemandFunction();
 				aggregatedFunction = sumCurves(nodeFunction, aggregatedFunction);
 			}
 			if (this.asset instanceof Transport) {
@@ -224,11 +221,11 @@ public abstract class Node implements INode {
 			}
 			return aggregatedFunction;
 		} else {
-			TreeMap<Double, Double> demandFunction = getDemandFunction();
+			BidFunction demandFunction = getDemandFunction();
 			if (demandFunction == null) {
-				demandFunction = new TreeMap<Double, Double>();
-				demandFunction.put(pmin, 0.0);
-				demandFunction.put(pmax, 0.0);
+				demandFunction = new BidFunction();
+				demandFunction.addPoint(pmin, 0.0);
+				demandFunction.addPoint(pmax, 0.0);
 				setDemandFunction(demandFunction);
 			}
 			return getDemandFunction();
@@ -240,7 +237,34 @@ public abstract class Node implements INode {
 		normaliseCosts(minMaxCosts);
 	}
 
-	public double[] allocateAndPropagate(TreeMap<Double, Double> summedFunction, List<Observation> observations,
+	private double[] findMinMaxCosts(double min, double max) {
+		if (children != null) {
+			for (Node child : children) {
+				double[] res = child.findMinMaxCosts(min, max);
+				if (res[0] < min)
+					min = res[0];
+				if (res[1] > max)
+					max = res[1];
+			}
+		}
+		if (cost < min)
+			min = cost;
+		if (cost > max)
+			max = cost;
+
+		return new double[] { min, max };
+	}
+
+	private void normaliseCosts(double[] minMaxCosts) {
+		if (children != null) {
+			for (Node child : children) {
+				child.normaliseCosts(minMaxCosts);
+			}
+		}
+		cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
+	}
+
+	public double[] allocateAndPropagate(BidFunction summedFunction, List<Observation> observations,
 			EssimTime timestamp) {
 		// Allocate
 		double balancingPrice = findPriceFromCurve(summedFunction, 0.0);
@@ -279,42 +303,41 @@ public abstract class Node implements INode {
 	public void makeInflexibleProductionFunction(double emax) {
 		energy = -emax;
 
-		demandFunction = new TreeMap<Double, Double>();
-		demandFunction.put(pmin, -emax);
-		demandFunction.put(pmax, -emax);
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(pmin);
+		demandFunction.addPoint(pmin, -emax);
+		demandFunction.addPoint(pmax, -emax);
 	}
 
 	public void makeInflexibleConsumptionFunction(double emax) {
 		energy = emax;
 
-		demandFunction = new TreeMap<Double, Double>();
-		demandFunction.put(pmin, emax);
-		demandFunction.put(pmax, emax);
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(pmin);
+		demandFunction.addPoint(pmin, emax);
+		demandFunction.addPoint(pmax, emax);
 	}
 
 	public void makeAdjustableProductionFunction(double emax) {
 		energy = -emax;
 
-		demandFunction = new TreeMap<Double, Double>();
-
-		if (cost == 0.0) {
-			cost = pmax / 2;
-		}
-
-		demandFunction.put(pmin, 0.0);
-		demandFunction.put(cost, 0.0);
-		demandFunction.put(cost + price_delta, energy);
-		demandFunction.put(pmax, energy);
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(cost);
+		demandFunction.addPoint(pmin, 0.0);
+		demandFunction.addPoint(cost, 0.0);
+		demandFunction.addPoint(cost + price_delta, energy);
+		demandFunction.addPoint(pmax, energy);
 	}
 
 	public void makeAdjustableConsumptionFunction(double emax) {
 		energy = emax;
-		demandFunction = new TreeMap<Double, Double>();
-		demandFunction.put(pmin, energy);
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(cost);
+		demandFunction.addPoint(pmin, energy);
 		if (cost != 0.0) {
-			demandFunction.put(cost, 0.0);
+			demandFunction.addPoint(cost, 0.0);
 		}
-		demandFunction.put(pmax, 0.0);
+		demandFunction.addPoint(pmax, 0.0);
 	}
 
 	public void makeStorageFunction(double ecmax, double edmax, double soc, Double mc1, Double mc2) {
@@ -332,15 +355,15 @@ public abstract class Node implements INode {
 		if (mc2 == null) {
 			mc2 = Math.min(1.0, 1.05 * cost);
 		}
-		
-		demandFunction = new TreeMap<Double, Double>();
 
-		demandFunction.put(pmin, ecmax);
-		demandFunction.put(Math.max(pmin, Math.min(mc1, pmax)), ecmax);
-		demandFunction.put(Math.max(pmin, Math.min(mc1+delta, pmax)), 0.0);
-		demandFunction.put(Math.max(pmin, Math.min(mc2, pmax)), 0.0);
-		demandFunction.put(Math.max(pmin, Math.min(mc2+delta, pmax)), -edmax);
-		demandFunction.put(pmax, -edmax);
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(mc1);
+		demandFunction.addPoint(pmin, ecmax);
+		demandFunction.addPoint(Math.max(pmin, Math.min(mc1, pmax)), ecmax);
+		demandFunction.addPoint(Math.max(pmin, Math.min(mc1 + delta, pmax)), 0.0);
+		demandFunction.addPoint(Math.max(pmin, Math.min(mc2, pmax)), 0.0);
+		demandFunction.addPoint(Math.max(pmin, Math.min(mc2 + delta, pmax)), -edmax);
+		demandFunction.addPoint(pmax, -edmax);
 	}
 
 	@Override
@@ -356,17 +379,8 @@ public abstract class Node implements INode {
 		return bldr.toString();
 	}
 
-	private TreeMap<Double, Double> sumCurves(TreeMap<Double, Double> a, TreeMap<Double, Double> b) {
-		TreeMap<Double, Double> sum = new TreeMap<Double, Double>();
-		TreeSet<Double> allPrices = new TreeSet<Double>();
-		allPrices.addAll(a.keySet());
-		allPrices.addAll(b.keySet());
-		for (double price : allPrices) {
-			double aValue = findDemandFromCurve(a, price);
-			double bValue = findDemandFromCurve(b, price);
-			sum.put(price, aValue + bValue);
-		}
-		return sum;
+	private BidFunction sumCurves(BidFunction a, BidFunction b) {
+		return BidFunction.sumCurves(a, b);
 	}
 
 	private void propagate(double price, List<Observation> observations, EssimTime timestamp) {
@@ -380,7 +394,8 @@ public abstract class Node implements INode {
 				.tag("carrierId", carrier.getId())
 				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
 				.value("allocationEnergy", energy)
-				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds());
+				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
+				.value("marginalCost", cost);
 
 		// Tag sector if defined
 		String sectorName = "DefaultSector";
@@ -407,94 +422,12 @@ public abstract class Node implements INode {
 
 	}
 
-	private double findDemandFromCurve(TreeMap<Double, Double> demandFunction, double price) {
-		if (demandFunction.isEmpty()) {
-			return 0.0;
-		}
-
-		if (demandFunction.containsKey(price)) {
-			return demandFunction.get(price);
-		}
-
-		double p1 = Double.NaN;
-		double p2 = Double.NaN;
-		double v1 = Double.NaN;
-		double v2 = Double.NaN;
-		for (double p : demandFunction.keySet()) {
-			if (p > price) {
-				p2 = p;
-				v2 = demandFunction.get(p2);
-				break;
-			}
-			p1 = p;
-			v1 = demandFunction.get(p1);
-		}
-
-		if (Double.isNaN(p1)) {
-			return v2;
-		} else if (Double.isNaN(p2)) {
-			return v1;
-		} else {
-			return v1 + (((v2 - v1) / (p2 - p1)) * (price - p1));
-		}
+	private double findDemandFromCurve(BidFunction demandFunction, double price) {
+		return demandFunction.findDemandFromCurve(price);
 	}
 
-	private double findPriceFromCurve(TreeMap<Double, Double> demandFunction, double demand) {
-		for (Entry<Double, Double> entry : demandFunction.entrySet()) {
-			if (Math.abs(entry.getValue() - demand) < eps) {
-				return entry.getKey();
-			}
-		}
-
-		double p1 = Double.NaN;
-		double p2 = Double.NaN;
-		double v1 = Double.NaN;
-		double v2 = Double.NaN;
-		for (double p : demandFunction.keySet()) {
-			double v = demandFunction.get(p);
-			if (v < demand) {
-				p2 = p;
-				v2 = v;
-				break;
-			}
-			p1 = p;
-			v1 = v;
-		}
-
-		if (Double.isNaN(p1)) {
-			return p2;
-		} else if (Double.isNaN(p2)) {
-			return p1;
-		} else {
-			return p1 + (((p2 - p1) / (v2 - v1)) * (demand - v1));
-		}
-	}
-
-	private double[] findMinMaxCosts(double min, double max) {
-		if (children != null) {
-			for (Node child : children) {
-				double[] res = child.findMinMaxCosts(min, max);
-				if (res[0] < min)
-					min = res[0];
-				if (res[1] > max)
-					max = res[1];
-			}
-		}
-		if (cost < min)
-			min = cost;
-		if (cost > max)
-			max = cost;
-
-		return new double[] { min, max };
-	}
-
-	private void normaliseCosts(double[] minMaxCosts) {
-		if (children != null) {
-			for (Node child : children) {
-				child.normaliseCosts(minMaxCosts);
-			}
-		}
-		cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
+	private double findPriceFromCurve(BidFunction demandFunction, double demand) {
+		return demandFunction.findPriceFromCurve(demand);
 	}
 
 	@Override

@@ -13,10 +13,10 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
-import java.util.TreeMap;
 
 import esdl.Carrier;
 import esdl.EnergyAsset;
@@ -24,6 +24,7 @@ import esdl.Transport;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
@@ -38,10 +39,10 @@ public class TransportNode extends Node {
 
 	@Builder(builderMethodName = "transportNodeBuilder")
 	public TransportNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
-			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now);
 		this.transport = (Transport) asset;
 		this.capacity = transport.getCapacity();
 	}
@@ -52,12 +53,10 @@ public class TransportNode extends Node {
 
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-		long timeStepInSeconds = timestamp.getSimulationStepLength()
-				.getSeconds();
+		long timeStepInSeconds = timestamp.getSimulationStepLength().getSeconds();
 		builder.tag("capability", "Transport");
-		builder.value("capacity", capacity)
-		.value("allocationEnergy", directionFactor * energy)
-		.value("allocationPower", directionFactor * energy / timeStepInSeconds);
+		builder.value("capacity", capacity).value("allocationEnergy", directionFactor * energy).value("allocationPower",
+				directionFactor * energy / timeStepInSeconds);
 		if (capacity != 0) {
 			double load = directionFactor * energy / (timeStepInSeconds * capacity);
 			builder.value("load", load);

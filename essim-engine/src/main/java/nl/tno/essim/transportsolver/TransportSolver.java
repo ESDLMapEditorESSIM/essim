@@ -22,12 +22,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
 
+import esdl.AbstractBasicConversion;
 import esdl.Asset;
 import esdl.Carrier;
 import esdl.Consumer;
@@ -47,6 +47,7 @@ import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.commons.ISimulationManager;
@@ -178,8 +179,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 					rootAsset = producer;
 					maxCapacity = producer.getPower();
 				}
-			} else if (asset instanceof Conversion && roleMap.get(asset).equals(Role.PRODUCER)) {
-				Conversion conversion = (Conversion) asset;
+			} else if (asset instanceof AbstractBasicConversion && roleMap.get(asset).equals(Role.PRODUCER)) {
+				AbstractBasicConversion conversion = (AbstractBasicConversion) asset;
 				if (conversion.getPower() > maxCapacity) {
 					rootAsset = conversion;
 					maxCapacity = conversion.getPower();
@@ -191,6 +192,27 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 					maxCapacity = consumer.getPower();
 				}
 			}
+		}
+
+		if (rootAsset == null) {
+			log.warn("A network for carrier {} has no energy producers in it! Please check if this was intentional!",
+					carrier);
+			for (EnergyAsset asset : assetList) {
+				if (roleMap.get(asset).equals(Role.CONSUMER)) {
+					rootAsset = asset;
+					break;
+				}
+			}
+		}
+
+		if (rootAsset == null) {
+			List<String> assetListString = new ArrayList<String>();
+			for (EnergyAsset asset : assetList) {
+				assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
+						+ roleMap.get(asset));
+			}
+			throw new IllegalStateException("Cannot find a producer or consumer in the network for carrier: "
+					+ getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
 		}
 
 		rootRole = roleMap.get(rootAsset);
@@ -349,7 +371,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				RemoteLogicNode remoteLogicNode = (RemoteLogicNode) node;
 				remoteLogicNode.init();
 			}
-			
+
 			EnergyAsset asset = node.getAsset();
 			for (Port port : asset.getPort()) {
 				initialiseProfile(port);
@@ -360,6 +382,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 					initialiseProfile(((DrivenByProfile) asset.getControlStrategy()).getProfile());
 				}
 			}
+		}
+
+		if (carrier.getCost() != null) {
+			initialiseProfile(carrier.getCost());
 		}
 	}
 
@@ -373,16 +399,18 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		Horizon now = new Horizon(timestamp.getTime(), timeStepinDT);
 
 		// Create Bid Curves.
+		double marginalCostSum = 0.0;
 		for (Node deviceNode : deviceNodes) {
 			deviceNode.createBidCurve(timeStep, now, Commons.P_MIN, Commons.P_MAX);
+			marginalCostSum += deviceNode.getDemandFunction().getMarginalCost();
 		}
 
-		// Prices are between 0 and 1, but O&M costs may not be. First normalise these
-		// costs.
-		// tree.normaliseCosts();
+		for (Node deviceNode : deviceNodes) {
+			deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
+		}
 
 		// Send demand functions upwards
-		TreeMap<Double, Double> summedFunction = tree.aggregateDemandFunction();
+		BidFunction summedFunction = tree.aggregateDemandFunction();
 
 		// Allocate devices and collect observations
 		ArrayList<Observation> observations = new ArrayList<Observation>();

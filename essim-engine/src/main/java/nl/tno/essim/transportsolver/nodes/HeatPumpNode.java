@@ -13,15 +13,16 @@
  *  Manager:
  *      TNO
  */
+
 package nl.tno.essim.transportsolver.nodes;
 
 import java.util.List;
-import java.util.TreeMap;
 
 import esdl.Carrier;
 import esdl.DrivenByDemand;
 import esdl.DrivenByProfile;
 import esdl.DrivenBySupply;
+import esdl.ElectricityCommodity;
 import esdl.EnergyAsset;
 import esdl.EnergyCarrier;
 import esdl.GenericProfile;
@@ -34,6 +35,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
@@ -44,22 +46,36 @@ import nl.tno.essim.time.Horizon;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class HeatPumpNode extends ConversionNode {
+public class HeatPumpNode extends AbstractBasicConversionNode {
 
 	protected static final double DEFAULT_HP_COP = 3.5;
 	protected double cop;
 	protected HeatPump heatPump;
 	private String hpName;
+	private GenericProfile costProfile = null;
+	private GenericProfile marginalCostProfile;
 
 	@Builder(builderMethodName = "heatPumpNodeBuilder")
 	public HeatPumpNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			String esdlString, int directionFactor, Role role, TreeMap<Double, Double> demandFunction,
-			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
-		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role,
-				demandFunction, energy, cost, parent, carrier, children, timeStep, now);
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now) {
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now);
 		this.heatPump = (HeatPump) asset;
 		this.hpName = heatPump.getName() == null ? heatPump.getId() : heatPump.getName();
-		this.costInformation = heatPump.getCostInformation();
+		costInformation = heatPump.getCostInformation();
+		if (costInformation != null) {
+			marginalCostProfile = costInformation.getMarginalCosts();
+		}
+		for (Port port : heatPump.getPort()) {
+			if (port instanceof InPort) {
+				if (port.getCarrier() instanceof ElectricityCommodity) {
+					ElectricityCommodity commodity = (ElectricityCommodity) port.getCarrier();
+					costProfile = commodity.getCost();
+				}
+			}
+		}
+
 		this.controlStrategy = heatPump.getControlStrategy();
 		this.cop = heatPump.getCOP();
 		if (cop < Commons.eps) {
@@ -88,14 +104,14 @@ public class HeatPumpNode extends ConversionNode {
 					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
 					// = Make Flexible Producer curve
 					double energyOutput = timeStep * power;
-					if (costInformation == null) {
-						log.warn("Conversion {} is missing cost information!", hpName);
-						setCost(0.5);
+					if (marginalCostProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+					} else if (costProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) / cop);
 					} else {
-						GenericProfile marginalCosts = costInformation.getMarginalCosts();
-						if (marginalCosts != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-						}
+						log.warn("HeatPump {} is missing cost information! Defaulting to {}", hpName,
+								DEFAULT_MARGINAL_COST);
+						setCost(DEFAULT_MARGINAL_COST);
 					}
 					makeAdjustableProductionFunction(energyOutput);
 				} else {
@@ -276,14 +292,14 @@ public class HeatPumpNode extends ConversionNode {
 					}
 
 					double energyInput = timeStep * power * inputFactor;
-					if (costInformation == null) {
-						log.warn("Conversion {} is missing cost information!", getNodeId());
-						setCost(0.5);
+					if (marginalCostProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+					} else if (costProfile != null) {
+						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) * cop);
 					} else {
-						GenericProfile marginalCosts = costInformation.getMarginalCosts();
-						if (marginalCosts != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(marginalCosts, now)));
-						}
+						log.warn("HeatPump {} is missing cost information! Defaulting to {}", hpName,
+								DEFAULT_MARGINAL_COST);
+						setCost(DEFAULT_MARGINAL_COST);
 					}
 					makeAdjustableConsumptionFunction(energyInput);
 				} else {

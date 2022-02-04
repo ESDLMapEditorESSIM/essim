@@ -1,3 +1,4 @@
+
 package nl.tno.essim.mso;
 
 import java.util.List;
@@ -72,7 +73,7 @@ public class MSOClient {
 		@Override
 		public void messageArrived(String topic, MqttMessage message) throws Exception {
 			byte[] payload = message.getPayload();
-			log.debug("Received message: {} on topic {}".formatted(new String(payload)), topic);
+			log.debug("Received message: {} on topic {}", new String(payload), topic);
 			if (topic.contains("ModelsReady")) {
 				msoBarrier.countDown();
 			} else if (topic.contains("UnhealthyModel")) {

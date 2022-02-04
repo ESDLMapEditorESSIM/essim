@@ -26,7 +26,7 @@
           "condition": "AND",
           "key": "capability",
           "operator": "=",
-          "value": "Consumer"
+          "value": "Producer"
         }
       ],
       "groupBy": [],
@@ -50,7 +50,7 @@
           }
         ]
       ],
-      "measurement": "ESSIM"
+      "measurement": "/.*/"
     }
   ],
   "options": {},
@@ -65,7 +65,7 @@
     {
       "value": "null",
       "op": "=",
-      "text": "N/A"
+      "text": "No carrier with emissions defined!"
     }
   ],
   "mappingTypes": [
@@ -114,5 +114,6 @@
     "thresholdMarkers": true,
     "thresholdLabels": false
   },
-  "tableColumn": ""
+  "tableColumn": "",
+  "transparent": true
 }
