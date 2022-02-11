@@ -153,18 +153,27 @@ public class ProducerNode extends Node {
 			EnergyCarrier energyCarrier = (EnergyCarrier) carrier;
 
 			if (energyCarrier != null) {
-				double carrierEnergyContent = Commons.toStandardizedUnits(energyCarrier.getEnergyContent(),
-						energyCarrier.getEnergyContentUnit());
-				double carrierEmission = Commons.toStandardizedUnits(energyCarrier.getEmission(),
-						energyCarrier.getEmissionUnit());
+				EnergyCarrier inputEnergyCarrier = (EnergyCarrier) carrier;
 
-				double outputCarrierQuantity = -energy / carrierEnergyContent;
-				double emission = outputCarrierQuantity * carrierEmission;
+				double carrierEnergyContent = Commons.toStandardizedUnits(inputEnergyCarrier.getEnergyContent(),
+						inputEnergyCarrier.getEnergyContentUnit());
+				double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
+						inputEnergyCarrier.getEmissionUnit());
 
-				if (producer.getProdType().equals(RenewableTypeEnum.RENEWABLE)) {
-					emission = 0;
+				if (carrierEnergyContent > Commons.eps) {
+					double inputCarrierQuantity = Math.abs(energy) / carrierEnergyContent;
+					double emission = inputCarrierQuantity * carrierEmission;
+					builder.value("emission", emission);
+					builder.value("fuelConsumption", inputCarrierQuantity);
+
+					double currentInputCarrierCost = Commons
+							.aggregateCost(Commons.readProfile(carrier.getCost(),
+									new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+					if (!Double.isNaN(currentInputCarrierCost)) {
+						double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
+						builder.value("cost", inputCarrierCost);
+					}
 				}
-				builder.value("emission", emission);
 			}
 
 		}

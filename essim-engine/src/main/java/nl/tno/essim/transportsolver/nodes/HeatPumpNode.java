@@ -527,19 +527,25 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 						if (carrier instanceof EnergyCarrier) {
 							EnergyCarrier inputEnergyCarrier = (EnergyCarrier) carrier;
 
+							double carrierEnergyContent = Commons.toStandardizedUnits(
+									inputEnergyCarrier.getEnergyContent(), inputEnergyCarrier.getEnergyContentUnit());
 							double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
 									inputEnergyCarrier.getEmissionUnit());
 
-							double inputCarrierQuantity = Math.abs(energy);
-							double currentInputCarrierCost = Commons
-									.aggregateCost(Commons.readProfile(carrier.getCost(),
-											new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
-							double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
-							double emission = inputCarrierQuantity * carrierEmission;
+							if (carrierEnergyContent > Commons.eps) {
+								double inputCarrierQuantity = Math.abs(energy) / carrierEnergyContent;
+								double emission = inputCarrierQuantity * carrierEmission;
+								builder.value("emission", emission);
+								builder.value("fuelConsumption", inputCarrierQuantity);
 
-							builder.value("emission", emission);
-							builder.value("fuelConsumption", inputCarrierQuantity);
-							builder.value("cost", inputCarrierCost);
+								double currentInputCarrierCost = Commons
+										.aggregateCost(Commons.readProfile(carrier.getCost(),
+												new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+								if (!Double.isNaN(currentInputCarrierCost)) {
+									double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
+									builder.value("cost", inputCarrierCost);
+								}
+							}
 						}
 					}
 					double outputEnergy = energy + otherInputEnergy;
@@ -571,18 +577,25 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 					if (carrier instanceof EnergyCarrier) {
 						EnergyCarrier inputEnergyCarrier = (EnergyCarrier) carrier;
 
+						double carrierEnergyContent = Commons.toStandardizedUnits(inputEnergyCarrier.getEnergyContent(),
+								inputEnergyCarrier.getEnergyContentUnit());
 						double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
 								inputEnergyCarrier.getEmissionUnit());
 
-						double inputCarrierQuantity = Math.abs(energy);
-						double currentInputCarrierCost = Commons.aggregateCost(Commons.readProfile(carrier.getCost(),
-								new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
-						double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
-						double emission = inputCarrierQuantity * carrierEmission;
+						if (carrierEnergyContent > Commons.eps) {
+							double inputCarrierQuantity = Math.abs(energy) / carrierEnergyContent;
+							double emission = inputCarrierQuantity * carrierEmission;
+							builder.value("emission", emission);
+							builder.value("fuelConsumption", inputCarrierQuantity);
 
-						builder.value("emission", emission);
-						builder.value("fuelConsumption", inputCarrierQuantity);
-						builder.value("cost", inputCarrierCost);
+							double currentInputCarrierCost = Commons
+									.aggregateCost(Commons.readProfile(carrier.getCost(),
+											new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+							if (!Double.isNaN(currentInputCarrierCost)) {
+								double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
+								builder.value("cost", inputCarrierCost);
+							}
+						}
 					}
 				}
 				double outputEnergy = energy + otherInputEnergy;
