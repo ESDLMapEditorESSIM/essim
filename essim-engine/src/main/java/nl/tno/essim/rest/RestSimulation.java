@@ -26,7 +26,6 @@ import java.net.URLDecoder;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,7 +51,7 @@ import nl.tno.essim.mongo.MongoBackend;
 public class RestSimulation implements Simulation {
 
 	private MongoBackend mongo;
-	private final String ESSIM_ID = UUID.randomUUID().toString().substring(0, 8);
+	private final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);
 
 	private UncaughtExceptionHandler essimExceptionHandler = new UncaughtExceptionHandler() {
 		@Override
@@ -301,6 +300,7 @@ public class RestSimulation implements Simulation {
 										moduleResult.put("status", "Success");
 									}
 								} catch (JSONException e) {
+									
 									// Running calculation, so display progress as value
 									if (Commons.isNumericString(moduleResultString)) {
 										moduleResult = new JSONObject("{status: Calculating}");

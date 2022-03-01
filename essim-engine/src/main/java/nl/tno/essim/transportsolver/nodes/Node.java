@@ -91,7 +91,8 @@ public abstract class Node implements INode {
 			Node node = null;
 			if (this.config != null) {
 				node = new RemoteLogicNode(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor,
-						role, demandFunction, energy, cost, parent, carrier, children, timeStep, now, config, connectedPort);
+						role, demandFunction, energy, cost, parent, carrier, children, timeStep, now, config,
+						connectedPort);
 			} else if (asset != null) {
 				Class<?> assetNodeClass = null;
 				classSearch: for (Class<?> clazz = asset.getClass(); !clazz.equals(ItemImpl.class); clazz = clazz
@@ -115,9 +116,9 @@ public abstract class Node implements INode {
 						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
 								String.class, EnergyAsset.class, String.class, int.class, Role.class, BidFunction.class,
 								double.class, double.class, Node.class, Carrier.class, List.class, long.class,
-								Horizon.class, Port.class).newInstance(simulationId, nodeId, address, networkId, asset, esdlString,
-										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
-										timeStep, now, connectedPort);
+								Horizon.class, Port.class).newInstance(simulationId, nodeId, address, networkId, asset,
+										esdlString, directionFactor, role, demandFunction, energy, cost, parent,
+										carrier, children, timeStep, now, connectedPort);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -401,7 +402,7 @@ public abstract class Node implements INode {
 		ObservationBuilder builder = Observation.builder().observedAt(timestamp.getTime()).tag("assetId", asset.getId())
 				.tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
 				.tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName()).tag("address", address)
-				.tag("carrierId", carrier.getId())
+				.tag("carrierId", carrier.getId()).tag("role", role.name())
 				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
 				.value("allocationEnergy", energy)
 				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())

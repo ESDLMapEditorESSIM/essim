@@ -23,6 +23,7 @@ import com.mongodb.client.MongoDatabase;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.Commons;
 import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.rest.EssimHttpServer;
 
@@ -60,6 +61,7 @@ public class ESSimMain {
 		}
 
 		log.debug("ESSIM revision: {}", version);
+		System.setProperty(Commons.ESSIM_REVISION, version);
 
 		// Setup MongoDB server
 		log.debug("Connecting to Mongo Backend");

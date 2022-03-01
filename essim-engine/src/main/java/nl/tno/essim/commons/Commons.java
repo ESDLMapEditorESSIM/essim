@@ -65,6 +65,7 @@ public class Commons {
 	public static final double P_MIN = 0.0;
 	public static final double P_MAX = 1.0;
 	public static final String RESOURCE = ".";
+	public static final String ESSIM_REVISION = "ESSIM_REVISION";
 	public static RangeMap<Double, String> thresholdMap;
 	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
 

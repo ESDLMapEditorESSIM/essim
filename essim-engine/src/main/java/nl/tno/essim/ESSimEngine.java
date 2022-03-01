@@ -147,7 +147,7 @@ public class ESSimEngine implements IStatusProvider {
 
 	public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, File esdlFile)
 			throws Exception {
-		log.debug("ESSIM ID: {}", essimId);
+		log.debug("ESSIM Revision: {}", essimId);
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -450,7 +450,7 @@ public class ESSimEngine implements IStatusProvider {
 			}
 		}
 		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
-				scenarioName, simulationId, simulationStartTime, simulationEndTime, emissionRow);
+				scenarioName, simulationId, simulationStartTime, simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow);
 		return grafanaClient.getDashboardUrl();
 	}
 
