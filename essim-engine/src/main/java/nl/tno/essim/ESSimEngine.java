@@ -88,6 +88,7 @@ import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.consumers.AMQPObservationConsumer;
 import nl.tno.essim.observation.consumers.CSVObservationConsumer;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KafkaObservationConsumer;
@@ -214,6 +215,13 @@ public class ESSimEngine implements IStatusProvider {
 				simulationManager.addObservationConsumer(mqttObservationConsumer);
 				log.debug("Registering MQTT Observation Consumer");
 			}
+			if (simulation.getAmqpURL() != null) {
+				AMQPObservationConsumer amqpObservationConsumer = new AMQPObservationConsumer(simulation.getAmqpURL());
+				amqpObservationConsumer.init(simulationId);
+				observationManager.registerConsumer(amqpObservationConsumer);
+				simulationManager.addObservationConsumer(amqpObservationConsumer);
+				log.debug("Registering AMQP Observation Consumer");
+			}
 		} catch (Exception e) {
 			simulationManager.shutdown();
 			throw new IllegalArgumentException("Error in Observation Manager init: " + e.getMessage());
@@ -302,7 +310,8 @@ public class ESSimEngine implements IStatusProvider {
 		}
 
 		if (simulation.getMso() != null) {
-			MSOClient msoClient = new MSOClient(essimId, simulationId, simulation.getMso(), nodeConfig, energySystem, simulationManager);
+			MSOClient msoClient = new MSOClient(essimId, simulationId, simulation.getMso(), nodeConfig, energySystem,
+					simulationManager);
 			msoClient.deployModels();
 		}
 
@@ -450,7 +459,8 @@ public class ESSimEngine implements IStatusProvider {
 			}
 		}
 		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
-				scenarioName, simulationId, simulationStartTime, simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow);
+				scenarioName, simulationId, simulationStartTime,
+				simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow);
 		return grafanaClient.getDashboardUrl();
 	}
 

@@ -191,12 +191,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 					throw new InterruptedException(interruptedCause);
 				}
 
-//				Month thisMonth = time.getTime().getMonth();
-//				if (thisMonth != currentMonth) {
-//					log.debug("Next timestep {}", time.getTime().toString());
-//					currentMonth = thisMonth;
-//				}
-
 				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
 				if (status >= log_stat) {
