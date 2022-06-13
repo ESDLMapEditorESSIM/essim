@@ -53,7 +53,6 @@ public class RemoteLogicNode extends Node {
 	private static final String MQTT_PASSWORD = "Who Does Not Like Essim!?";
 
 	RemoteLogicNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-
 			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
 			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config,
 			Port connectedPort) {
@@ -73,21 +72,6 @@ public class RemoteLogicNode extends Node {
 			UUID randomId = UUID.randomUUID();
 			this.client = new MqttClient(serverURI, randomId.toString());
 
-			/*
-			 * client.setCallback(new MqttCallback() {
-			 * 
-			 * @Override public void messageArrived(String topic, MqttMessage message)
-			 * throws Exception { log.info("Also here received new message at topic: {}",
-			 * topic); }
-			 * 
-			 * @Override public void deliveryComplete(IMqttDeliveryToken token) {
-			 * log.info("Delivery complete"); }
-			 * 
-			 * @Override public void connectionLost(Throwable cause) {
-			 * log.error("Connection lost");
-			 * 
-			 * } });
-			 */
 			MqttConnectOptions connOpts = new MqttConnectOptions();
 			connOpts.setMaxInflight(50000);
 			connOpts.setCleanSession(true);
@@ -105,7 +89,8 @@ public class RemoteLogicNode extends Node {
 		try {
 			JSONObject message = new JSONObject()
 					.put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
-					.put("simulationId", simulationId).put("config", remoteConfig);
+					.put("simulationId", simulationId)
+					.put("config", remoteConfig);
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
 		} catch (MqttException e) {
@@ -121,8 +106,11 @@ public class RemoteLogicNode extends Node {
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
 
-		JSONObject message = new JSONObject().put("timeStamp", t).put("timeStepInSeconds", now.getPeriod().getSeconds())
-				.put("minPrice", minPrice).put("maxPrice", maxPrice).put("carrierId", carrier.getId());
+		JSONObject message = new JSONObject().put("timeStamp", t)
+				.put("timeStepInSeconds", now.getPeriod().getSeconds())
+				.put("minPrice", minPrice)
+				.put("maxPrice", maxPrice)
+				.put("carrierId", carrier.getId());
 		try {
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/createBid", msg);
@@ -141,14 +129,14 @@ public class RemoteLogicNode extends Node {
 	}
 
 	public void init() {
-		System.err.println("init() called...");
 		publishConfig();
 	}
 
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		JSONObject message = new JSONObject().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
-				.put("price", price).put("carrierId", carrier.getId());
+				.put("price", price)
+				.put("carrierId", carrier.getId());
 
 		try {
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());

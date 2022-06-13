@@ -259,7 +259,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				Port connectedPort = assetConnections.get(connectedAsset);
 				NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).connectedPort(connectedPort)
 						.simulationId(simulationId).asset(connectedAsset).parent(parentNode).networkId(getId())
-						.carrier(carrier);
+						.esdlString(esdlString).carrier(carrier);
 				for (Port myPort : connectedAsset.getPort()) {
 					if (myPort instanceof InPort) {
 						InPort myInPort = (InPort) myPort;
