@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -51,7 +50,6 @@ import esdl.Carrier;
 import esdl.Carriers;
 import esdl.ControlStrategy;
 import esdl.Conversion;
-import esdl.CostInformation;
 import esdl.DrivenByDemand;
 import esdl.DrivenBySupply;
 import esdl.EnergyAsset;
@@ -60,7 +58,6 @@ import esdl.EnergySystem;
 import esdl.EnergySystemInformation;
 import esdl.EsdlFactory;
 import esdl.EssimESDLPackage;
-import esdl.GenericProfile;
 import esdl.InPort;
 import esdl.Instance;
 import esdl.OutPort;
@@ -96,7 +93,6 @@ import nl.tno.essim.observation.consumers.MQTTObservationConsumer;
 import nl.tno.essim.observation.consumers.NATSObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.time.Horizon;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
 import nl.tno.essim.transportsolver.TransportSolver;
 
@@ -260,11 +256,6 @@ public class ESSimEngine implements IStatusProvider {
 
 		energyAssets = new ArrayList<EnergyAsset>();
 		findAllEnergyAssets(mainArea, energyAssets);
-
-		// Calculate and publish CAPEX costs
-		double[] capexCosts = calculateCAPEXCosts();
-		observationManager.publish(generalObservationProvider, Observation.builder().observedAt(simulationStartTime)
-				.value("investmentCosts", capexCosts[0]).value("installationCosts", capexCosts[1]).build());
 
 		EnergySystemInformation esInformation = energySystem.getEnergySystemInformation();
 		if (esInformation != null) {
@@ -451,7 +442,7 @@ public class ESSimEngine implements IStatusProvider {
 				for (Carrier carrier : carriers.getCarrier()) {
 					if (carrier instanceof EnergyCarrier) {
 						EnergyCarrier energyCarrier = (EnergyCarrier) carrier;
-						if (energyCarrier.getEmission() - 0.0 > 1e-15) {
+						if (energyCarrier.getEmission() - 0.0 > Commons.eps) {
 							emissionRow = true;
 						}
 					}
@@ -462,29 +453,6 @@ public class ESSimEngine implements IStatusProvider {
 				scenarioName, simulationId, simulationStartTime,
 				simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow);
 		return grafanaClient.getDashboardUrl();
-	}
-
-	private double[] calculateCAPEXCosts() {
-		double installationCosts = 0.0;
-		double investmentCosts = 0.0;
-		long simSeconds = Duration.between(simulationStartTime, simulationEndTime).getSeconds();
-		Horizon simulationPeriod = new Horizon(simulationStartTime, EssimDuration.of(simSeconds, ChronoUnit.SECONDS));
-
-		for (EnergyAsset asset : energyAssets) {
-			CostInformation costInformation = asset.getCostInformation();
-			if (costInformation != null) {
-				GenericProfile installationCostProfile = costInformation.getInstallationCosts();
-				if (installationCostProfile != null) {
-					installationCosts += Commons.sum(Commons.readProfile(installationCostProfile, simulationPeriod));
-				}
-				GenericProfile investmentCostProfile = costInformation.getInvestmentCosts();
-				if (investmentCostProfile != null) {
-					investmentCosts += Commons.sum(Commons.readProfile(investmentCostProfile, simulationPeriod));
-				}
-			}
-		}
-
-		return new double[] { investmentCosts, installationCosts };
 	}
 
 	public void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
