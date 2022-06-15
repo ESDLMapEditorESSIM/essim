@@ -135,9 +135,10 @@ public class HybridHeatpumpNode extends Node {
 		// This HHP is modelled like so:
 		// =============================
 		// if Heat Output < Max Electrical Thermal Output,
-		//      Heat Output = COP * Electrical Input
-		// if Max Electrical Thermal Output <= Heat Output <= Max Electrical Thermal Output + Max Gas Thermal Output,
-		//      Heat Output = Max Electrical Thermal Output + Eff * Gas Input
+		// Heat Output = COP * Electrical Input
+		// if Max Electrical Thermal Output <= Heat Output <= Max Electrical Thermal
+		// Output + Max Gas Thermal Output,
+		// Heat Output = Max Electrical Thermal Output + Eff * Gas Input
 		// @formatter:on
 
 		// Checks if an asset is operational (accounts for Commissioning and
@@ -199,7 +200,8 @@ public class HybridHeatpumpNode extends Node {
 					}
 
 					if (drivenByProfile.getPort().equals(hOutPort)) {
-						// If heat profile is given, the value in the profile is the heat output which cannot exceed the
+						// If heat profile is given, the value in the profile is the heat output which
+						// cannot exceed the
 						// rated electrical and gas thermal outputs of the device
 						energyOutput = Math.min(profileValue, (maxElecPowerThermal + maxGasPowerThermal) * timeStep);
 					} else {
@@ -355,14 +357,16 @@ public class HybridHeatpumpNode extends Node {
 				double eInputEnergy = 0.0;
 				double hOutputEnergy = 0.0;
 				if (connectedPort.equals(eInPort)) {
-					// Allocation is electricity, then gas input is zero and only heat output need be calculated
+					// Allocation is electricity, then gas input is zero and only heat output need
+					// be calculated
 					eInputEnergy = energy;
-					hOutputEnergy = -energy * cop;
+					hOutputEnergy = energy * cop;
 				} else if (connectedPort.equals(gInPort)) {
-					// Allocation is gas, then electricity input is max and heat output need be calculated
-					eInputEnergy = -maxElecPowerThermal * timeStep;
+					// Allocation is gas, then electricity input is max and heat output need be
+					// calculated
+					eInputEnergy = (maxElecPowerThermal / cop) * timeStep;
 					gInputEnergy = energy;
-					hOutputEnergy = -(gInputEnergy + eInputEnergy);
+					hOutputEnergy = (gInputEnergy * efficiency) + eInputEnergy;
 				} else {
 					throw new IllegalStateException("Hybrid heat pump " + hhpName
 							+ " cannot be a consumer in this network -> " + networkId + "!");
