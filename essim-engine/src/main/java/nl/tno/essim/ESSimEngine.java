@@ -77,6 +77,7 @@ import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.MSOConfiguration;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
@@ -120,6 +121,7 @@ public class ESSimEngine implements IStatusProvider {
 	private Date simRunTime;
 	private List<NodeConfiguration> nodeConfig;
 	private RemoteKPIModule kpiModules;
+	private MSOConfiguration msoConfiguration;
 	private double status;
 	private String statusDescription = "";
 	private String esdlString;
@@ -150,6 +152,7 @@ public class ESSimEngine implements IStatusProvider {
 		simRunTime = simulation.getSimRunDate();
 		nodeConfig = simulation.getNodeConfig();
 		kpiModules = simulation.getKpiModule();
+		msoConfiguration = simulation.getMso();
 		influxURL = simulation.getInfluxURL();
 
 		scenarioName = simulation.getScenarioID();
@@ -225,8 +228,11 @@ public class ESSimEngine implements IStatusProvider {
 
 		// Publish Simulation Description
 		if (simulationDescription != null) {
-			observationManager.publish(generalObservationProvider, Observation.builder().observedAt(simulationStartTime)
-					.value("SimDescription", simulationDescription).build());
+			observationManager.publish(generalObservationProvider,
+					Observation.builder()
+							.observedAt(simulationStartTime)
+							.value("SimDescription", simulationDescription)
+							.build());
 		}
 
 		energySystem = loadEcoreResource(esdlFile.getAbsoluteFile().toString());
@@ -247,7 +253,7 @@ public class ESSimEngine implements IStatusProvider {
 		if (energySystem.getInstance() == null) {
 			throw new IllegalArgumentException("No energy instance found in ESDL file!");
 		}
-		// TODO: Figure out which instance to simulate. For now, take the first one.
+
 		Instance instance = energySystem.getInstance().get(0);
 		if (instance.getArea() == null) {
 			throw new IllegalArgumentException("No area found in ESDL energy instance !");
@@ -282,10 +288,10 @@ public class ESSimEngine implements IStatusProvider {
 				emissionManager.setObservationManager(observationManager);
 				simulationManager.addOtherSimulatable(emissionManager);
 			} else {
-				// TODO: no carriers defined - going with copperplate
+				throw new IllegalArgumentException("No Carrier Information specified!");
 			}
 		} else {
-			// error
+			throw new IllegalArgumentException("No Energy System Information specified! Cannot read carrier information.");
 		}
 		int numAssets = 0;
 		for (TransportSolver solver : solversList) {
@@ -300,7 +306,7 @@ public class ESSimEngine implements IStatusProvider {
 			new KPIModuleClient(simulationId, simulation, messages);
 		}
 
-		if (simulation.getMso() != null) {
+		if (msoConfiguration != null) {
 			MSOClient msoClient = new MSOClient(essimId, simulationId, simulation.getMso(), nodeConfig, energySystem,
 					simulationManager);
 			msoClient.deployModels();
@@ -308,20 +314,17 @@ public class ESSimEngine implements IStatusProvider {
 
 		/*
 		 * String newFileName = energySystemFileName.split(".esdl")[0] + "_" +
-		 * simulationEndTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".esdl";
-		 * saveEcoreResource(energySystem, newFileName);
+		 * simulationEndTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".esdl"; saveEcoreResource(energySystem,
+		 * newFileName);
 		 * 
-		 * ESDLFile esdlFile = EssimFactory.eINSTANCE.createESDLFile();
-		 * esdlFile.setId(energySystem.getId());
+		 * ESDLFile esdlFile = EssimFactory.eINSTANCE.createESDLFile(); esdlFile.setId(energySystem.getId());
 		 * esdlFile.setName(energySystem.getName()); esdlFile.setPath(newFileName);
 		 * 
-		 * ESSetup esSetup = EssimFactory.eINSTANCE.createESSetup();
-		 * esSetup.setEnergySystemDescription(esdlFile);
+		 * ESSetup esSetup = EssimFactory.eINSTANCE.createESSetup(); esSetup.setEnergySystemDescription(esdlFile);
 		 * esSetup.setTimeStamp(DidoTime.localDateTimeToDate(simulationEndTime));
 		 * simulationRun.setLatestESSetup(esSetup);
 		 * 
-		 * saveEcoreResource(essimProject,
-		 * projectFileName.split(".essim")[0]+"_modified.essim");
+		 * saveEcoreResource(essimProject, projectFileName.split(".essim")[0]+"_modified.essim");
 		 */
 	}
 
@@ -372,14 +375,14 @@ public class ESSimEngine implements IStatusProvider {
 
 		log.debug(solversList.toString());
 
-//      WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
-//		simulation.setTransport(getNetworkDiags());
-//		MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
+		// WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
+		// simulation.setTransport(getNetworkDiags());
+		// MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
 
 		// Find all Conversion assets and their solver orders
 		convAssets = findAllConversionAssets();
 
-//		List<Integer[]> constrIndices = new ArrayList<Integer[]>();
+		// List<Integer[]> constrIndices = new ArrayList<Integer[]>();
 		HashMap<String, List<Integer[]>> constrIndices = new HashMap<String, List<Integer[]>>();
 		for (Conversion convAsset : convAssets.keySet()) {
 			Solvers solverOrder = convAssets.get(convAsset);
@@ -392,7 +395,7 @@ public class ESSimEngine implements IStatusProvider {
 						constrIndices.put(convAsset.getName(), new ArrayList<Integer[]>());
 					}
 					List<Integer[]> constraintList = constrIndices.get(convAsset.getName());
-					constraintList.add(new Integer[] { solversList.indexOf(first), solversList.indexOf(later) });
+					constraintList.add(new Integer[]{solversList.indexOf(first), solversList.indexOf(later)});
 				}
 			}
 			log.debug(convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
@@ -583,7 +586,8 @@ public class ESSimEngine implements IStatusProvider {
 							// Control Strategy is specified - go according to specification
 							if (controlStrategy instanceof DrivenByDemand) {
 								DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-								boolean portFound = conversion.getPort().parallelStream()
+								boolean portFound = conversion.getPort()
+										.parallelStream()
 										.anyMatch(p -> drivenByDemand.getOutPort().equals(p)
 												&& p.getCarrier().equals(solver.getCarrier()));
 								if (solver.getRole(conversion).equals(Role.PRODUCER) && portFound) {
@@ -593,7 +597,8 @@ public class ESSimEngine implements IStatusProvider {
 								}
 							} else if (controlStrategy instanceof DrivenBySupply) {
 								DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-								boolean portFound = conversion.getPort().parallelStream()
+								boolean portFound = conversion.getPort()
+										.parallelStream()
 										.anyMatch(p -> drivenBySupply.getInPort().equals(p)
 												&& p.getCarrier().equals(solver.getCarrier()));
 								if (solver.getRole(conversion).equals(Role.CONSUMER) && portFound) {
@@ -617,12 +622,14 @@ public class ESSimEngine implements IStatusProvider {
 							if (i != 1) {
 								throw new IllegalStateException(
 										conversion.getClass().getInterfaces()[0].getSimpleName() + " asset "
-												+ (conversion.getName() == null ? (" with ID " + conversion.getId())
+												+ (conversion.getName() == null
+														? (" with ID " + conversion.getId())
 														: (" with name " + conversion.getName()))
 												+ " has no control strategy defined!!");
 							} else {
 								log.warn(conversion.getClass().getInterfaces()[0].getSimpleName() + " asset "
-										+ (conversion.getName() == null ? (" with ID " + conversion.getId())
+										+ (conversion.getName() == null
+												? (" with ID " + conversion.getId())
 												: (" with name " + conversion.getName()))
 										+ " has no control strategy defined! Defaulting to DrivenByDemand.");
 								DrivenByDemand drivenByDemand = EsdlFactory.eINSTANCE.createDrivenByDemand();
@@ -673,24 +680,24 @@ public class ESSimEngine implements IStatusProvider {
 			int amount = Integer.parseInt(matcher.group(1));
 			ChronoUnit unit = null;
 			switch (matcher.group(2)) {
-			case "s":
-				unit = ChronoUnit.SECONDS;
-				break;
-			case "m":
-				unit = ChronoUnit.MINUTES;
-				break;
-			case "h":
-				unit = ChronoUnit.HOURS;
-				break;
-			case "d":
-				unit = ChronoUnit.DAYS;
-				break;
-			case "M":
-				unit = ChronoUnit.MONTHS;
-				break;
-			case "y":
-				unit = ChronoUnit.YEARS;
-				break;
+				case "s" :
+					unit = ChronoUnit.SECONDS;
+					break;
+				case "m" :
+					unit = ChronoUnit.MINUTES;
+					break;
+				case "h" :
+					unit = ChronoUnit.HOURS;
+					break;
+				case "d" :
+					unit = ChronoUnit.DAYS;
+					break;
+				case "M" :
+					unit = ChronoUnit.MONTHS;
+					break;
+				case "y" :
+					unit = ChronoUnit.YEARS;
+					break;
 			}
 			return EssimDuration.of(amount, unit);
 		}

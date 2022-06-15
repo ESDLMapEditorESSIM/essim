@@ -406,7 +406,7 @@ public abstract class Node implements INode {
 				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
 				.value("allocationEnergy", energy)
 				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
-				.value("marginalCost", cost);
+				.value("marginalCost", demandFunction.getMarginalCost());
 
 		// Tag sector if defined
 		String sectorName = "DefaultSector";

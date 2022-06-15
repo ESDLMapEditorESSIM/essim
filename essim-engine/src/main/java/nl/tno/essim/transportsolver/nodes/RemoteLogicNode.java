@@ -49,6 +49,7 @@ public class RemoteLogicNode extends Node {
 	private final Map<Long, Object> locks;
 	private final MqttClient client;
 	private JSONObject remoteConfig;
+	private String carrierId;
 	private static final String MQTT_USERNAME = "essim-mso";
 	private static final String MQTT_PASSWORD = "Who Does Not Like Essim!?";
 
@@ -60,6 +61,7 @@ public class RemoteLogicNode extends Node {
 				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
 		this.locks = new HashMap<>();
 		this.remoteLogicConfig = config;
+		carrierId = carrier.getId();
 		@SuppressWarnings("unchecked")
 		HashMap<String, ?> remoteConfigMap = (HashMap<String, ?>) config.getConfig();
 		remoteConfig = new JSONObject(remoteConfigMap);
@@ -79,7 +81,8 @@ public class RemoteLogicNode extends Node {
 			connOpts.setUserName(MQTT_USERNAME);
 			connOpts.setPassword(MQTT_PASSWORD.toCharArray());
 			this.client.connect(connOpts);
-			this.client.subscribe(config.getMqttTopic() + "/simulation/" + this.nodeId + "/#", this::receiveMessage);
+			this.client.subscribe(config.getMqttTopic() + "/simulation/" + this.nodeId + "/" + this.carrierId + "/#",
+					this::receiveMessage);
 		} catch (MqttException e) {
 			throw new RuntimeException(e);
 		}
@@ -172,10 +175,15 @@ public class RemoteLogicNode extends Node {
 
 				if (this.locks.containsKey(timestep)) {
 					this.demandFunction = new BidFunction();
-
+					String point = "";
 					while (buf.remaining() >= 16) {
-						this.demandFunction.addPoint(buf.getDouble(), buf.getDouble());
+						double price = buf.getDouble();
+						double energy = buf.getDouble();
+						point += "[" + price + "," + energy + "],";
+						this.demandFunction.addPoint(price, energy);
 					}
+					log.debug("Received for timestep " + timestep + ", carrier " + carrierId
+							+ ", bid curve is " + point.substring(0, point.length() - 1));
 
 					// Resume the createBidCurve thread
 					synchronized (this.locks.get(timestep)) {
