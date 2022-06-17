@@ -130,9 +130,16 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 						}
 						double energyOutput = timeStep * power * heatFactor;
 						if (marginalCostProfile != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+							Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+							if(Double.isNaN(aggregateCost)) {
+								aggregateCost = DEFAULT_MARGINAL_COST;
+							}
 						} else if (costProfile != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) / costFactor);
+							Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now))/ costFactor;
+							if(Double.isNaN(aggregateCost)) {
+								aggregateCost = DEFAULT_MARGINAL_COST;
+							}
+							setCost(aggregateCost);
 						} else {
 							log.warn("CoGeneration {} is missing cost information! Defaulting to {}", coGenName,
 									DEFAULT_MARGINAL_COST);
@@ -265,10 +272,16 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 						// = Make Flexible Consumer curve
 						double energyInput = (timeStep * power) / electricalEfficiency;
 						if (marginalCostProfile != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+							Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+							if(Double.isNaN(aggregateCost)) {
+								aggregateCost = DEFAULT_MARGINAL_COST;
+							}
 						} else if (costProfile != null) {
-							setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now))
-									* (electricalEfficiency + heatEfficiency));
+							Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now))* (electricalEfficiency + heatEfficiency);
+							if(Double.isNaN(aggregateCost)) {
+								aggregateCost = DEFAULT_MARGINAL_COST;
+							}
+							setCost(aggregateCost);
 						} else {
 							log.warn("CoGeneration {} is missing cost information! Defaulting to {}", coGenName,
 									DEFAULT_MARGINAL_COST);

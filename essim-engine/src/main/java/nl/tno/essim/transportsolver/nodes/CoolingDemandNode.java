@@ -100,9 +100,16 @@ public class CoolingDemandNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+				if(Double.isNaN(aggregateCost)) {
+					aggregateCost = DEFAULT_MARGINAL_COST;
+				}
 			} else if (costProfile != null) {
-				setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
+				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+				if(Double.isNaN(aggregateCost)) {
+					aggregateCost = DEFAULT_MARGINAL_COST;
+				}
+				setCost(aggregateCost);
 			} else {
 				log.warn("CoolingDemand {} is missing cost information! Defaulting to {}", consumerName,
 						DEFAULT_MARGINAL_COST);

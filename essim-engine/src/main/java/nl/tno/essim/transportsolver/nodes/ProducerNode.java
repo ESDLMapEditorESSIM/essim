@@ -123,9 +123,16 @@ public class ProducerNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+				if (Double.isNaN(aggregateCost)) {
+					aggregateCost = DEFAULT_MARGINAL_COST;
+				}
 			} else if (costProfile != null) {
-				setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
+				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+				if (Double.isNaN(aggregateCost)) {
+					aggregateCost = DEFAULT_MARGINAL_COST;
+				}
+				setCost(aggregateCost);
 			} else {
 				log.warn("Producer {} is missing cost information! Defaulting to {}", producerName,
 						DEFAULT_MARGINAL_COST);
@@ -166,9 +173,8 @@ public class ProducerNode extends Node {
 					builder.value("emission", emission);
 					builder.value("fuelConsumption", inputCarrierQuantity);
 
-					double currentInputCarrierCost = Commons
-							.aggregateCost(Commons.readProfile(carrier.getCost(),
-									new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+					double currentInputCarrierCost = Commons.aggregateCost(Commons.readProfile(carrier.getCost(),
+							new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
 					if (!Double.isNaN(currentInputCarrierCost)) {
 						double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
 						builder.value("cost", inputCarrierCost);

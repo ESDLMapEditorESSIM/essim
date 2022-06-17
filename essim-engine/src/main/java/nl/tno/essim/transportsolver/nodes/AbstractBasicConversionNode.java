@@ -115,9 +115,17 @@ public class AbstractBasicConversionNode extends Node {
 					// Make Flexible Producer Curve
 					double energyOutput = timeStep * power;
 					if (marginalCostProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+						if(Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
+						setCost(aggregateCost);
 					} else if (costProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) / efficiency);
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) / efficiency;
+						if(Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
+						setCost(aggregateCost);
 					} else {
 						log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
 								DEFAULT_MARGINAL_COST);
@@ -296,9 +304,16 @@ public class AbstractBasicConversionNode extends Node {
 					// Make flexible consumption curve
 					double energyOutput = (timeStep * power) / efficiency;
 					if (marginalCostProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+						if(Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
 					} else if (costProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)));
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+						if(Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
+						setCost(aggregateCost);
 					} else {
 						log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
 								DEFAULT_MARGINAL_COST);

@@ -156,7 +156,10 @@ public class HybridHeatpumpNode extends Node {
 				double totalPossibleThermalOutput = maxElecPowerThermal + maxGasPowerThermal;
 				double energyOutput = timeStep * totalPossibleThermalOutput;
 				if (marginalCostProfile != null) {
-					setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+					Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+					if (Double.isNaN(aggregateCost)) {
+						aggregateCost = DEFAULT_MARGINAL_COST;
+					}
 				} else {
 					log.warn("Hybrid heat pump {} is missing cost information! Defaulting to {}", hhpName,
 							DEFAULT_MARGINAL_COST);
@@ -231,18 +234,27 @@ public class HybridHeatpumpNode extends Node {
 					energyInput = maxElecPowerThermal / cop;
 					if (elecCostProfile != null) {
 						carrierCost = Commons.aggregateCost(Commons.readProfile(elecCostProfile, now));
+						if (Double.isNaN(carrierCost)) {
+							carrierCost = DEFAULT_MARGINAL_COST;
+						}
 					}
 				} else if (connectedPort.equals(gInPort)) {
 					energyInput = maxGasPowerThermal / efficiency;
 					if (gasCostProfile != null) {
 						carrierCost = Commons.aggregateCost(Commons.readProfile(gasCostProfile, now));
+						if (Double.isNaN(carrierCost)) {
+							carrierCost = DEFAULT_MARGINAL_COST;
+						}
 					}
 				} else {
 					throw new IllegalStateException("Hybrid heat pump " + hhpName
 							+ " cannot be a consumer in this network -> " + networkId + "!");
 				}
 				if (marginalCostProfile != null) {
-					setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+					Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+					if(Double.isNaN(aggregateCost)) {
+						aggregateCost = DEFAULT_MARGINAL_COST;
+					}
 				} else if (carrierCost != null) {
 					setCost(carrierCost);
 				} else {

@@ -105,9 +105,16 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 					// = Make Flexible Producer curve
 					double energyOutput = timeStep * power;
 					if (marginalCostProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+						if(Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
 					} else if (costProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) / cop);
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) / cop;
+						if (Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
+						setCost(aggregateCost);
 					} else {
 						log.warn("HeatPump {} is missing cost information! Defaulting to {}", hpName,
 								DEFAULT_MARGINAL_COST);
@@ -293,9 +300,16 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 
 					double energyInput = timeStep * power * inputFactor;
 					if (marginalCostProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now)));
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+						if(Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
 					} else if (costProfile != null) {
-						setCost(Commons.aggregateCost(Commons.readProfile(costProfile, now)) * cop);
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) * cop;
+						if (Double.isNaN(aggregateCost)) {
+							aggregateCost = DEFAULT_MARGINAL_COST;
+						}
+						setCost(aggregateCost);
 					} else {
 						log.warn("HeatPump {} is missing cost information! Defaulting to {}", hpName,
 								DEFAULT_MARGINAL_COST);
@@ -415,17 +429,17 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 					// = Impossible!!
 					throw new IllegalStateException(hpName + " cannot be a producer of " + carrier.getName());
 				}
-//			} else if (controlStrategy instanceof DrivenBySupply) {
-//				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-//				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
-//				if (drivingCarrier.equals(carrier)) {
-//					// PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
-//					// = Impossible!!
-//					throw new IllegalStateException(hpName + " cannot be a producer of " + carrier.getName());
-//				} else {
-//					// PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-//					// = Do Nothing!!
-//				}
+				// } else if (controlStrategy instanceof DrivenBySupply) {
+				// DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+				// Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+				// if (drivingCarrier.equals(carrier)) {
+				// // PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
+				// // = Impossible!!
+				// throw new IllegalStateException(hpName + " cannot be a producer of " + carrier.getName());
+				// } else {
+				// // PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
+				// // = Do Nothing!!
+				// }
 			} else if (controlStrategy instanceof DrivenByProfile) {
 				// PRODUCER + DRIVENBYPROFILE
 				// = Calculate 2x InputEnergy and write to InPorts
@@ -457,9 +471,8 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 						builder.value("emission", emission);
 						builder.value("fuelConsumption", inputCarrierQuantity);
 
-						double currentInputCarrierCost = Commons
-								.aggregateCost(Commons.readProfile(carrier.getCost(),
-										new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+						double currentInputCarrierCost = Commons.aggregateCost(Commons.readProfile(carrier.getCost(),
+								new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
 						if (!Double.isNaN(currentInputCarrierCost)) {
 							double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
 							builder.value("cost", inputCarrierCost);
@@ -488,8 +501,8 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 						if (carrier != null && carrier instanceof EnergyCarrier) {
 							EnergyCarrier inputEnergyCarrier = (EnergyCarrier) carrier;
 
-							double carrierEnergyContent = Commons.toStandardizedUnits(inputEnergyCarrier.getEnergyContent(),
-									inputEnergyCarrier.getEnergyContentUnit());
+							double carrierEnergyContent = Commons.toStandardizedUnits(
+									inputEnergyCarrier.getEnergyContent(), inputEnergyCarrier.getEnergyContentUnit());
 							double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
 									inputEnergyCarrier.getEmissionUnit());
 

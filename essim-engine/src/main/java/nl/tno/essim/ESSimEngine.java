@@ -158,8 +158,10 @@ public class ESSimEngine implements IStatusProvider {
 		scenarioName = simulation.getScenarioID();
 		this.simulationId = simulationId;
 
-		simulationStartTime = EssimTime.dateFromGUI(simulation.getStartDate());
-		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
+		simulationStartTime = EssimTime.dateToLocalDateTime(simulation.getStartDate());
+		simulationEndTime = EssimTime.dateToLocalDateTime(simulation.getEndDate());
+//		simulationStartTime = EssimTime.dateFromGUI(simulation.getStartDate());
+//		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
 		simulationStepLength = SIMULATION_STEP;
 		String timeStep = simulation.getTimeStep();
 		if (timeStep != null) {
@@ -312,20 +314,6 @@ public class ESSimEngine implements IStatusProvider {
 			msoClient.deployModels();
 		}
 
-		/*
-		 * String newFileName = energySystemFileName.split(".esdl")[0] + "_" +
-		 * simulationEndTime.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".esdl"; saveEcoreResource(energySystem,
-		 * newFileName);
-		 * 
-		 * ESDLFile esdlFile = EssimFactory.eINSTANCE.createESDLFile(); esdlFile.setId(energySystem.getId());
-		 * esdlFile.setName(energySystem.getName()); esdlFile.setPath(newFileName);
-		 * 
-		 * ESSetup esSetup = EssimFactory.eINSTANCE.createESSetup(); esSetup.setEnergySystemDescription(esdlFile);
-		 * esSetup.setTimeStamp(DidoTime.localDateTimeToDate(simulationEndTime));
-		 * simulationRun.setLatestESSetup(esSetup);
-		 * 
-		 * saveEcoreResource(essimProject, projectFileName.split(".essim")[0]+"_modified.essim");
-		 */
 	}
 
 	public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) throws Exception {

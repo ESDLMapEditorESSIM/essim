@@ -95,7 +95,7 @@ public abstract class Node implements INode {
 						connectedPort);
 			} else if (asset != null) {
 				Class<?> assetNodeClass = null;
-				classSearch: for (Class<?> clazz = asset.getClass(); !clazz.equals(ItemImpl.class); clazz = clazz
+				classSearch : for (Class<?> clazz = asset.getClass(); !clazz.equals(ItemImpl.class); clazz = clazz
 						.getSuperclass()) {
 					for (Class<?> interfaze : clazz.getInterfaces()) {
 						String nodeName = NODE_PACKAGE_NAME + "." + interfaze.getSimpleName() + NODE;
@@ -113,12 +113,14 @@ public abstract class Node implements INode {
 
 				if (assetNodeClass != null) {
 					try {
-						node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
-								String.class, EnergyAsset.class, String.class, int.class, Role.class, BidFunction.class,
-								double.class, double.class, Node.class, Carrier.class, List.class, long.class,
-								Horizon.class, Port.class).newInstance(simulationId, nodeId, address, networkId, asset,
-										esdlString, directionFactor, role, demandFunction, energy, cost, parent,
-										carrier, children, timeStep, now, connectedPort);
+						node = (Node) assetNodeClass
+								.getConstructor(String.class, String.class, String.class, String.class,
+										EnergyAsset.class, String.class, int.class, Role.class, BidFunction.class,
+										double.class, double.class, Node.class, Carrier.class, List.class, long.class,
+										Horizon.class, Port.class)
+								.newInstance(simulationId, nodeId, address, networkId, asset, esdlString,
+										directionFactor, role, demandFunction, energy, cost, parent, carrier, children,
+										timeStep, now, connectedPort);
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -256,7 +258,7 @@ public abstract class Node implements INode {
 		if (cost > max)
 			max = cost;
 
-		return new double[] { min, max };
+		return new double[]{min, max};
 	}
 
 	private void normaliseCosts(double[] minMaxCosts) {
@@ -277,7 +279,7 @@ public abstract class Node implements INode {
 		// Propagate
 		propagate(balancingPrice, observations, timestamp);
 
-		double[] vals = { imbalance, balancingPrice };
+		double[] vals = {imbalance, balancingPrice};
 		return vals;
 	}
 
@@ -360,10 +362,10 @@ public abstract class Node implements INode {
 		// cost = Math.max(0, Math.min(1, 1 - soc));
 		double delta = 0.01;
 		cost = 0.15;
-		if (mc1 == null) {
+		if (mc1 == null || Double.isNaN(mc1)) {
 			mc1 = Math.max(0.0, 0.95 * cost);
 		}
-		if (mc2 == null) {
+		if (mc2 == null || Double.isNaN(mc2)) {
 			mc2 = Math.min(1.0, 1.05 * cost);
 		}
 
@@ -399,10 +401,14 @@ public abstract class Node implements INode {
 		energy = findDemandFromCurve(demandFunction, price);
 
 		// Make observation
-		ObservationBuilder builder = Observation.builder().observedAt(timestamp.getTime()).tag("assetId", asset.getId())
+		ObservationBuilder builder = Observation.builder()
+				.observedAt(timestamp.getTime())
+				.tag("assetId", asset.getId())
 				.tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
-				.tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName()).tag("address", address)
-				.tag("carrierId", carrier.getId()).tag("role", role.name())
+				.tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName())
+				.tag("address", address)
+				.tag("carrierId", carrier.getId())
+				.tag("role", role.name())
 				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
 				.value("allocationEnergy", energy)
 				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
