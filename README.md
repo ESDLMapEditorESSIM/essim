@@ -20,5 +20,5 @@ docker build -t [optional-repository/]<name-of-image>[:optional-image-version] e
 
 *PS: Please take a look at `essim-engine/Dockerfile` to see what environment variables need to be defined.* <br>
 *PS: To execute in a non-Docker environment, you can use the jar generated after Step 1:*
-- *Traverse to `essim-engine\target\` and execute using the command `java -Xms2G -jar essim.jar`.*
+- *Traverse to `essim-engine\target\` and execute using the command `java -Xms8G -XX:+UseParallelGC -XX:GCTimeRatio=9 -jar essim.jar`.*
 - *Also remember to define the environment variables (refer to `essim-engine/Dockerfile`) in your execution environment.*
