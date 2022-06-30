@@ -24,4 +24,4 @@ ENV MAX_LOG_FILE_SIZE 10MB
 ENV MAX_LOG_HISTORY_DAYS 60
 ENV LOG_FILES_SIZE_CAP 2GB
 
-CMD java -Xms8G -jar essim.jar
+CMD java -Xms8G -XX:+UseParallelGC -XX:GCTimeRatio=9 -jar essim.jar

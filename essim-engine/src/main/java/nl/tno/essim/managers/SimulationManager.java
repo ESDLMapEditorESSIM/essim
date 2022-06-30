@@ -196,6 +196,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				if (status >= log_stat) {
 					log.debug("Next timestep {} [{} %]", time.getTime().toString(), String.format("%.0f", status * 100));
 					log_stat = log_stat + 0.1;
+					System.gc();
 				}
 
 				for (Integer simulatableType : solverBlock.keySet()) {
@@ -220,6 +221,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 				time = time.nextTimeStep();
 			}
+			System.gc();
 
 			barrier = new CountDownLatch(numOfSolvers);
 			for (Integer simTypeNumber : solverBlock.keySet()) {
