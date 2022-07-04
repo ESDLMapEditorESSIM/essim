@@ -135,10 +135,9 @@ public class HybridHeatPumpNode extends Node {
 		// This HHP is modelled like so:
 		// =============================
 		// if Heat Output < Max Electrical Thermal Output,
-		// Heat Output = COP * Electrical Input
-		// if Max Electrical Thermal Output <= Heat Output <= Max Electrical Thermal
-		// Output + Max Gas Thermal Output,
-		// Heat Output = Max Electrical Thermal Output + Eff * Gas Input
+		//      Heat Output = COP * Electrical Input
+		// if Max Electrical Thermal Output <= Heat Output <= Max Electrical Thermal Output + Max Gas Thermal Output,
+		// 		Heat Output = Max Electrical Thermal Output + Eff * Gas Input
 		// @formatter:on
 
 		// Checks if an asset is operational (accounts for Commissioning and
