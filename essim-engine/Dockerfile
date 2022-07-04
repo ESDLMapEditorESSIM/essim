@@ -1,4 +1,4 @@
-FROM anapsix/alpine-java:latest
+FROM eclipse-temurin:11-jre-alpine 
 
 WORKDIR /opt
 

@@ -29,7 +29,7 @@ import esdl.EnergyAsset;
 import esdl.GasCommodity;
 import esdl.GenericProfile;
 import esdl.HeatCommodity;
-import esdl.HybridHeatpump;
+import esdl.HybridHeatPump;
 import esdl.InPort;
 import esdl.OutPort;
 import esdl.Port;
@@ -47,13 +47,13 @@ import nl.tno.essim.time.Horizon;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class HybridHeatpumpNode extends Node {
+public class HybridHeatPumpNode extends Node {
 
 	protected static final double DEFAULT_HP_COP = 3.5;
 	private static final double DEFAULT_EFFICIENCY = 0.6;
 	protected double cop;
 	protected double efficiency;
-	protected HybridHeatpump hybridHeatPump;
+	protected HybridHeatPump HybridHeatPump;
 	private String hhpName;
 	private GenericProfile elecCostProfile = null;
 	private GenericProfile gasCostProfile = null;
@@ -66,20 +66,20 @@ public class HybridHeatpumpNode extends Node {
 	private CostInformation costInformation;
 	private ControlStrategy controlStrategy;
 
-	@Builder(builderMethodName = "hybridHeatpumpNodeBuilder")
-	public HybridHeatpumpNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+	@Builder(builderMethodName = "HybridHeatPumpNodeBuilder")
+	public HybridHeatPumpNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
 			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
 				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
 		this.timeStep = timeStep;
-		this.hybridHeatPump = (HybridHeatpump) asset;
-		this.hhpName = hybridHeatPump.getName() == null ? hybridHeatPump.getId() : hybridHeatPump.getName();
-		costInformation = hybridHeatPump.getCostInformation();
+		this.HybridHeatPump = (HybridHeatPump) asset;
+		this.hhpName = HybridHeatPump.getName() == null ? HybridHeatPump.getId() : HybridHeatPump.getName();
+		costInformation = HybridHeatPump.getCostInformation();
 		if (costInformation != null) {
 			marginalCostProfile = costInformation.getMarginalCosts();
 		}
-		for (Port port : hybridHeatPump.getPort()) {
+		for (Port port : HybridHeatPump.getPort()) {
 			if (port instanceof InPort) {
 				if (port.getCarrier() instanceof ElectricityCommodity) {
 					ElectricityCommodity commodity = (ElectricityCommodity) port.getCarrier();
@@ -104,25 +104,25 @@ public class HybridHeatpumpNode extends Node {
 							+ hhpName);
 		}
 
-		controlStrategy = hybridHeatPump.getControlStrategy();
+		controlStrategy = HybridHeatPump.getControlStrategy();
 
-		maxElecPowerThermal = hybridHeatPump.getHeatpumpThermalPower();
+		maxElecPowerThermal = HybridHeatPump.getHeatPumpThermalPower();
 		if (maxElecPowerThermal < Commons.eps) {
 			throw new IllegalArgumentException(
 					"HeatpumpThermalPower attribute of hybrid heat pump " + hhpName + " not specified!");
 		}
-		cop = hybridHeatPump.getHeatpumpCOP();
+		cop = HybridHeatPump.getHeatPumpCOP();
 		if (cop < Commons.eps) {
 			cop = DEFAULT_HP_COP;
 			log.warn("CoP for HHP {} is not defined! Defaulting to {}", hhpName, DEFAULT_HP_COP);
 		}
 
-		maxGasPowerThermal = hybridHeatPump.getGasHeaterThermalPower();
+		maxGasPowerThermal = HybridHeatPump.getGasHeaterThermalPower();
 		if (maxGasPowerThermal < Commons.eps) {
 			throw new IllegalArgumentException(
 					"GasHeaterThermalPower attribute of hybrid heat pump " + hhpName + " not specified!");
 		}
-		efficiency = hybridHeatPump.getGasHeaterEfficiency();
+		efficiency = HybridHeatPump.getGasHeaterEfficiency();
 		if (efficiency < Commons.eps) {
 			efficiency = DEFAULT_EFFICIENCY;
 			log.warn("Efficiency for HHP {} is not defined! Defaulting to {}", hhpName, DEFAULT_EFFICIENCY);
