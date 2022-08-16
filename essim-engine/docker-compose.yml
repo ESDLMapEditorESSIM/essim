@@ -37,7 +37,7 @@ services:
      - essim_net
 
   essim:
-    image: ci.tno.nl/essim/open-sourced-essim/essim-engine:ewoud
+    image: ci.tno.nl/essim/open-sourced-essim/essim-engine:master
     ports:
       - 8081:8081
     depends_on:

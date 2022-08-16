@@ -75,7 +75,7 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
 				}
 			}
 		}
-		log.debug("Initialised TimeSeriesProfile " + this);
+		log.debug("Initialised TimeSeriesProfile " + this.toString() );
 	}
 		
 	/*
@@ -123,5 +123,16 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
 			}
 		}
 		return true;
+	}
+	
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + "(" + 
+				"name=" + this.getName() + ", " +
+				"id=" + this.getId() + ", " + 
+				"startDateTime=" + this.getStartDateTime() + ", " + 
+				"timeStep=" + this.getTimestep() + 
+				")"
+				;
 	}
 }

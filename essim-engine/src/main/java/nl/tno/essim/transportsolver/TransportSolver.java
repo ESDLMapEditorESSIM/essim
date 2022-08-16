@@ -45,6 +45,7 @@ import esdl.ProfileReference;
 import esdl.Transport;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
+import essim.ESSIMTimeSeriesProfile;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
@@ -478,6 +479,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 						} else if (profile instanceof ESSIMDateTimeProfile) {
 							ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
 							dtProfile.initProfile(null, null, null);
+						} else if (profile instanceof ESSIMTimeSeriesProfile) {
+							ESSIMTimeSeriesProfile tsProfile = (ESSIMTimeSeriesProfile) profile;
+							tsProfile.initProfile(null, null, null);
 						}
 					}
 				}
@@ -538,6 +542,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			if (profile instanceof ProfileReference) {
 				profile = ((ProfileReference) profile).getReference();
 			}
+			// TODO: do instanceof check on ESSIMProfile, as all not-trivial profiles implement that interface
 			if (profile instanceof ESSIMInfluxDBProfile) {
 				ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
 				profileImpl.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
@@ -546,6 +551,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			} else if (profile instanceof ESSIMDateTimeProfile) {
 				ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
 				dtProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
+						EssimTime.localDateTimeToDate(simulationEndTime),
+						Converter.toESDLDuration(simulationStepLength));
+			} else if (profile instanceof ESSIMTimeSeriesProfile) {
+				ESSIMTimeSeriesProfile tsProfile = (ESSIMTimeSeriesProfile) profile;
+				tsProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
 						EssimTime.localDateTimeToDate(simulationEndTime),
 						Converter.toESDLDuration(simulationStepLength));
 			}
