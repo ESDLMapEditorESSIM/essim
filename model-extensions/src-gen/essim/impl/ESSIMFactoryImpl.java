@@ -1,17 +1,4 @@
 /**
- *  This work is based on original code developed and copyrighted by TNO 2020. 
- *  Subsequent contributions are licensed to you by the developers of such code and are
- *  made available to the Project under one or several contributor license agreements.
- *
- *  This work is licensed to you under the Apache License, Version 2.0.
- *  You may obtain a copy of the license at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Contributors:
- *      TNO         - Initial implementation
- *  Manager:
- *      TNO
  */
 package essim.impl;
 
@@ -32,7 +19,7 @@ import org.eclipse.emf.ecore.plugin.EcorePlugin;
  * <!-- end-user-doc -->
  * @generated
  */
-public class ESSIMFactoryImpl extends EFactoryImpl implements EssimFactory {
+public class EssimFactoryImpl extends EFactoryImpl implements EssimFactory {
 	/**
 	 * Creates the default factory implementation.
 	 * <!-- begin-user-doc -->
@@ -48,7 +35,7 @@ public class ESSIMFactoryImpl extends EFactoryImpl implements EssimFactory {
 		} catch (Exception exception) {
 			EcorePlugin.INSTANCE.log(exception);
 		}
-		return new ESSIMFactoryImpl();
+		return new EssimFactoryImpl();
 	}
 
 	/**
@@ -57,7 +44,7 @@ public class ESSIMFactoryImpl extends EFactoryImpl implements EssimFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	public ESSIMFactoryImpl() {
+	public EssimFactoryImpl() {
 		super();
 	}
 
@@ -75,6 +62,8 @@ public class ESSIMFactoryImpl extends EFactoryImpl implements EssimFactory {
 			return createESSIMDateTimeProfile();
 		case EssimPackage.ESSIM_SINGLE_VALUE_PROFILE:
 			return createESSIMSingleValueProfile();
+		case EssimPackage.ESSIM_TIME_SERIES_PROFILE:
+			return createESSIMTimeSeriesProfile();
 		default:
 			throw new IllegalArgumentException("The class '" + eClass.getName() + "' is not a valid classifier");
 		}
@@ -141,6 +130,17 @@ public class ESSIMFactoryImpl extends EFactoryImpl implements EssimFactory {
 	public ESSIMSingleValueProfile createESSIMSingleValueProfile() {
 		ESSIMSingleValueProfileImpl essimSingleValueProfile = new ESSIMSingleValueProfileImpl();
 		return essimSingleValueProfile;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public ESSIMTimeSeriesProfile createESSIMTimeSeriesProfile() {
+		ESSIMTimeSeriesProfileImpl essimTimeSeriesProfile = new ESSIMTimeSeriesProfileImpl();
+		return essimTimeSeriesProfile;
 	}
 
 	/**

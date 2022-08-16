@@ -23,6 +23,7 @@ import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
 import essim.ESSIMProfile;
 import essim.ESSIMSingleValueProfile;
+import essim.ESSIMTimeSeriesProfile;
 import essim.EssimFactory;
 import essim.EssimPackage;
 import essim.ExtendedESSIMFactory;
@@ -70,6 +71,13 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 	 * @generated
 	 */
 	private EClass essimSingleValueProfileEClass = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass essimTimeSeriesProfileEClass = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -240,6 +248,16 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 	 * @generated
 	 */
 	@Override
+	public EClass getESSIMTimeSeriesProfile() {
+		return essimTimeSeriesProfileEClass;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EEnum getProfileRepetitionEnum() {
 		return profileRepetitionEnumEEnum;
 	}
@@ -286,6 +304,8 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 
 		essimSingleValueProfileEClass = createEClass(ESSIM_SINGLE_VALUE_PROFILE);
 
+		essimTimeSeriesProfileEClass = createEClass(ESSIM_TIME_SERIES_PROFILE);
+
 		// Create enums
 		profileRepetitionEnumEEnum = createEEnum(PROFILE_REPETITION_ENUM);
 	}
@@ -328,6 +348,8 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 		essimDateTimeProfileEClass.getESuperTypes().add(this.getESSIMProfile());
 		essimSingleValueProfileEClass.getESuperTypes().add(theEsdlPackage.getSingleValue());
 		essimSingleValueProfileEClass.getESuperTypes().add(this.getESSIMProfile());
+		essimTimeSeriesProfileEClass.getESuperTypes().add(theEsdlPackage.getTimeSeriesProfile());
+		essimTimeSeriesProfileEClass.getESuperTypes().add(this.getESSIMProfile());
 
 		// Initialize classes, features, and operations; add parameters
 		initEClass(essimInfluxDBProfileEClass, ESSIMInfluxDBProfile.class, "ESSIMInfluxDBProfile", !IS_ABSTRACT,
@@ -356,6 +378,9 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 
 		initEClass(essimSingleValueProfileEClass, ESSIMSingleValueProfile.class, "ESSIMSingleValueProfile",
 				!IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+
+		initEClass(essimTimeSeriesProfileEClass, ESSIMTimeSeriesProfile.class, "ESSIMTimeSeriesProfile", !IS_ABSTRACT,
+				!IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 
 		// Initialize enums and add enum literals
 		initEEnum(profileRepetitionEnumEEnum, ProfileRepetitionEnum.class, "ProfileRepetitionEnum");

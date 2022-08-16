@@ -32,7 +32,7 @@ public interface EssimFactory extends EFactory {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
-	EssimFactory eINSTANCE = essim.impl.ESSIMFactoryImpl.init();
+	EssimFactory eINSTANCE = essim.impl.EssimFactoryImpl.init();
 
 	/**
 	 * Returns a new object of class '<em>ESSIM Influx DB Profile</em>'.
@@ -60,6 +60,15 @@ public interface EssimFactory extends EFactory {
 	 * @generated
 	 */
 	ESSIMSingleValueProfile createESSIMSingleValueProfile();
+
+	/**
+	 * Returns a new object of class '<em>ESSIM Time Series Profile</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>ESSIM Time Series Profile</em>'.
+	 * @generated
+	 */
+	ESSIMTimeSeriesProfile createESSIMTimeSeriesProfile();
 
 	/**
 	 * Returns the package supported by this factory.

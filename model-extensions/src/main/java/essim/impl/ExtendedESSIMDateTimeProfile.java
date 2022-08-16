@@ -61,16 +61,18 @@ public class ExtendedESSIMDateTimeProfile extends ESSIMDateTimeProfileImpl {
 		LocalDateTime startDate = EssimTime.dateToLocalDateTime(start);
 		LocalDateTime endDate = EssimTime.dateToLocalDateTime(end);
 		double val = 0.0;
-
-		for (LocalDateTime t = startDate; t.isEqual(endDate)
-				|| t.isBefore(endDate); t = t.plus(simStep.getSeconds(), ChronoUnit.SECONDS)) {
-			if (vals.containsKey(t)) {
-				val = vals.get(t);
-			}
-			if (getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
-				profile.put(t, Converter.toStandardizedUnits(val, getProfileQuantityAndUnit()));
-			} else {
-				profile.put(t, Converter.toStandardizedUnits(val, getProfileType()));
+		
+		synchronized (profile) {
+			for (LocalDateTime t = startDate; t.isEqual(endDate)
+					|| t.isBefore(endDate); t = t.plus(simStep.getSeconds(), ChronoUnit.SECONDS)) {
+				if (vals.containsKey(t)) {
+					val = vals.get(t);
+				}
+				if (getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
+					profile.put(t, Converter.toStandardizedUnits(val, getProfileQuantityAndUnit()));
+				} else {
+					profile.put(t, Converter.toStandardizedUnits(val, getProfileType()));
+				}
 			}
 		}
 		log.debug("Initialised profile " + this);

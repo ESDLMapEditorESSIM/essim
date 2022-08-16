@@ -23,6 +23,7 @@ import esdl.InfluxDBProfile;
 
 import esdl.SingleValue;
 import esdl.StaticProfile;
+import esdl.TimeSeriesProfile;
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notifier;
 
@@ -106,6 +107,11 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 		}
 
 		@Override
+		public Adapter caseESSIMTimeSeriesProfile(ESSIMTimeSeriesProfile object) {
+			return createESSIMTimeSeriesProfileAdapter();
+		}
+
+		@Override
 		public Adapter caseGenericProfile(GenericProfile object) {
 			return createGenericProfileAdapter();
 		}
@@ -138,6 +144,11 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 		@Override
 		public Adapter caseSingleValue(SingleValue object) {
 			return createSingleValueAdapter();
+		}
+
+		@Override
+		public Adapter caseTimeSeriesProfile(TimeSeriesProfile object) {
+			return createTimeSeriesProfileAdapter();
 		}
 
 		@Override
@@ -212,6 +223,20 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createESSIMSingleValueProfileAdapter() {
+		return null;
+	}
+
+	/**
+	 * Creates a new adapter for an object of class '{@link essim.ESSIMTimeSeriesProfile <em>ESSIM Time Series Profile</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see essim.ESSIMTimeSeriesProfile
+	 * @generated
+	 */
+	public Adapter createESSIMTimeSeriesProfileAdapter() {
 		return null;
 	}
 
@@ -310,6 +335,20 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createSingleValueAdapter() {
+		return null;
+	}
+
+	/**
+	 * Creates a new adapter for an object of class '{@link esdl.TimeSeriesProfile <em>Time Series Profile</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see esdl.TimeSeriesProfile
+	 * @generated
+	 */
+	public Adapter createTimeSeriesProfileAdapter() {
 		return null;
 	}
 

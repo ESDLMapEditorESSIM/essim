@@ -563,6 +563,143 @@ public interface EssimPackage extends EPackage {
 	int ESSIM_SINGLE_VALUE_PROFILE_OPERATION_COUNT = EsdlPackage.SINGLE_VALUE_OPERATION_COUNT + 1;
 
 	/**
+	 * The meta object id for the '{@link essim.impl.ESSIMTimeSeriesProfileImpl <em>ESSIM Time Series Profile</em>}' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see essim.impl.ESSIMTimeSeriesProfileImpl
+	 * @see essim.impl.EssimPackageImpl#getESSIMTimeSeriesProfile()
+	 * @generated
+	 */
+	int ESSIM_TIME_SERIES_PROFILE = 4;
+
+	/**
+	 * The feature id for the '<em><b>Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__NAME = EsdlPackage.TIME_SERIES_PROFILE__NAME;
+
+	/**
+	 * The feature id for the '<em><b>Profile Type</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__PROFILE_TYPE = EsdlPackage.TIME_SERIES_PROFILE__PROFILE_TYPE;
+
+	/**
+	 * The feature id for the '<em><b>Id</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__ID = EsdlPackage.TIME_SERIES_PROFILE__ID;
+
+	/**
+	 * The feature id for the '<em><b>Data Source</b></em>' containment reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__DATA_SOURCE = EsdlPackage.TIME_SERIES_PROFILE__DATA_SOURCE;
+
+	/**
+	 * The feature id for the '<em><b>Profile Quantity And Unit</b></em>' containment reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__PROFILE_QUANTITY_AND_UNIT = EsdlPackage.TIME_SERIES_PROFILE__PROFILE_QUANTITY_AND_UNIT;
+
+	/**
+	 * The feature id for the '<em><b>Interpolation Method</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__INTERPOLATION_METHOD = EsdlPackage.TIME_SERIES_PROFILE__INTERPOLATION_METHOD;
+
+	/**
+	 * The feature id for the '<em><b>Start Date Time</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__START_DATE_TIME = EsdlPackage.TIME_SERIES_PROFILE__START_DATE_TIME;
+
+	/**
+	 * The feature id for the '<em><b>Timestep</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__TIMESTEP = EsdlPackage.TIME_SERIES_PROFILE__TIMESTEP;
+
+	/**
+	 * The feature id for the '<em><b>Values</b></em>' attribute list.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE__VALUES = EsdlPackage.TIME_SERIES_PROFILE__VALUES;
+
+	/**
+	 * The number of structural features of the '<em>ESSIM Time Series Profile</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE_FEATURE_COUNT = EsdlPackage.TIME_SERIES_PROFILE_FEATURE_COUNT + 0;
+
+	/**
+	 * The operation id for the '<em>Get Profile</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE___GET_PROFILE__DATE_DATE_DURATION = EsdlPackage.TIME_SERIES_PROFILE___GET_PROFILE__DATE_DATE_DURATION;
+
+	/**
+	 * The operation id for the '<em>Set Profile</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE___SET_PROFILE__ELIST = EsdlPackage.TIME_SERIES_PROFILE___SET_PROFILE__ELIST;
+
+	/**
+	 * The operation id for the '<em>Init Profile</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE___INIT_PROFILE__DATE_DATE_DURATION = EsdlPackage.TIME_SERIES_PROFILE_OPERATION_COUNT
+			+ 0;
+
+	/**
+	 * The number of operations of the '<em>ESSIM Time Series Profile</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_TIME_SERIES_PROFILE_OPERATION_COUNT = EsdlPackage.TIME_SERIES_PROFILE_OPERATION_COUNT + 1;
+
+	/**
 	 * The meta object id for the '{@link essim.ProfileRepetitionEnum <em>Profile Repetition Enum</em>}' enum.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -570,7 +707,7 @@ public interface EssimPackage extends EPackage {
 	 * @see essim.impl.EssimPackageImpl#getProfileRepetitionEnum()
 	 * @generated
 	 */
-	int PROFILE_REPETITION_ENUM = 4;
+	int PROFILE_REPETITION_ENUM = 5;
 
 	/**
 	 * Returns the meta object for class '{@link essim.ESSIMInfluxDBProfile <em>ESSIM Influx DB Profile</em>}'.
@@ -654,6 +791,16 @@ public interface EssimPackage extends EPackage {
 	 * @generated
 	 */
 	EClass getESSIMSingleValueProfile();
+
+	/**
+	 * Returns the meta object for class '{@link essim.ESSIMTimeSeriesProfile <em>ESSIM Time Series Profile</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for class '<em>ESSIM Time Series Profile</em>'.
+	 * @see essim.ESSIMTimeSeriesProfile
+	 * @generated
+	 */
+	EClass getESSIMTimeSeriesProfile();
 
 	/**
 	 * Returns the meta object for enum '{@link essim.ProfileRepetitionEnum <em>Profile Repetition Enum</em>}'.
@@ -761,6 +908,16 @@ public interface EssimPackage extends EPackage {
 		 * @generated
 		 */
 		EClass ESSIM_SINGLE_VALUE_PROFILE = eINSTANCE.getESSIMSingleValueProfile();
+
+		/**
+		 * The meta object literal for the '{@link essim.impl.ESSIMTimeSeriesProfileImpl <em>ESSIM Time Series Profile</em>}' class.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see essim.impl.ESSIMTimeSeriesProfileImpl
+		 * @see essim.impl.EssimPackageImpl#getESSIMTimeSeriesProfile()
+		 * @generated
+		 */
+		EClass ESSIM_TIME_SERIES_PROFILE = eINSTANCE.getESSIMTimeSeriesProfile();
 
 		/**
 		 * The meta object literal for the '{@link essim.ProfileRepetitionEnum <em>Profile Repetition Enum</em>}' enum.

@@ -23,6 +23,7 @@ import esdl.InfluxDBProfile;
 
 import esdl.SingleValue;
 import esdl.StaticProfile;
+import esdl.TimeSeriesProfile;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 
@@ -139,6 +140,21 @@ public class EssimSwitch<T> extends Switch<T> {
 				result = defaultCase(theEObject);
 			return result;
 		}
+		case EssimPackage.ESSIM_TIME_SERIES_PROFILE: {
+			ESSIMTimeSeriesProfile essimTimeSeriesProfile = (ESSIMTimeSeriesProfile) theEObject;
+			T result = caseESSIMTimeSeriesProfile(essimTimeSeriesProfile);
+			if (result == null)
+				result = caseTimeSeriesProfile(essimTimeSeriesProfile);
+			if (result == null)
+				result = caseESSIMProfile(essimTimeSeriesProfile);
+			if (result == null)
+				result = caseStaticProfile(essimTimeSeriesProfile);
+			if (result == null)
+				result = caseGenericProfile(essimTimeSeriesProfile);
+			if (result == null)
+				result = defaultCase(theEObject);
+			return result;
+		}
 		default:
 			return defaultCase(theEObject);
 		}
@@ -201,6 +217,21 @@ public class EssimSwitch<T> extends Switch<T> {
 	 * @generated
 	 */
 	public T caseESSIMSingleValueProfile(ESSIMSingleValueProfile object) {
+		return null;
+	}
+
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>ESSIM Time Series Profile</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>ESSIM Time Series Profile</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseESSIMTimeSeriesProfile(ESSIMTimeSeriesProfile object) {
 		return null;
 	}
 
@@ -306,6 +337,21 @@ public class EssimSwitch<T> extends Switch<T> {
 	 * @generated
 	 */
 	public T caseSingleValue(SingleValue object) {
+		return null;
+	}
+
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>Time Series Profile</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>Time Series Profile</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseTimeSeriesProfile(TimeSeriesProfile object) {
 		return null;
 	}
 

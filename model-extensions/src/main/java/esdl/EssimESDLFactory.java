@@ -19,6 +19,7 @@ import esdl.impl.EssimESDLFactoryImpl;
 import essim.impl.ExtendedESSIMDateTimeProfile;
 import essim.impl.ExtendedESSIMInfluxDBProfile;
 import essim.impl.ExtendedESSIMSingleValueProfile;
+import essim.impl.ExtendedESSIMTimeSeriesProfile;
 
 /** This factory  overrides the generated factory and returns the new generated interfaces */
 public interface EssimESDLFactory extends EsdlFactory 
@@ -47,5 +48,11 @@ public interface EssimESDLFactory extends EsdlFactory
 	 */
 	@Override
 	public ExtendedESSIMInfluxDBProfile createInfluxDBProfile();
+	
+	/* (non-Javadoc)
+	 * @see esdl.EsdlFactory#createInfluxDBProfile()
+	 */
+	@Override
+	public ExtendedESSIMTimeSeriesProfile createTimeSeriesProfile();
 
 }

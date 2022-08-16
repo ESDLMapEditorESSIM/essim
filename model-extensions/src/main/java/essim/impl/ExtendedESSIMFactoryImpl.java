@@ -21,7 +21,7 @@ import org.eclipse.emf.ecore.plugin.EcorePlugin;
 import essim.EssimPackage;
 import essim.ExtendedESSIMFactory;
 
-public class ExtendedESSIMFactoryImpl extends ESSIMFactoryImpl implements ExtendedESSIMFactory {
+public class ExtendedESSIMFactoryImpl extends EssimFactoryImpl implements ExtendedESSIMFactory {
 
 	public ExtendedESSIMFactoryImpl() {
 		super();
@@ -55,5 +55,14 @@ public class ExtendedESSIMFactoryImpl extends ESSIMFactoryImpl implements Extend
 	public ExtendedESSIMDateTimeProfile createESSIMDateTimeProfile() {
 		return new ExtendedESSIMDateTimeProfile();
 	}
+	
+	/* (non-Javadoc)
+	 * @see esdl.EsdlFactory#createTimeSeriesProfile()
+	 */
+	@Override
+	public ExtendedESSIMTimeSeriesProfile createESSIMTimeSeriesProfile() {
+		return new ExtendedESSIMTimeSeriesProfile();
+	}
+
 
 }
