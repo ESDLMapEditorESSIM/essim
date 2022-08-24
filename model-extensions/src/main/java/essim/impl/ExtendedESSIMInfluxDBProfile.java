@@ -214,6 +214,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 								+ ". Please verify the database name, measurement and field names and timeframe of query!");
 					}
 					for (Series series : result.getSeries()) {
+						log.debug("Query returned {} values", series.getValues().size());
 						dataCache = new TimeSeriesDataCache(field, series.getValues(), simStartDate, simEndDate,
 								simulationStepLength, annualChange);
 					}
