@@ -19,12 +19,16 @@ import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.glassfish.grizzly.http.server.CLStaticHttpHandler;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class EssimHttpServer {
 
 	private HttpServer server;
@@ -45,6 +49,11 @@ public class EssimHttpServer {
 		ResourceConfig rc = ResourceConfig.forApplication(new EssimApplication());
 		rc.register(LoggingFeature.class);
 		this.server = GrizzlyHttpServerFactory.createHttpServer(publishURI, rc);
+		// server openapi.json from the openapi folder in /src/main/resources (part of the jar)
+		this.server.getServerConfiguration().addHttpHandler(new CLStaticHttpHandler(EssimHttpServer.class.getClassLoader(), "openapi/"), "/openapi");
+		log.info(String.format("ESSIM OpenAPI endpoint available at %s://%s:%d/openapi/", scheme, host, port));
+		//final AccessLogBuilder builder = new AccessLogBuilder("access.log");
+		//builder.instrument(this.server.getServerConfiguration());
 	}
 
 	public URI getBaseURI() {
