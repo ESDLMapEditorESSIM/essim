@@ -159,6 +159,7 @@ public class HybridHeatPumpNode extends Node {
 					if (Double.isNaN(aggregateCost)) {
 						aggregateCost = DEFAULT_MARGINAL_COST;
 					}
+					setCost(aggregateCost);
 				} else {
 					log.warn("Hybrid heat pump {} is missing cost information! Defaulting to {}", hhpName,
 							DEFAULT_MARGINAL_COST);
@@ -254,6 +255,7 @@ public class HybridHeatPumpNode extends Node {
 					if(Double.isNaN(aggregateCost)) {
 						aggregateCost = DEFAULT_MARGINAL_COST;
 					}
+					setCost(aggregateCost);
 				} else if (carrierCost != null) {
 					setCost(carrierCost);
 				} else {

@@ -127,6 +127,7 @@ public class ProducerNode extends Node {
 				if (Double.isNaN(aggregateCost)) {
 					aggregateCost = DEFAULT_MARGINAL_COST;
 				}
+				setCost(aggregateCost);
 			} else if (costProfile != null) {
 				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
 				if (Double.isNaN(aggregateCost)) {

@@ -399,6 +399,9 @@ public abstract class Node implements INode {
 	private void propagate(double price, List<Observation> observations, EssimTime timestamp) {
 		// Allocate
 		energy = findDemandFromCurve(demandFunction, price);
+		
+		// print curve to stdout
+		System.out.println(this.getAsset().getName() + ": " + demandFunction.toString() + ", price=" + price + ", energy="+energy);
 
 		// Make observation
 		ObservationBuilder builder = Observation.builder()

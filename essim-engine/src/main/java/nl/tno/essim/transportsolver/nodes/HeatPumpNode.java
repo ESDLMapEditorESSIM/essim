@@ -109,6 +109,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 						if(Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
+						setCost(aggregateCost);
 					} else if (costProfile != null) {
 						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) / cop;
 						if (Double.isNaN(aggregateCost)) {
@@ -304,6 +305,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 						if(Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
+						setCost(aggregateCost);
 					} else if (costProfile != null) {
 						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) * cop;
 						if (Double.isNaN(aggregateCost)) {

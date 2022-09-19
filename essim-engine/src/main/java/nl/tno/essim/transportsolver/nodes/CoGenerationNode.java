@@ -134,6 +134,7 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 							if(Double.isNaN(aggregateCost)) {
 								aggregateCost = DEFAULT_MARGINAL_COST;
 							}
+							setCost(aggregateCost);
 						} else if (costProfile != null) {
 							Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now))/ costFactor;
 							if(Double.isNaN(aggregateCost)) {
@@ -276,6 +277,7 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 							if(Double.isNaN(aggregateCost)) {
 								aggregateCost = DEFAULT_MARGINAL_COST;
 							}
+							setCost(aggregateCost);
 						} else if (costProfile != null) {
 							Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now))* (electricalEfficiency + heatEfficiency);
 							if(Double.isNaN(aggregateCost)) {
