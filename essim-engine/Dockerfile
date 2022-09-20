@@ -5,7 +5,6 @@ WORKDIR /opt
 COPY target/essim.jar /opt
 COPY src/main/resources/json /opt/json
 COPY src/main/resources/tree /opt/tree
-COPY version.txt /opt
 
 ENV HTTP_SERVER_SCHEME http
 ENV HTTP_SERVER_HOSTNAME localhost

@@ -5,7 +5,7 @@
 
 	<groupId>nl.tno.essim</groupId>
 	<artifactId>parent</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>${revision}</version>
 
 	<packaging>pom</packaging>
 	<name>ESSIM parent POM</name>
@@ -23,9 +23,9 @@
 	</organization>
 
 	<properties>
+		<revision>22.09</revision>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>11</java.version>
-		<project.version>0.0.1-SNAPSHOT</project.version>
 		<emf.version>2.16.0</emf.version>
 		<emfecore.version>2.18.0</emfecore.version>
 		<esdl.version>2.22.7</esdl.version>
@@ -145,6 +145,31 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>5.0.0</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <!--
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.build.(time|version)$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.commit.id.(abbrev|full)$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                    -->
+                    <commitIdGenerationMode>full</commitIdGenerationMode>
+                </configuration>
+            </plugin>
 		</plugins>
 	</build>
 </project>

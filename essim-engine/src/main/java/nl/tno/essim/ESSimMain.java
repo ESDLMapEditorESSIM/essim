@@ -15,14 +15,12 @@
  */
 package nl.tno.essim;
 
-import java.io.FileReader;
-import java.io.IOException;
-
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.Version.GitRepositoryState;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.rest.EssimHttpServer;
@@ -51,16 +49,22 @@ public class ESSimMain {
 
 	public ESSimMain() {
 
-		String version = "local";
+//		String version = "local";
+//
+//		try (FileReader fr = new FileReader("version.txt")) {
+//			char[] versionText = new char[7];
+//			fr.read(versionText);
+//			version = new String(versionText);
+//		} catch (IOException e) {
+//		}
+//		
+		GitRepositoryState gitVersion = Version.getGitRepositoryState();
+		String version = gitVersion.getCommitIdAbbrev();
 
-		try (FileReader fr = new FileReader("version.txt")) {
-			char[] versionText = new char[7];
-			fr.read(versionText);
-			version = new String(versionText);
-		} catch (IOException e) {
-		}
-
-		log.debug("ESSIM revision: {}", version);
+		log.debug("ESSIM version: {}", gitVersion.getBuildVersion());
+		log.debug("ESSIM git commit id: {} / {}", version, gitVersion.getDescribeShort());
+		log.debug("ESSIM Last git commit by {} at {}", gitVersion.getCommitUserName(), gitVersion.getCommitTime());
+		log.debug("ESSIM build by {} at {}", gitVersion.getBuildUserName(), gitVersion.getBuildTime());
 		System.setProperty(Commons.ESSIM_REVISION, version);
 
 		// Setup MongoDB server

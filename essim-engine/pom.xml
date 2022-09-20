@@ -13,7 +13,7 @@
 	<parent>
 		<groupId>nl.tno.essim</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>${revision}</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -120,7 +120,7 @@
 		<dependency>
 			<groupId>nl.tno.essim</groupId>
 			<artifactId>model-extensions</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 	</dependencies>
 
