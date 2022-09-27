@@ -37,7 +37,7 @@ import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.model.Status;
-import nl.tno.essim.mongo.MongoBackend;
+import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
@@ -66,7 +66,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private List<Simulatable> otherSims;
 	@Getter
 	private boolean started;
-	private MongoBackend mongo;
+	private IMongoBackend mongo;
 	private String interruptedCause;
 	private ScheduledExecutorService statusUpdater;
 	private boolean interrupted;
@@ -75,7 +75,8 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private long modelDeployTimeout;
 
 	public SimulationManager(String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
-			EssimDuration simStepLength) {
+			EssimDuration simStepLength, IMongoBackend mongo) {
+		this.mongo = mongo;
 		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
 		if (timeout == null) {
 			timeout = "45";
@@ -89,7 +90,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		otherSims = new ArrayList<Simulatable>();
 		time = new EssimTime(startDateTime, endDateTime, simStepLength);
 		precheckTime = Duration.of(0, ChronoUnit.SECONDS);
-		mongo = MongoBackend.getInstance();
+		//mongo = MongoBackend.getInstance();
 		interrupted = false;
 		interruptedCause = "";
 

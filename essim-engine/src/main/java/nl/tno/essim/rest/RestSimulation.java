@@ -45,12 +45,13 @@ import nl.tno.essim.model.SimulationStatus;
 import nl.tno.essim.model.SimulationStatusImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.model.TransportNetwork;
+import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mongo.MongoBackend;
 
 @Slf4j
 public class RestSimulation implements Simulation {
 
-	private MongoBackend mongo;
+	private IMongoBackend mongo;
 	private final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);
 
 	private UncaughtExceptionHandler essimExceptionHandler = new UncaughtExceptionHandler() {
@@ -65,6 +66,8 @@ public class RestSimulation implements Simulation {
 	};
 
 	public RestSimulation() {
+		// For now use the singleton, next version this needs to be injected such that we can test ESSIM
+		// this uses the actual Backend instead of the stub in test cases...
 		mongo = MongoBackend.getInstance();
 	}
 
@@ -116,7 +119,7 @@ public class RestSimulation implements Simulation {
 
 				Date now = new Date();
 				simulation.setSimRunDate(now);
-				ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, esdlFile);
+				ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, esdlFile, mongo);
 				String grafanaDashboard = engine.createGrafanaDashboard();
 				if (grafanaDashboard != null) {
 					simulation.setDashboardURL(grafanaDashboard);

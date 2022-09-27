@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.Version.GitRepositoryState;
 import nl.tno.essim.commons.Commons;
+import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.rest.EssimHttpServer;
 
@@ -41,7 +42,7 @@ public class ESSimMain {
 	private MongoDatabase database;
 	@Getter
 	private EssimHttpServer ramlServer;
-	private MongoBackend mongoBackend;
+	private IMongoBackend mongoBackend;
 
 	public static void main(String[] args) {
 		new ESSimMain();

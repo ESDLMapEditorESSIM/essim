@@ -51,9 +51,9 @@ import nl.tno.essim.model.SimulationStatusImpl;
 import nl.tno.essim.model.Status;
 
 @Slf4j
-public class MongoBackend {
+public class MongoBackend implements IMongoBackend {
 
-	private static MongoBackend instance;
+	private static IMongoBackend instance;
 	private static final String KPI_DATABASE = "KPIModules";
 	private static final String KPI_COLL_NAME = "KPIModulesColl";
 	private static final String ESSIM_DATABASE = "essimDB";
@@ -69,7 +69,7 @@ public class MongoBackend {
 	private JacksonDBCollection<KPIModuleInfo, String> kpiCollection;
 	private String status;
 
-	public synchronized static MongoBackend getInstance() {
+	public synchronized static IMongoBackend getInstance() {
 		return MongoBackend.instance;
 	}
 
@@ -99,10 +99,12 @@ public class MongoBackend {
 		instance = this;
 	}
 
+	@Override
 	public void updateStatus(String status) {
 		this.status = status;
 	}
 
+	@Override
 	public String getStatus() {
 		return status;
 	}
@@ -117,12 +119,14 @@ public class MongoBackend {
 		log.debug("Connection to MongoDB @ {} succeeded!", serverAddress.toString());
 	}
 
+	@Override
 	public String addSimulation(EssimSimulation simulation) {
 		WriteResult<EssimSimulation, String> result = essimCollection.save(simulation);
 		String id = result.getDbObject().get("_id").toString();
 		return id;
 	}
 
+	@Override
 	public void updateSimulationData(String simulationId, EssimSimulation simulationData) {
 		try {
 			Query query = DBQuery.is("_id", new ObjectId(simulationId));
@@ -133,6 +137,7 @@ public class MongoBackend {
 		}
 	}
 
+	@Override
 	public SimulationStatus getSimulationStatus(String simulationId) {
 		SimulationStatus simStatus = null;
 		try {
@@ -145,6 +150,7 @@ public class MongoBackend {
 		return simStatus;
 	}
 
+	@Override
 	public void updateSimulationStatus(String simulationId, Status type, String status) {
 		try {
 			SimulationStatus statusObj = new SimulationStatusImpl();
@@ -159,6 +165,7 @@ public class MongoBackend {
 		}
 	}
 
+	@Override
 	public List<EssimSimulation> getSimulations() {
 		List<EssimSimulation> simInstance = new ArrayList<EssimSimulation>();
 		try {
@@ -175,6 +182,7 @@ public class MongoBackend {
 		return simInstance;
 	}
 
+	@Override
 	public EssimSimulation getSimulation(String simulationId) {
 		EssimSimulation simInstance = null;
 		try {
@@ -190,10 +198,12 @@ public class MongoBackend {
 		return simInstance;
 	}
 
+	@Override
 	public void stop() {
 		mongoClient.close();
 	}
 
+	@Override
 	public String getMetaInfo(String key) {
 		DBObject valueObj = essimMetaCollection.findOne(key);
 		if (valueObj == null) {
@@ -202,6 +212,7 @@ public class MongoBackend {
 		return (String) valueObj.get("value");
 	}
 
+	@Override
 	public void updateMetaInfo(String key, String value) {
 		BasicDBObject entry = new BasicDBObject();
 		entry.put("_id", key);
@@ -209,6 +220,7 @@ public class MongoBackend {
 		essimMetaCollection.save(entry);
 	}
 
+	@Override
 	public List<KPIModuleInfo> getAllKpiModules() {
 		List<KPIModuleInfo> kpis = new ArrayList<KPIModuleInfo>();
 		try {

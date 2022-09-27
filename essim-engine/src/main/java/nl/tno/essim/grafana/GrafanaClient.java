@@ -37,6 +37,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.ITransportSolver;
+import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.transportsolver.TransportSolver;
 
@@ -70,14 +71,15 @@ public class GrafanaClient {
 	private String grafanaExternalUrl;
 	@Getter
 	private String dashboardUrl;
-	private MongoBackend mongo;
+	private IMongoBackend mongo;
 	private String grafanaAdminUser;
 	private String grafanaAdminPassword;
 	private String grafanaAdminAuthorisation;
 
 	public GrafanaClient(String user, String timeString, String influxDBURL, List<TransportSolver> solversList,
 			String energySystemId, String scenarioName, String simulationRunName, LocalDateTime simStartDate,
-			LocalDateTime simEndDate, boolean emissionRow) {
+			LocalDateTime simEndDate, boolean emissionRow, IMongoBackend mongo) {
+		this.mongo = mongo;
 
 		grafanaInternalUrl = System.getenv(GRAFANA_INTERNAL_URL_ENV);
 		grafanaExternalUrl = System.getenv(GRAFANA_EXTERNAL_URL_ENV);
@@ -104,7 +106,7 @@ public class GrafanaClient {
 		grafanaAdminAuthorisation = Base64.getEncoder()
 				.encodeToString((grafanaAdminUser + ":" + grafanaAdminPassword).getBytes());
 
-		mongo = MongoBackend.getInstance();
+		//mongo = MongoBackend.getInstance();
 		grafanaAdminKey = createGrafanaAdminKey();
 
 		String dashboardString = null;

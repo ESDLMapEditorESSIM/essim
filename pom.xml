@@ -23,7 +23,7 @@
 	</organization>
 
 	<properties>
-		<revision>22.09</revision>
+		<revision>22.09</revision> <!-- use this to set the version of all the modules -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>11</java.version>
 		<emf.version>2.16.0</emf.version>

@@ -82,6 +82,7 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.model.TransportNetworkImpl;
+import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
@@ -106,6 +107,7 @@ public class ESSimEngine implements IStatusProvider {
 	private String simulationId;
 	private String scenarioName;
 	private String energySystemId;
+	@Getter
 	private EnergySystem energySystem;
 	private LocalDateTime simulationStartTime;
 	private LocalDateTime simulationEndTime;
@@ -126,6 +128,9 @@ public class ESSimEngine implements IStatusProvider {
 	private String statusDescription = "";
 	private String esdlString;
 	private HashMap<Conversion, Solvers> convAssets;
+	private IMongoBackend mongo;
+	@Getter
+	private ObservationManager observationManager;
 
 	private IObservationProvider generalObservationProvider = new IObservationProvider() {
 		@Override
@@ -144,9 +149,10 @@ public class ESSimEngine implements IStatusProvider {
 		}
 	};
 
-	public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, File esdlFile)
+	public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, File esdlFile, IMongoBackend mongo)
 			throws Exception {
 		log.debug("ESSIM Revision: {}", essimId);
+		this.mongo = mongo;
 		simulationDescription = simulation.getSimulationDescription();
 		user = simulation.getUser();
 		simRunTime = simulation.getSimRunDate();
@@ -172,10 +178,9 @@ public class ESSimEngine implements IStatusProvider {
 
 		// Initialise SimulationManager
 		simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
-				simulationStepLength);
+				simulationStepLength, mongo);
 
-		// Initialise ObservationManager
-		ObservationManager observationManager = new ObservationManager(simulationId);
+		observationManager = new ObservationManager(simulationId);
 
 		try {
 			// Register all ObservationConsumers - Eg: InfluxDB
@@ -279,7 +284,7 @@ public class ESSimEngine implements IStatusProvider {
 				// Add to simulation manager the transport solvers in the order we determined.
 				for (int k : transportSolveOrder.keySet()) {
 					List<TransportSolver> solvers = transportSolveOrder.get(k);
-					log.debug(solvers.toString());
+					log.debug(" - {}: {}", k, solvers.toString());
 					simulationManager.addSolvers(solvers);
 					for (TransportSolver solver : solvers) {
 						solver.setSimulationManager(simulationManager);
@@ -442,7 +447,7 @@ public class ESSimEngine implements IStatusProvider {
 		}
 		GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
 				scenarioName, simulationId, simulationStartTime,
-				simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow);
+				simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow, mongo);
 		return grafanaClient.getDashboardUrl();
 	}
 
