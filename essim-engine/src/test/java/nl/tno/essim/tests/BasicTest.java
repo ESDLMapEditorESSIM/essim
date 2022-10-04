@@ -108,7 +108,7 @@ class BasicTest {
 			Resource eResource = es.eResource();
 			EnergyAsset asset = (EnergyAsset)eResource.getEObject(entry.getKey());
 			if (asset instanceof Export) {
-				assertEquals(total, 0.0);
+				assertEquals(total, 0.0, 1E-3);
 			} else if (asset instanceof ElectricityDemand || asset instanceof ElectricityNetwork) {
 				assertEquals(total, 1E9, 1E3);
 			} else if (asset instanceof Import) {
