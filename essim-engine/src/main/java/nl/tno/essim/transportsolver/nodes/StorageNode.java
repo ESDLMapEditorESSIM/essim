@@ -67,7 +67,7 @@ public class StorageNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
-
+		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
 		if (!isOperational(now)) {

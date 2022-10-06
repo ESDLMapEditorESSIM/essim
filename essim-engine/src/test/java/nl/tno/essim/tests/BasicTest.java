@@ -8,9 +8,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,6 @@ import esdl.EnergySystem;
 import esdl.Export;
 import esdl.Import;
 import esdl.Port;
-import esdl.util.EsdlResourceImpl;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulationImpl;
 import nl.tno.essim.model.Status;

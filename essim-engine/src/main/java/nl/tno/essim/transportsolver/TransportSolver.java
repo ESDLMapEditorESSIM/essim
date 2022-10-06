@@ -56,6 +56,7 @@ import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.commons.SimulationStatus;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
@@ -98,13 +99,15 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private Collection<NodeConfiguration> nodeConfig;
 	private String simulationId;
 	private String esdlString;
+	private Market market;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
-			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem) {
+			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem, Market market) {
 		this.id = name;
 		this.carrier = carrier;
 		this.nodeConfig = nodeConfig;
 		this.esdlString = energySystem;
+		this.market = market;
 		assetList = new ArrayList<EnergyAsset>();
 		processedList = new ArrayList<EnergyAsset>();
 		deviceNodes = new ArrayList<Node>();
@@ -425,16 +428,18 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		double marginalCostSum = 0.0;
 		boolean normalise = false;
 		for (Node deviceNode : deviceNodes) {
-			deviceNode.createBidCurve(timeStep, now, Commons.P_MIN, Commons.P_MAX);
-			double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
-			if (marginalCost > 1.0) {
-				normalise = true;
-			}
-			marginalCostSum += marginalCost;
+			deviceNode.createBidCurve(timeStep, now, market.getMinPrice().doubleValue(), market.getMaxPrice().doubleValue());
+			// Currently: no normalization necessary
+			//double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
+			//if (marginalCost > 1.0) {
+			//	normalise = true;
+			//}
+			//marginalCostSum += marginalCost;
 		}
 
 		if (normalise) {
 			for (Node deviceNode : deviceNodes) {
+				log.warn("Normalizing bid for " + deviceNode.getAsset().getName());
 				deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
 			}
 		}

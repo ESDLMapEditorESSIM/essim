@@ -49,10 +49,6 @@ public class TransportNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
-	};
-
-	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		long timeStepInSeconds = timestamp.getSimulationStepLength().getSeconds();
 		builder.tag("capability", "Transport");

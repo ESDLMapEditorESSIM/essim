@@ -131,6 +131,7 @@ public class HybridHeatPumpNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 		// @formatter:off
 		// This HHP is modelled like so:
 		// =============================

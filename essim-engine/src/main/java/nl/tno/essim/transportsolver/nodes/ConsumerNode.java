@@ -76,6 +76,7 @@ public class ConsumerNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 		double energyOutput = Double.NaN;
 		GenericProfile consumerProfile = Commons.getEnergyProfile(inputPort);
 

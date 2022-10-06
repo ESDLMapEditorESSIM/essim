@@ -53,6 +53,15 @@ public class BidFunction {
 	public boolean isEmpty() {
 		return curve != null && curve.isEmpty();
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof BidFunction) {
+			BidFunction other = (BidFunction) obj;
+			return other.curve.equals(this.curve) && other.marginalCost == this.marginalCost;
+		}
+		return false;
+	}
 
 	@Override
 	public String toString() {

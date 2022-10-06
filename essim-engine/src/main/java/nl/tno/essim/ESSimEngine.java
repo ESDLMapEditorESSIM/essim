@@ -78,6 +78,8 @@ import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.MSOConfiguration;
+import nl.tno.essim.model.Market;
+import nl.tno.essim.model.MarketImpl;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.model.RemoteKPIModule;
 import nl.tno.essim.model.TransportNetwork;
@@ -131,6 +133,8 @@ public class ESSimEngine implements IStatusProvider {
 	private IMongoBackend mongo;
 	@Getter
 	private ObservationManager observationManager;
+	@Getter
+	private Market market;
 
 	private IObservationProvider generalObservationProvider = new IObservationProvider() {
 		@Override
@@ -173,6 +177,17 @@ public class ESSimEngine implements IStatusProvider {
 		if (timeStep != null) {
 			simulationStepLength = parseTimeStep(timeStep);
 		}
+		
+		
+		Market market = simulation.getMarket();
+		// Set default min/max market prices if not defined by the input
+		if (market == null) {
+			market = new MarketImpl();
+			market.setMinPrice(Commons.P_MIN);
+			market.setMaxPrice(Commons.P_MAX);
+		}
+		this.market = market;
+		log.info("Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice()+"]");
 
 		esdlString = new String(Files.readAllBytes(esdlFile.getAbsoluteFile().toPath()), StandardCharsets.UTF_8);
 
@@ -335,7 +350,7 @@ public class ESSimEngine implements IStatusProvider {
 				String solverId = energySystemId + " "
 						+ (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
 				TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
-						energyAssetRoles, esdlString);
+						energyAssetRoles, esdlString, this.market);
 				solver.setSimulationManager(simulationManager);
 				for (EnergyAsset filteredAsset : filteredAssets) {
 					solver.addToNetwork(filteredAsset);

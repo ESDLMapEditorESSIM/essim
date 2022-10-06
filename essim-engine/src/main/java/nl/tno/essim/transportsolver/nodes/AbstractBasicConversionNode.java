@@ -95,6 +95,7 @@ public class AbstractBasicConversionNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+		super.createBidCurve(timeStep, now, minPrice, maxPrice);
 		// Generic Conversion or Gas Heater (All single-input/single-output conversions)
 
 		// Checks if an asset is operational (accounts for Commissioning and

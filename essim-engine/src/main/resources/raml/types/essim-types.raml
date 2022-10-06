@@ -77,6 +77,17 @@ types:
       dashboardURL?: string
       loadAnimationJSON?: string
       nodeConfig?: NodeConfiguration[]
+      market?: Market
+      
+  Market:
+    type: object
+    properties:
+      minPrice:
+        type: number
+        default: 0.0
+      maxPrice: 
+        type: number
+        default: 1.0
 
   MSOConfiguration:
     type: object

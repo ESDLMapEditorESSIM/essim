@@ -49,8 +49,8 @@ import nl.tno.essim.time.Horizon;
 public abstract class Node implements INode {
 	protected static final double DEFAULT_MARGINAL_COST = 0.5;
 	private static final double price_delta = 0.01;
-	private static final double pmin = 0.0;
-	private static final double pmax = 1.0;
+	//private static final double pmin = 0.0;
+	//private static final double pmax = 1.0;
 
 	protected String simulationId;
 	protected String nodeId;
@@ -69,7 +69,375 @@ public abstract class Node implements INode {
 	protected long timeStep;
 	protected Horizon now;
 	protected Port connectedPort;
+	
+	
+	/** these are set by {@link #createBidCurve(long, Horizon, double, double)} **/
+	@Builder.Default
+	private double minMarketPrice = 0.0;
+	@Builder.Default
+	private double maxMarketPrice = 1.0;
 
+	public Node(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
+		super();
+		this.simulationId = simulationId;
+		this.nodeId = nodeId;
+		this.address = address;
+		this.networkId = networkId;
+		this.asset = asset;
+		this.esdlString = esdlString;
+		this.directionFactor = directionFactor;
+		this.role = role;
+		this.demandFunction = demandFunction;
+		this.energy = energy;
+		this.cost = cost;
+		this.parent = parent;
+		this.carrier = carrier;
+		this.children = children;
+		this.timeStep = timeStep;
+		this.now = now;
+		this.connectedPort = connectedPort;
+	}
+	
+	public void addChild(Node n) {
+		if (children == null) {
+			children = new ArrayList<Node>();
+		}
+		n.setParent(this);
+		children.add(n);
+	}
+
+	public Node findNodeById(String id) {
+		if (nodeId.equals(id)) {
+			return this;
+		}
+		if (children != null) {
+			for (Node child : children) {
+				child.findNodeById(id);
+			}
+		}
+
+		return null;
+	}
+
+	public void findNodesByAssetType(Class<?> clazz, List<Node> nodeList) {
+		if (clazz.isInstance(asset)) {
+			nodeList.add(this);
+		}
+		if (children != null) {
+			for (Node child : children) {
+				child.findNodesByAssetType(clazz, nodeList);
+			}
+		}
+	}
+
+	public void findDeviceNodes(List<Node> nodeList) {
+		if (!(asset instanceof Transport)) {
+			nodeList.add(this);
+		}
+		if (children != null) {
+			for (Node child : children) {
+				child.findDeviceNodes(nodeList);
+			}
+		}
+	}
+
+	public BidFunction aggregateDemandFunction() {
+		if (children != null) {
+			BidFunction aggregatedFunction = new BidFunction();
+			for (Node child : children) {
+				BidFunction nodeFunction = child.aggregateDemandFunction();
+				aggregatedFunction = sumCurves(nodeFunction, aggregatedFunction);
+			}
+			if (this.asset instanceof Transport) {
+				setDemandFunction(aggregatedFunction);
+			} else {
+				aggregatedFunction = sumCurves(getDemandFunction(), aggregatedFunction);
+			}
+			return aggregatedFunction;
+		} else {
+			BidFunction demandFunction = getDemandFunction();
+			if (demandFunction == null) {
+				demandFunction = new BidFunction();
+				demandFunction.addPoint(minMarketPrice, 0.0);
+				demandFunction.addPoint(maxMarketPrice, 0.0);
+				setDemandFunction(demandFunction);
+			}
+			return getDemandFunction();
+		}
+	}
+
+	public void normaliseCosts() {
+		double[] minMaxCosts = findMinMaxCosts(Double.MAX_VALUE, Double.MIN_VALUE);
+		normaliseCosts(minMaxCosts);
+	}
+
+	private double[] findMinMaxCosts(double min, double max) {
+		if (children != null) {
+			for (Node child : children) {
+				double[] res = child.findMinMaxCosts(min, max);
+				if (res[0] < min)
+					min = res[0];
+				if (res[1] > max)
+					max = res[1];
+			}
+		}
+		if (cost < min)
+			min = cost;
+		if (cost > max)
+			max = cost;
+
+		return new double[]{min, max};
+	}
+
+	private void normaliseCosts(double[] minMaxCosts) {
+		if (children != null) {
+			for (Node child : children) {
+				child.normaliseCosts(minMaxCosts);
+			}
+		}
+		cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
+	}
+
+	public double[] allocateAndPropagate(BidFunction summedFunction, List<Observation> observations,
+			EssimTime timestamp) {
+		// Allocate
+		double balancingPrice = findPriceFromCurve(summedFunction, 0.0);
+		double imbalance = findDemandFromCurve(summedFunction, balancingPrice);
+
+		// Propagate
+		propagate(balancingPrice, observations, timestamp);
+
+		double[] vals = {imbalance, balancingPrice};
+		return vals;
+	}
+
+	public JSONObject getJSONString() {
+		String ctrlStrategy = "";
+		if (getAsset() instanceof Conversion) {
+			if (getAsset().getControlStrategy() != null) {
+				ctrlStrategy = "[" + getAsset().getControlStrategy().getClass().getInterfaces()[0].getSimpleName()
+						+ "]";
+			}
+		}
+		JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")" + ctrlStrategy);
+		if (parent != null) {
+			nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")" + ctrlStrategy);
+		} else {
+			nodeObj.put("parent", "null");
+		}
+
+		JSONArray childrenJSON = null;
+		if (children != null && !children.isEmpty()) {
+			childrenJSON = new JSONArray();
+			for (Node node : children) {
+				JSONObject childJSON = node.getJSONString();
+				childrenJSON.put(childJSON);
+			}
+		}
+		if (childrenJSON != null) {
+			nodeObj.put("children", childrenJSON);
+		}
+
+		return nodeObj;
+	}
+
+	public void makeInflexibleProductionFunction(double emax) {
+		energy = -emax;
+
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(0.0); // no marginal cost to produce?
+		demandFunction.addPoint(minMarketPrice, -emax);
+		demandFunction.addPoint(maxMarketPrice, -emax);
+	}
+
+	public void makeInflexibleConsumptionFunction(double emax) {
+		energy = emax;
+
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(0.0); // no marginal cost to consume?
+		demandFunction.addPoint(minMarketPrice, emax);
+		demandFunction.addPoint(maxMarketPrice, emax);
+	}
+
+	public void makeAdjustableProductionFunction(double emax) {
+		energy = -emax;
+
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(cost);
+		demandFunction.addPoint(minMarketPrice, 0.0);
+		demandFunction.addPoint(cost, 0.0);
+		demandFunction.addPoint(cost + price_delta, energy);
+		demandFunction.addPoint(maxMarketPrice, energy);
+	}
+
+	public void makeAdjustableConsumptionFunction(double emax) {
+		energy = emax;
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(cost);
+		demandFunction.addPoint(minMarketPrice, energy);
+		demandFunction.addPoint(0.0, energy);
+		if (cost > 0.0) { // TODO make this work for negative mc
+			demandFunction.addPoint(cost, 0.0);
+		}
+		demandFunction.addPoint(maxMarketPrice, 0.0);
+	}
+
+	public void makeStorageFunction(double ecmax, double edmax, double soc, Double mc1, Double mc2) {
+
+		// Marginal cost of storage moves inversely as SOC.
+		// Higher the SOC, the more eager it is to start producing.
+		// cost = 0.9 - 0.8 * soc;
+		// cost = 1 - 0.9 * soc * soc;
+		// cost = Math.max(0, Math.min(1, 1 - soc));
+		double delta = price_delta;
+		cost = 0.15;
+		if (mc1 == null || Double.isNaN(mc1)) {
+			mc1 = Math.max(0.0, 0.95 * cost);
+		}
+		if (mc2 == null || Double.isNaN(mc2)) {
+			mc2 = Math.min(1.0, 1.05 * cost);
+		}
+
+		demandFunction = new BidFunction();
+		demandFunction.setMarginalCost(mc1);
+		demandFunction.addPoint(minMarketPrice, ecmax);
+		if (minMarketPrice < 0.0 && mc1  > 0.0) {
+			demandFunction.addPoint(0.0, ecmax); // in case minMarketPrice < 0
+		}
+		demandFunction.addPoint(Math.max(minMarketPrice, Math.min(mc1, maxMarketPrice)), ecmax);
+		demandFunction.addPoint(Math.max(minMarketPrice, Math.min(mc1 + delta, maxMarketPrice)), 0.0);
+		demandFunction.addPoint(Math.max(minMarketPrice, Math.min(mc2, maxMarketPrice)), 0.0);
+		demandFunction.addPoint(Math.max(minMarketPrice, Math.min(mc2 + delta, maxMarketPrice)), -edmax);
+		demandFunction.addPoint(minMarketPrice, -edmax);
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder bldr = new StringBuilder();
+
+		bldr.append(nodeId);
+		bldr.append("(");
+		bldr.append(asset.getClass().getInterfaces()[0].getSimpleName());
+		bldr.append(") : ");
+		bldr.append(role.toString());
+
+		return bldr.toString();
+	}
+
+	private BidFunction sumCurves(BidFunction a, BidFunction b) {
+		return BidFunction.sumCurves(a, b);
+	}
+
+	private void propagate(double price, List<Observation> observations, EssimTime timestamp) {
+		// Allocate
+		energy = findDemandFromCurve(demandFunction, price);
+		
+		// print curve to stdout
+		System.out.println(timestamp.getTime() + ": " + getAsset().getName() + ": " + demandFunction.toString() + ", price=" + price + ", energy="+energy);
+
+		// Make observation
+		ObservationBuilder builder = Observation.builder()
+				.observedAt(timestamp.getTime())
+				.tag("assetId", asset.getId())
+				.tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
+				.tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName())
+				.tag("address", address)
+				.tag("carrierId", carrier.getId())
+				.tag("role", role.name())
+				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
+				.value("allocationEnergy", energy)
+				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
+				.value("marginalCost", demandFunction.getMarginalCost());
+
+		// Tag sector if defined
+		String sectorName = "DefaultSector";
+		Sector sector = asset.getSector();
+		if (sector != null) {
+			if (sector.getName() != null) {
+				sectorName = sector.getName();
+			}
+		}
+		builder.tag("sector", sectorName);
+
+		// Process Allocation for this node
+		processAllocation(timestamp, builder, price);
+
+		// Build observations
+		observations.add(builder.build());
+
+		// Propagate
+		if (children != null) {
+			for (Node child : children) {
+				child.propagate(price, observations, timestamp);
+			}
+		}
+
+	}
+
+	private double findDemandFromCurve(BidFunction demandFunction, double price) {
+		return demandFunction.findDemandFromCurve(price);
+	}
+
+	private double findPriceFromCurve(BidFunction demandFunction, double demand) {
+		return demandFunction.findPriceFromCurve(demand);
+	}
+
+	@Override
+	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+		if (this.timeStep == 0l) {
+			this.timeStep = timeStep;
+		}
+		if (this.now == null) {
+			this.now = now;
+		}
+		this.minMarketPrice = minPrice;
+		this.maxMarketPrice = maxPrice;
+	}
+
+	@Override
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+
+	}
+
+	// Consider renaming for consumers
+	// Checks the commissioning and decommissioning dates of the asset
+	public boolean isOperational(Horizon now) {
+		// Only assets whose commissioning date is at or before the start time of the
+		// simulation step construct a bid curve
+		// AND
+		// Only assets whose decommissioning date is after the start time of the
+		// simulation step construct a bid curve
+
+		boolean isOperational = false;
+
+		if (asset.getCommissioningDate() == null && asset.getDecommissioningDate() == null) {
+			isOperational = true;
+		} else {
+			if (asset.getCommissioningDate() != null && asset.getDecommissioningDate() == null) {
+				LocalDateTime converted_cd = EssimTime.dateToLocalDateTime(asset.getCommissioningDate());
+				if (converted_cd.isBefore(now.getStartTime()) || converted_cd.isEqual(now.getStartTime()))
+					isOperational = true;
+			} else if (asset.getCommissioningDate() == null && asset.getDecommissioningDate() != null) {
+				LocalDateTime converted_dd = EssimTime.dateToLocalDateTime(asset.getDecommissioningDate());
+				if (converted_dd.isAfter(now.getStartTime()))
+					isOperational = true;
+			} else {
+				LocalDateTime converted_cd = EssimTime.dateToLocalDateTime(asset.getCommissioningDate());
+				LocalDateTime converted_dd = EssimTime.dateToLocalDateTime(asset.getDecommissioningDate());
+
+				if ((converted_cd.isBefore(now.getStartTime()) || converted_cd.isEqual(now.getStartTime()))
+						&& converted_dd.isAfter(now.getStartTime()))
+					isOperational = true;
+			}
+		}
+
+		return isOperational;
+
+	}
+	
+	
 	public static class NodeBuilder {
 		private static final String NODE = "Node";
 		private static final String NODE_PACKAGE_NAME = Node.class.getPackage().getName();
@@ -170,335 +538,7 @@ public abstract class Node implements INode {
 
 	}
 
-	public void addChild(Node n) {
-		if (children == null) {
-			children = new ArrayList<Node>();
-		}
-		n.setParent(this);
-		children.add(n);
-	}
 
-	public Node findNodeById(String id) {
-		if (nodeId.equals(id)) {
-			return this;
-		}
-		if (children != null) {
-			for (Node child : children) {
-				child.findNodeById(id);
-			}
-		}
-
-		return null;
-	}
-
-	public void findNodesByAssetType(Class<?> clazz, List<Node> nodeList) {
-		if (clazz.isInstance(asset)) {
-			nodeList.add(this);
-		}
-		if (children != null) {
-			for (Node child : children) {
-				child.findNodesByAssetType(clazz, nodeList);
-			}
-		}
-	}
-
-	public void findDeviceNodes(List<Node> nodeList) {
-		if (!(asset instanceof Transport)) {
-			nodeList.add(this);
-		}
-		if (children != null) {
-			for (Node child : children) {
-				child.findDeviceNodes(nodeList);
-			}
-		}
-	}
-
-	public BidFunction aggregateDemandFunction() {
-		if (children != null) {
-			BidFunction aggregatedFunction = new BidFunction();
-			for (Node child : children) {
-				BidFunction nodeFunction = child.aggregateDemandFunction();
-				aggregatedFunction = sumCurves(nodeFunction, aggregatedFunction);
-			}
-			if (this.asset instanceof Transport) {
-				setDemandFunction(aggregatedFunction);
-			} else {
-				aggregatedFunction = sumCurves(getDemandFunction(), aggregatedFunction);
-			}
-			return aggregatedFunction;
-		} else {
-			BidFunction demandFunction = getDemandFunction();
-			if (demandFunction == null) {
-				demandFunction = new BidFunction();
-				demandFunction.addPoint(pmin, 0.0);
-				demandFunction.addPoint(pmax, 0.0);
-				setDemandFunction(demandFunction);
-			}
-			return getDemandFunction();
-		}
-	}
-
-	public void normaliseCosts() {
-		double[] minMaxCosts = findMinMaxCosts(Double.MAX_VALUE, Double.MIN_VALUE);
-		normaliseCosts(minMaxCosts);
-	}
-
-	private double[] findMinMaxCosts(double min, double max) {
-		if (children != null) {
-			for (Node child : children) {
-				double[] res = child.findMinMaxCosts(min, max);
-				if (res[0] < min)
-					min = res[0];
-				if (res[1] > max)
-					max = res[1];
-			}
-		}
-		if (cost < min)
-			min = cost;
-		if (cost > max)
-			max = cost;
-
-		return new double[]{min, max};
-	}
-
-	private void normaliseCosts(double[] minMaxCosts) {
-		if (children != null) {
-			for (Node child : children) {
-				child.normaliseCosts(minMaxCosts);
-			}
-		}
-		cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
-	}
-
-	public double[] allocateAndPropagate(BidFunction summedFunction, List<Observation> observations,
-			EssimTime timestamp) {
-		// Allocate
-		double balancingPrice = findPriceFromCurve(summedFunction, 0.0);
-		double imbalance = findDemandFromCurve(summedFunction, balancingPrice);
-
-		// Propagate
-		propagate(balancingPrice, observations, timestamp);
-
-		double[] vals = {imbalance, balancingPrice};
-		return vals;
-	}
-
-	public JSONObject getJSONString() {
-		String ctrlStrategy = "";
-		if (getAsset() instanceof Conversion) {
-			if (getAsset().getControlStrategy() != null) {
-				ctrlStrategy = "[" + getAsset().getControlStrategy().getClass().getInterfaces()[0].getSimpleName()
-						+ "]";
-			}
-		}
-		JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")" + ctrlStrategy);
-		if (parent != null) {
-			nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")" + ctrlStrategy);
-		} else {
-			nodeObj.put("parent", "null");
-		}
-
-		JSONArray childrenJSON = null;
-		if (children != null && !children.isEmpty()) {
-			childrenJSON = new JSONArray();
-			for (Node node : children) {
-				JSONObject childJSON = node.getJSONString();
-				childrenJSON.put(childJSON);
-			}
-		}
-		if (childrenJSON != null) {
-			nodeObj.put("children", childrenJSON);
-		}
-
-		return nodeObj;
-	}
-
-	public void makeInflexibleProductionFunction(double emax) {
-		energy = -emax;
-
-		demandFunction = new BidFunction();
-		demandFunction.setMarginalCost(pmin);
-		demandFunction.addPoint(pmin, -emax);
-		demandFunction.addPoint(pmax, -emax);
-	}
-
-	public void makeInflexibleConsumptionFunction(double emax) {
-		energy = emax;
-
-		demandFunction = new BidFunction();
-		demandFunction.setMarginalCost(pmin);
-		demandFunction.addPoint(pmin, emax);
-		demandFunction.addPoint(pmax, emax);
-	}
-
-	public void makeAdjustableProductionFunction(double emax) {
-		energy = -emax;
-
-		demandFunction = new BidFunction();
-		demandFunction.setMarginalCost(cost);
-		demandFunction.addPoint(pmin, 0.0);
-		demandFunction.addPoint(cost, 0.0);
-		demandFunction.addPoint(cost + price_delta, energy);
-		demandFunction.addPoint(pmax, energy);
-	}
-
-	public void makeAdjustableConsumptionFunction(double emax) {
-		energy = emax;
-		demandFunction = new BidFunction();
-		demandFunction.setMarginalCost(cost);
-		demandFunction.addPoint(pmin, energy);
-		if (cost != 0.0) {
-			demandFunction.addPoint(cost, 0.0);
-		}
-		demandFunction.addPoint(pmax, 0.0);
-	}
-
-	public void makeStorageFunction(double ecmax, double edmax, double soc, Double mc1, Double mc2) {
-
-		// Marginal cost of storage moves inversely as SOC.
-		// Higher the SOC, the more eager it is to start producing.
-		// cost = 0.9 - 0.8 * soc;
-		// cost = 1 - 0.9 * soc * soc;
-		// cost = Math.max(0, Math.min(1, 1 - soc));
-		double delta = 0.01;
-		cost = 0.15;
-		if (mc1 == null || Double.isNaN(mc1)) {
-			mc1 = Math.max(0.0, 0.95 * cost);
-		}
-		if (mc2 == null || Double.isNaN(mc2)) {
-			mc2 = Math.min(1.0, 1.05 * cost);
-		}
-
-		demandFunction = new BidFunction();
-		demandFunction.setMarginalCost(mc1);
-		demandFunction.addPoint(pmin, ecmax);
-		demandFunction.addPoint(Math.max(pmin, Math.min(mc1, pmax)), ecmax);
-		demandFunction.addPoint(Math.max(pmin, Math.min(mc1 + delta, pmax)), 0.0);
-		demandFunction.addPoint(Math.max(pmin, Math.min(mc2, pmax)), 0.0);
-		demandFunction.addPoint(Math.max(pmin, Math.min(mc2 + delta, pmax)), -edmax);
-		demandFunction.addPoint(pmax, -edmax);
-	}
-
-	@Override
-	public String toString() {
-		StringBuilder bldr = new StringBuilder();
-
-		bldr.append(nodeId);
-		bldr.append("(");
-		bldr.append(asset.getClass().getInterfaces()[0].getSimpleName());
-		bldr.append(") : ");
-		bldr.append(role.toString());
-
-		return bldr.toString();
-	}
-
-	private BidFunction sumCurves(BidFunction a, BidFunction b) {
-		return BidFunction.sumCurves(a, b);
-	}
-
-	private void propagate(double price, List<Observation> observations, EssimTime timestamp) {
-		// Allocate
-		energy = findDemandFromCurve(demandFunction, price);
-		
-		// print curve to stdout
-		//System.out.println(this.getAsset().getName() + ": " + demandFunction.toString() + ", price=" + price + ", energy="+energy);
-
-		// Make observation
-		ObservationBuilder builder = Observation.builder()
-				.observedAt(timestamp.getTime())
-				.tag("assetId", asset.getId())
-				.tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
-				.tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName())
-				.tag("address", address)
-				.tag("carrierId", carrier.getId())
-				.tag("role", role.name())
-				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
-				.value("allocationEnergy", energy)
-				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
-				.value("marginalCost", demandFunction.getMarginalCost());
-
-		// Tag sector if defined
-		String sectorName = "DefaultSector";
-		Sector sector = asset.getSector();
-		if (sector != null) {
-			if (sector.getName() != null) {
-				sectorName = sector.getName();
-			}
-		}
-		builder.tag("sector", sectorName);
-
-		// Process Allocation for this node
-		processAllocation(timestamp, builder, price);
-
-		// Build observations
-		observations.add(builder.build());
-
-		// Propagate
-		if (children != null) {
-			for (Node child : children) {
-				child.propagate(price, observations, timestamp);
-			}
-		}
-
-	}
-
-	private double findDemandFromCurve(BidFunction demandFunction, double price) {
-		return demandFunction.findDemandFromCurve(price);
-	}
-
-	private double findPriceFromCurve(BidFunction demandFunction, double demand) {
-		return demandFunction.findPriceFromCurve(demand);
-	}
-
-	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
-		if (this.timeStep == 0l) {
-			this.timeStep = timeStep;
-		}
-		if (this.now == null) {
-			this.now = now;
-		}
-	}
-
-	@Override
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-
-	}
-
-	// Consider renaming for consumers
-	// Checks the commissioning and decommissioning dates of the asset
-	public boolean isOperational(Horizon now) {
-		// Only assets whose commissioning date is at or before the start time of the
-		// simulation step construct a bid curve
-		// AND
-		// Only assets whose decommissioning date is after the start time of the
-		// simulation step construct a bid curve
-
-		boolean isOperational = false;
-
-		if (asset.getCommissioningDate() == null && asset.getDecommissioningDate() == null) {
-			isOperational = true;
-		} else {
-			if (asset.getCommissioningDate() != null && asset.getDecommissioningDate() == null) {
-				LocalDateTime converted_cd = EssimTime.dateToLocalDateTime(asset.getCommissioningDate());
-				if (converted_cd.isBefore(now.getStartTime()) || converted_cd.isEqual(now.getStartTime()))
-					isOperational = true;
-			} else if (asset.getCommissioningDate() == null && asset.getDecommissioningDate() != null) {
-				LocalDateTime converted_dd = EssimTime.dateToLocalDateTime(asset.getDecommissioningDate());
-				if (converted_dd.isAfter(now.getStartTime()))
-					isOperational = true;
-			} else {
-				LocalDateTime converted_cd = EssimTime.dateToLocalDateTime(asset.getCommissioningDate());
-				LocalDateTime converted_dd = EssimTime.dateToLocalDateTime(asset.getDecommissioningDate());
-
-				if ((converted_cd.isBefore(now.getStartTime()) || converted_cd.isEqual(now.getStartTime()))
-						&& converted_dd.isAfter(now.getStartTime()))
-					isOperational = true;
-			}
-		}
-
-		return isOperational;
-
-	}
+	
 
 }
