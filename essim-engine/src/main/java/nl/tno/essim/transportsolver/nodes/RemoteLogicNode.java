@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
@@ -104,15 +105,16 @@ public class RemoteLogicNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
-		super.createBidCurve(timeStep, now, minPrice, maxPrice);
+	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
+		super.createBidCurve(timeStep, now, marketInfo);
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
 
 		JSONObject message = new JSONObject().put("timeStamp", t)
 				.put("timeStepInSeconds", now.getPeriod().getSeconds())
-				.put("minPrice", minPrice)
-				.put("maxPrice", maxPrice)
+				.put("minPrice", marketInfo.getMinPrice().doubleValue())
+				.put("maxPrice", marketInfo.getMaxPrice().doubleValue())
+				.put("deltaPrice", marketInfo.getDeltaPrice().doubleValue())
 				.put("carrierId", carrier.getId());
 		try {
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());

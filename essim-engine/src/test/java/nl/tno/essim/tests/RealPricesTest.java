@@ -2,17 +2,18 @@ package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map.Entry;
-import java.util.UUID;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import esdl.Asset;
@@ -20,18 +21,15 @@ import esdl.ElectricityDemand;
 import esdl.ElectricityNetwork;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
-import esdl.EsdlFactory;
 import esdl.Export;
 import esdl.Import;
 import esdl.Port;
-import esdl.TimeSeriesProfile;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulationImpl;
 import nl.tno.essim.model.MarketImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
-import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.io.csv.CsvReadOptions;
 
@@ -49,7 +47,7 @@ class RealPricesTest {
 	}
 
 	
-	@Test
+	@Test @Disabled
 	void testReadProfiles( ) throws InterruptedException {
 		CsvReadOptions csvReadOptions = CsvReadOptions.builder("src/test/resources/profiles/consumer_dynamic_tariff.csv").separator(';').build();
 		Table tariffs = Table.read().csv(csvReadOptions);
@@ -71,6 +69,7 @@ class RealPricesTest {
 		sim.setMarket(market);
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);
+		market.setDeltaPrice(1E-2);
 		
 		sim.setScenarioID("testcase1-realpriceprofile");
 		String simId = mongo.addSimulation(sim);
@@ -111,7 +110,7 @@ class RealPricesTest {
 		System.out.println("Sim hours:" + simHours);
 		System.out.println("\t(" + start + " to " + stop + ")");
 		
-
+		Files.createDirectories(Paths.get("output"));
 		for (Entry<String, Table> entry : tables.entrySet()) {			
 			Table table = entry.getValue();
 			double total = table.doubleColumn("allocationEnergy").sum();
@@ -125,6 +124,7 @@ class RealPricesTest {
 			} else if (asset instanceof Import) {
 				assertEquals(-1E9, total, 1E3);
 			}
+			table.write().csv("output/" + table.name() + ".csv");
 		}
 		
 		HashMap<String,Table> networks = inMemoryObservationConsumer.getNetworks();
@@ -133,6 +133,7 @@ class RealPricesTest {
 			double sum = table.doubleColumn("imbalanceEnergy").sum();
 			System.out.println("Network " + network.getKey() + " balance = " + sum);
 			assertEquals(0.0, sum, 1.0);
+			table.write().csv("output/" + table.name() + ".csv");
 		}
 		
 		

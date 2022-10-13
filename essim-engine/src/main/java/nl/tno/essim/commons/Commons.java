@@ -63,10 +63,12 @@ public class Commons {
 	public static final double DEFAULT_COGEN_E_EFF = 0.55;
 	public static final double DEFAULT_HP_COP = 3.5;
 	public static final double P_MIN = 0.0;
+	public static final double MIN_DELTA_PRICE = 1E-6;
 	public static final double P_MAX = 1.0;
 	public static final String RESOURCE = ".";
 	public static final String ESSIM_REVISION = "ESSIM_REVISION";
 	public static RangeMap<Double, String> thresholdMap;
+	// TODO: this is a memory leak: as this map is never cleared!
 	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
 
 	public static enum Role {

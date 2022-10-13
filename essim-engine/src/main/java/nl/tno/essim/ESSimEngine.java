@@ -185,6 +185,7 @@ public class ESSimEngine implements IStatusProvider {
 			market = new MarketImpl();
 			market.setMinPrice(Commons.P_MIN);
 			market.setMaxPrice(Commons.P_MAX);
+			market.setDeltaPrice(Commons.MIN_DELTA_PRICE);
 		}
 		this.market = market;
 		log.info("Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice()+"]");

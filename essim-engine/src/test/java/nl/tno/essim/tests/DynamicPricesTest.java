@@ -1,15 +1,14 @@
 package nl.tno.essim.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -33,8 +32,6 @@ import nl.tno.essim.model.MarketImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
-import tech.tablesaw.api.ColumnType;
-import tech.tablesaw.api.DateTimeColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.io.csv.CsvReadOptions;
@@ -115,6 +112,7 @@ class DynamicPricesTest {
 		sim.setMarket(market);
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);
+		market.setDeltaPrice(1E-6);
 		
 		sim.setScenarioID("testcase1-realpriceprofile");
 		String simId = mongo.addSimulation(sim);

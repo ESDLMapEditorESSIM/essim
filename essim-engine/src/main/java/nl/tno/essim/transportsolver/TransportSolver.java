@@ -428,7 +428,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		double marginalCostSum = 0.0;
 		boolean normalise = false;
 		for (Node deviceNode : deviceNodes) {
-			deviceNode.createBidCurve(timeStep, now, market.getMinPrice().doubleValue(), market.getMaxPrice().doubleValue());
+			deviceNode.createBidCurve(timeStep, now, market);
 			// Currently: no normalization necessary
 			//double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
 			//if (marginalCost > 1.0) {

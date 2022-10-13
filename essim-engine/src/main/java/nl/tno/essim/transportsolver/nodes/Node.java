@@ -37,6 +37,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
@@ -48,7 +49,6 @@ import nl.tno.essim.time.Horizon;
 @Slf4j
 public abstract class Node implements INode {
 	protected static final double DEFAULT_MARGINAL_COST = 0.5;
-	private static final double price_delta = 0.01;
 	//private static final double pmin = 0.0;
 	//private static final double pmax = 1.0;
 
@@ -71,11 +71,13 @@ public abstract class Node implements INode {
 	protected Port connectedPort;
 	
 	
-	/** these are set by {@link #createBidCurve(long, Horizon, double, double)} **/
+	/** these are set by {@link #createBidCurve(long, Horizon, Market)} **/
 	@Builder.Default
 	private double minMarketPrice = 0.0;
 	@Builder.Default
 	private double maxMarketPrice = 1.0;
+	@Builder.Default
+	private double deltaPrice = 1E-6;
 
 	public Node(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
 			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
@@ -268,7 +270,7 @@ public abstract class Node implements INode {
 		demandFunction.setMarginalCost(cost);
 		demandFunction.addPoint(minMarketPrice, 0.0);
 		demandFunction.addPoint(cost, 0.0);
-		demandFunction.addPoint(cost + price_delta, energy);
+		demandFunction.addPoint(cost + deltaPrice, energy);
 		demandFunction.addPoint(maxMarketPrice, energy);
 	}
 
@@ -291,7 +293,7 @@ public abstract class Node implements INode {
 		// cost = 0.9 - 0.8 * soc;
 		// cost = 1 - 0.9 * soc * soc;
 		// cost = Math.max(0, Math.min(1, 1 - soc));
-		double delta = price_delta;
+		double delta = deltaPrice;
 		cost = 0.15;
 		if (mc1 == null || Double.isNaN(mc1)) {
 			mc1 = Math.max(0.0, 0.95 * cost);
@@ -335,7 +337,7 @@ public abstract class Node implements INode {
 		energy = findDemandFromCurve(demandFunction, price);
 		
 		// print curve to stdout
-		System.out.println(timestamp.getTime() + ": " + getAsset().getName() + ": " + demandFunction.toString() + ", price=" + price + ", energy="+energy);
+		log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(), getAsset().getName(), demandFunction.toString(), price, energy);
 
 		// Make observation
 		ObservationBuilder builder = Observation.builder()
@@ -385,15 +387,16 @@ public abstract class Node implements INode {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
+	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
 		if (this.timeStep == 0l) {
 			this.timeStep = timeStep;
 		}
 		if (this.now == null) {
 			this.now = now;
 		}
-		this.minMarketPrice = minPrice;
-		this.maxMarketPrice = maxPrice;
+		this.minMarketPrice = marketInfo.getMinPrice().doubleValue();
+		this.maxMarketPrice = marketInfo.getMaxPrice().doubleValue();
+		this.deltaPrice = marketInfo.getDeltaPrice().doubleValue();
 	}
 
 	@Override

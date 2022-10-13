@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -130,8 +131,8 @@ public class HybridHeatPumpNode extends Node {
 	}
 
 	@Override
-	public void createBidCurve(long timeStep, Horizon now, double minPrice, double maxPrice) {
-		super.createBidCurve(timeStep, now, minPrice, maxPrice);
+	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
+		super.createBidCurve(timeStep, now, marketInfo);
 		// @formatter:off
 		// This HHP is modelled like so:
 		// =============================
