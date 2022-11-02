@@ -1,0 +1,8 @@
+{
+  "realm": "esdl-mapeditor",
+  "auth-server-url" : "https://idm.hesi.energy/auth",
+  "resource" : "curl",
+  "credentials": {
+    "secret": "secret"
+  }
+}

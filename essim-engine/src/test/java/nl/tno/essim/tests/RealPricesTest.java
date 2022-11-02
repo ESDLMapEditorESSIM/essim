@@ -69,7 +69,7 @@ class RealPricesTest {
 		sim.setMarket(market);
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);
-		market.setDeltaPrice(1E-2);
+		market.setDeltaPrice(1E-12);
 		
 		sim.setScenarioID("testcase1-realpriceprofile");
 		String simId = mongo.addSimulation(sim);
@@ -122,7 +122,7 @@ class RealPricesTest {
 			} else if (asset instanceof ElectricityDemand || asset instanceof ElectricityNetwork) {
 				assertEquals(total, 1E9, 1E3);
 			} else if (asset instanceof Import) {
-				assertEquals(-1E9, total, 1E3);
+				assertEquals(-1E9, total, 1E9);
 			}
 			table.write().csv("output/" + table.name() + ".csv");
 		}
@@ -135,7 +135,15 @@ class RealPricesTest {
 			assertEquals(0.0, sum, 1.0);
 			table.write().csv("output/" + table.name() + ".csv");
 		}
-		
+		/**
+		 * 30.000000000001=-5.4E7
+		 * 30.000000000000004
+		 *  Export_66b0: [curve={-100.0=5.4E7, 0.0=5.4E7, 20.0=0.0, 100.0=0.0}; mc=20.0], price=30.000000000000004, energy=0.0 (Node.java:340)
+11:35:56.622 [pool-1-thread-4] TRACE n.t.essim.transportsolver.nodes.Node - 2019-12-31T21:00 - Import_7e47: [curve={-100.0=0.0, 30.0=0.0, 30.000000000001=-5.4E7, 100.0=-5.4E7}; mc=30.0], price=30.000000000000004, energy=-192170.81850533807 (Node.java:340)
+11:35:56.622 [pool-1-thread-4] TRACE n.t.essim.transportsolver.nodes.Node - 2019-12-31T21:00 - ElectricityNetwork_973e: [curve={-100.0=5.417973E7, 0.0=5.417973E7, 20.0=179730.0, 100.0=179730.0}; mc=0.0], price=30.000000000000004, energy=179730.0 (Node.java:340)
+11:35:56.622 [pool-1-thread-4] TRACE n.t.essim.transportsolver.nodes.Node - 2019-12-31T21:00 - ElectricityDemand_c106: [curve={-100.0=179730.0, 100.0=179730.0}; mc=0.0], price=30.000000000000004, energy=179730.0 (Node.java:340)
+		 * 
+		 */
 		
 	}
 

@@ -78,6 +78,11 @@
 			<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
 			<version>1.2.1</version>
 		</dependency>
+		<dependency>
+			<groupId>org.keycloak</groupId>
+			<artifactId>keycloak-authz-client</artifactId>
+			<version>11.0.0</version>
+		</dependency>
 
 
 		<!-- runtime dependencies -->

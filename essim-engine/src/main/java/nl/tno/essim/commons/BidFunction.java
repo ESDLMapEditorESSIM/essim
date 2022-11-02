@@ -16,6 +16,8 @@
 
 package nl.tno.essim.commons;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -104,6 +106,10 @@ public class BidFunction {
 		return findDemandFromCurve(curve, price);
 	}
 
+	public BigDecimal findDemandFromCurveBD(BigDecimal price) {
+		return findDemandFromCurveBD(curve, price);
+	}
+
 	public static double findDemandFromCurve(TreeMap<Double, Double> curve, double price) {
 		if (curve.isEmpty()) {
 			return 0.0;
@@ -135,9 +141,59 @@ public class BidFunction {
 			return v1 + (((v2 - v1) / (p2 - p1)) * (price - p1));
 		}
 	}
+	public static BigDecimal findDemandFromCurveBD(TreeMap<Double, Double> curve, BigDecimal price) {
+		if (curve.isEmpty()) {
+			return new BigDecimal(0.0);
+		}
+		
+		if (curve.containsKey(price.doubleValue())) {
+			return new BigDecimal(curve.get(price.doubleValue()));
+		}
+		
+		double p1 = Double.NaN;
+		double p2 = Double.NaN;
+		double v1 = Double.NaN;
+		double v2 = Double.NaN;
+		for (double p : curve.keySet()) {
+			if (p > price.doubleValue()) {
+				p2 = p;
+				v2 = curve.get(p2);
+				break;
+			}
+			p1 = p;
+			v1 = curve.get(p1);
+		}
+		
+		if (Double.isNaN(p1)) {
+			return new BigDecimal(v2);
+		} else if (Double.isNaN(p2)) {
+			return new BigDecimal(v1);
+		} else {
+			double result = v1 + (((v2 - v1) / (p2 - p1)) * (price.doubleValue() - p1));
+			
+			var bdV1 = new BigDecimal(v1);
+			var bdV2 = new BigDecimal(v2);
+			var bdP1 = new BigDecimal(p1);
+			var bdP2 = new BigDecimal(p2);
+			var v2MinV1 = bdV2.subtract(bdV1);
+			var p2MinP1 = bdP2.subtract(bdP1);
+			var priceMinP1 = price.subtract(bdP1);
+			
+			var bdResult = bdV1.add(v2MinV1.divide(p2MinP1, MathContext.DECIMAL128).multiply(priceMinP1));
+			System.out.println("findDemandFromCurveBD Original    : " + result );
+			System.out.println("findDemandFromCurveBD BD result   : " + bdResult);
+			System.out.println("findDemandFromCurveBD BD as double: " + bdResult.doubleValue());
+			
+			return bdResult;
+		}
+	}
 
 	public double findPriceFromCurve(double bidPoint) {
 		return findPriceFromCurve(curve, bidPoint);
+	}
+
+	public BigDecimal findPriceFromCurveBD(BigDecimal bidPoint) {
+		return findPriceFromCurveBD(curve, bidPoint);
 	}
 
 	public static double findPriceFromCurve(TreeMap<Double, Double> curve, double bidPoint) {
@@ -167,7 +223,55 @@ public class BidFunction {
 		} else if (Double.isNaN(p2)) {
 			return p1;
 		} else {
-			return p1 + (((p2 - p1) / (v2 - v1)) * (bidPoint - v1));
+			return p1 + ((p2 - p1)  * ((bidPoint - v1) / (v2 - v1)));
+		}
+	}
+	
+	public static BigDecimal findPriceFromCurveBD(TreeMap<Double, Double> curve, BigDecimal bidPoint) {
+		for (Entry<Double, Double> entry : curve.entrySet()) {
+			if (Math.abs(entry.getValue() - bidPoint.doubleValue()) < eps) {
+				return new BigDecimal(entry.getKey());
+			}
+		}
+		
+		double p1 = Double.NaN;
+		double p2 = Double.NaN;
+		double v1 = Double.NaN;
+		double v2 = Double.NaN;
+		for (double p : curve.keySet()) {
+			double v = curve.get(p);
+			if (v < bidPoint.doubleValue()) {
+				p2 = p;
+				v2 = v;
+				break;
+			}
+			p1 = p;
+			v1 = v;
+		}
+		
+		if (Double.isNaN(p1)) {
+			return new BigDecimal(p2);
+		} else if (Double.isNaN(p2)) {
+			return new BigDecimal(p1);
+		} else {
+			var normalResult = p1 + ((p2 - p1)  * ((bidPoint.doubleValue() - v1) / (v2 - v1)));
+			
+			// BigDecimal
+			BigDecimal bdP1 = new BigDecimal(p1);
+			BigDecimal bdP2 = new BigDecimal(p2);
+			BigDecimal bdV1 = new BigDecimal(v1);
+			BigDecimal bdV2 = new BigDecimal(v2);
+			var p2Minp1 = bdP2.subtract(bdP1);
+			var bpMinV1 = bidPoint.subtract(bdV1);
+			var v2MinV1 = bdV2.subtract(bdV1);
+			
+			BigDecimal result = bdP1.add(p2Minp1.multiply(bpMinV1.divide(v2MinV1, MathContext.DECIMAL32)));
+			
+			System.out.println("findPriceFromCurveBD Normal      : " + normalResult);
+			System.out.println("findPriceFromCurveBD BD res      : " + result);
+			System.out.println("findPriceFromCurveBD BD as double: " + result.doubleValue());
+			return result;
+			
 		}
 	}
 
