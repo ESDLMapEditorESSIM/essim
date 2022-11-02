@@ -2,7 +2,7 @@ build:
   variables:
     MAVEN_IMAGE: maven:3.6.0
   only:
-    - master
+    - main
   stage: build
   image: $MAVEN_IMAGE-jdk-8
   before_script:
@@ -16,7 +16,7 @@ build:
 
 deploy:
   only:
-    - master
+    - main
   dependencies:
     - build
   variables:
