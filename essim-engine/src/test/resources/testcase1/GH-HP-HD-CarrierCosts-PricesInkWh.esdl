@@ -1,16 +1,18 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<esdl:EnergySystem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:esdl="http://www.tno.nl/esdl" id="175f2b97-4e0e-469f-a2dc-932140ed47ef" name="Untitled EnergySystem" description="" esdlVersion="v2207" version="4">
+<esdl:EnergySystem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:esdl="http://www.tno.nl/esdl" id="175f2b97-4e0e-469f-a2dc-932140ed47ef" name="Testcase4 Prices in Euro per kW" description="" esdlVersion="v2207" version="4">
   <energySystemInformation xsi:type="esdl:EnergySystemInformation" id="ef353965-0b2f-46fc-9231-bca69172a027">
     <carriers xsi:type="esdl:Carriers" id="92bfb07e-e43b-4ead-a2c8-d2f322ba8437">
       <carrier xsi:type="esdl:ElectricityCommodity" id="88b89c02-9d99-4548-afe6-ff48ba4042dd" name="Elek">
         <cost xsi:type="esdl:TimeSeriesProfile" id="879629f0-7889-43ce-bbee-404b86f0d4bd" values="0.1850816 0.1850695 0.1857713 0.1858681 0.1883123 0.1970969 0.2011625 0.199287 0.2168199 0.2116653 0.1930918 0.1889173 0.1889173 0.1889173 0.1935153 0.1953303 0.2038245 0.2076602 0.2056395 0.1965403 0.1925836 0.1930071 0.1853962 0.1857713" startDateTime="2019-02-19T00:00:00.000000" name="Elek-prijs">
-          <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" physicalQuantity="COST" id="29c2e656-bec3-478e-86af-5a3f7d53e57f" description="EUR / kW" perMultiplier="KILO" perUnit="WATT" unit="EURO"/>
+          <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" physicalQuantity="COST" id="29c2e656-bec3-478e-86af-5a3f7d53e57f" description="EUR / kWh" perMultiplier="KILO" perUnit="WATTHOUR" unit="EURO"/>
         </cost>
       </carrier>
-      <carrier xsi:type="esdl:GasCommodity" id="3cf3ac50-fa7f-4c03-b8df-42c68dd31bea" name="Gas">
+      <carrier xsi:type="esdl:EnergyCarrier" id="3cf3ac50-fa7f-4c03-b8df-42c68dd31bea" name="Gas" energyContent="31.65" emission="56.6">
         <cost xsi:type="esdl:TimeSeriesProfile" id="09492664-bcc0-4f0c-aa6a-0b4b35bb3132" values="0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018 0.8018" startDateTime="2019-02-19T00:00:00.000000" name="Gas-prijs">
           <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" physicalQuantity="COST" id="e18e285d-1dbf-4623-bd37-9c4ffcfedac7" description="EUR / m3" perUnit="CUBIC_METRE" unit="EURO"/>
         </cost>
+		<energyContentUnit xsi:type="esdl:QuantityAndUnitType" physicalQuantity="ENERGY" id="GasEnergyContentUnit" description="MJ / m3" perUnit="CUBIC_METRE" multiplier="MEGA" unit="JOULE"/>
+		<emissionUnit xsi:type="esdl:QuantityAndUnitType" physicalQuantity="EMISSION" id="GasEnergyContentUnit" description="kg / GJ" multiplier="KILO" unit="GRAM" perMultiplier="GIGA" perUnit="JOULE" />
       </carrier>
       <carrier xsi:type="esdl:HeatCommodity" id="ce72e734-86d9-456b-abfa-fcc2478b4045" name="Heat"/>
     </carriers>

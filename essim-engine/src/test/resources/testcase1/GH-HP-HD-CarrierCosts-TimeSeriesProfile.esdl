@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<esdl:EnergySystem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:esdl="http://www.tno.nl/esdl" id="175f2b97-4e0e-469f-a2dc-932140ed47ef" name="Untitled EnergySystem" description="" esdlVersion="v2207" version="4">
+<esdl:EnergySystem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:esdl="http://www.tno.nl/esdl" id="175f2b97-4e0e-469f-a2dc-932140ed47ef" name="Testcase3 Prices in J" description="" esdlVersion="v2207" version="4">
   <energySystemInformation xsi:type="esdl:EnergySystemInformation" id="ef353965-0b2f-46fc-9231-bca69172a027">
     <carriers xsi:type="esdl:Carriers" id="92bfb07e-e43b-4ead-a2c8-d2f322ba8437">
       <carrier xsi:type="esdl:ElectricityCommodity" id="88b89c02-9d99-4548-afe6-ff48ba4042dd" name="Elek">

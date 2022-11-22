@@ -29,6 +29,7 @@ public class BidFunction {
 	private static final double eps = 1e-22;
 	private static final double pmin = 0.0;
 	private static final double pmax = 1.0;
+	private static final double factor = 1E6;
 
 	@Getter
 	@Setter
@@ -153,13 +154,14 @@ public class BidFunction {
 	/**
 	 * Calculated the demand from a price in the BidFunction, but before calculating it
 	 * divides the energy axis by a factor of 1E6 (J to MJ) to deal with the precision constraints of a
-	 * 64-bit double value, when a large number is divided by a small number in this algorithm.  
+	 * 64-bit double value, when a large number is divided by a small number in this algorithm.<br/>  
+	 * As ESSIM always works internally in J and usual values are MJ for households, this seems a smart fix for
+	 * dealing with precision issues. Alternatives are using BigDecimals or don't deal with it...
 	 * @param curve
 	 * @param price
 	 * @return
 	 */
 	public static double findDemandFromCurveFactor(TreeMap<Double, Double> curve, double price) {
-		double factor = 1E6;
 		if (curve.isEmpty()) {
 			return 0.0;
 		}
@@ -237,7 +239,7 @@ public class BidFunction {
 			var p2MinP1 = bdP2.subtract(bdP1);
 			var priceMinP1 = price.subtract(bdP1);
 			
-			var bdResult = bdV1.add(v2MinV1.divide(p2MinP1, MathContext.DECIMAL128).multiply(priceMinP1));
+			var bdResult = bdV1.add(v2MinV1.divide(p2MinP1, MathContext.DECIMAL32).multiply(priceMinP1));
 			System.out.println("findDemandFromCurveBD Original    : " + result );
 			System.out.println("findDemandFromCurveBD BD result   : " + bdResult);
 			System.out.println("findDemandFromCurveBD BD as double: " + bdResult.doubleValue());
@@ -315,7 +317,6 @@ public class BidFunction {
 	 * @return
 	 */
 	public static double findPriceFromCurveFactor(TreeMap<Double, Double> curve, double bidPoint) {
-		double factor = 1E6;
 		double demand = bidPoint / factor;
 		
 		for (Entry<Double, Double> entry : curve.entrySet()) {

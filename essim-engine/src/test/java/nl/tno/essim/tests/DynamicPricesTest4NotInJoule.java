@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import esdl.Asset;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
+import esdl.GasHeater;
+import esdl.HeatPump;
 import esdl.HeatingDemand;
 import esdl.Import;
 import esdl.Port;
@@ -32,7 +34,7 @@ import tech.tablesaw.api.Table;
 import tech.tablesaw.io.csv.CsvWriteOptions;
 import tech.tablesaw.io.csv.CsvWriter;
 
-class DynamicPricesTest3 {
+class DynamicPricesTest4NotInJoule {
 
 	@BeforeAll
 	static void setUpBeforeClass() throws Exception {
@@ -44,9 +46,14 @@ class DynamicPricesTest3 {
 
 	
 	
+	/**
+	 * In this test actual prices are connected to the Carriers, and are automatically converted to the right values
+	 * in Joules internally by ESSIM
+	 * @throws Exception
+	 */
 	
 	@Test
-	void testActualUseCaseWithInfluxAndGrafana() throws Exception {
+	void testActualUseCaseNotInJouleWithInfluxAndGrafana() throws Exception {
 						
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulationImpl sim = new EssimSimulationImpl();
@@ -58,26 +65,26 @@ class DynamicPricesTest3 {
 		market.setDeltaPrice(1E-10);
 		sim.setMarket(market);
 		
-		sim.setScenarioID("testcase3-realpriceprofile");
-		sim.setSimulationDescription("testcase3: Real Priceprofile Dp=1E-10");
+		sim.setScenarioID("testcase4-realpriceprofile");
+		sim.setSimulationDescription("testcase4: Real Priceprofile Not Joule Dp=1E-10");
 		String simId = mongo.addSimulation(sim);
-		File esdlFile = new File("src/test/resources/testcase1/GH-HP-HD-CarrierCosts-TimeSeriesProfile.esdl");
-		sim.setInfluxURL("http://localhost:8086");
+		File esdlFile = new File("src/test/resources/testcase1/GH-HP-HD-CarrierCosts-PricesInkWh.esdl");
+		//sim.setInfluxURL("http://localhost:8086");
 		
-		ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase3", simId, sim, esdlFile, mongo);
+		ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase4", simId, sim, esdlFile, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 		
 		essimEngine.startSimulation();
-		while (mongo.getSimulationStatus(simId).getState() != Status.COMPLETE) {
+		while (mongo.getSimulationStatus(simId).getState() == Status.RUNNING) {
 			Thread.sleep(100);
 		}
 						
 		Thread.sleep(1000);
 		
-		String grafanaDashboard = essimEngine.createGrafanaDashboard();
-		System.out.println("Grafana  dashboard at: " + grafanaDashboard);
+		//String grafanaDashboard = essimEngine.createGrafanaDashboard();
+		//System.out.println("Grafana  dashboard at: " + grafanaDashboard);
 		
 		
 		EnergySystem es = essimEngine.getEnergySystem();
@@ -117,9 +124,25 @@ class DynamicPricesTest3 {
 			if (asset instanceof HeatingDemand) {
 				assertEquals(total, 250E6, 1E3);
 			} else if (asset instanceof Import && asset.getName().equals("Import_263a")) { // gas import
-				//assertEquals(-131.6E6, total, 1E6);
+				assertEquals(-147E6, total, 1E6); // 1 MJ difference
 			} else if (asset instanceof Import && asset.getName().equals("Import_cb54")) { // E import
-				//assertEquals(-62.5E6, total, 1E6);
+				assertEquals(-55E6, total, 1E6);
+			} else if (asset instanceof HeatPump) {
+				var carriers = table.stringColumn("carrierName");				
+				var total_elek = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Elek")).sum();
+				var total_heat = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Heat")).sum();
+				System.out.println("Total HP Elek:" + total_elek);
+				System.out.println("Total HP Heat:" + total_heat);
+				assertEquals(55E6, total_elek, 1E6);
+				assertEquals(-110E6, total_heat, 1E6);
+			} else if (asset instanceof GasHeater) {
+				var carriers = table.stringColumn("carrierName");				
+				var total_gas = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Gas")).sum();
+				var total_heat = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Heat")).sum();
+				System.out.println("Total GH gas:" + total_gas);
+				System.out.println("Total GH Heat:" + total_heat);
+				assertEquals(147E6, total_gas, 1E6);
+				assertEquals(-140E6, total_heat, 1E6);
 			}
 			csvWriter.write(table, CsvWriteOptions.builder("output/" + asset.getName() + ".csv").separator(';').build());
 		}
@@ -129,7 +152,8 @@ class DynamicPricesTest3 {
 			Table table = network.getValue();
 			double sum = table.doubleColumn("imbalanceEnergy").sum();
 			System.out.println("Network " + network.getKey() + " balance = " + sum);
-			//assertEquals(0.0, sum, 1.0);
+			assertEquals(0.0, sum, 1.0); // max 1 joule difference
+			csvWriter.write(table, CsvWriteOptions.builder("output/" + network.getKey() + ".csv").separator(';').build());
 		}
 	}
 }

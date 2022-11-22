@@ -337,7 +337,7 @@ public abstract class Node implements INode {
 		energy = findDemandFromCurve(demandFunction, price);
 		
 		// print curve to stdout
-		log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(), getAsset().getName(), demandFunction.toString(), price, energy);
+		//log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(), getAsset().getName(), demandFunction.toString(), price, energy);
 
 		// Make observation
 		ObservationBuilder builder = Observation.builder()

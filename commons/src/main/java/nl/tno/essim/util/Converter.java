@@ -21,8 +21,11 @@ import java.text.NumberFormat;
 import java.time.temporal.ChronoUnit;
 
 import esdl.AbstractQuantityAndUnit;
+import esdl.Carrier;
 import esdl.DurationUnitEnum;
+import esdl.EnergyCarrier;
 import esdl.EsdlFactory;
+import esdl.Fuel;
 import esdl.GenericProfile;
 import esdl.MultiplierEnum;
 import esdl.ProfileTypeEnum;
@@ -30,6 +33,7 @@ import esdl.QuantityAndUnitReference;
 import esdl.QuantityAndUnitType;
 import esdl.TimeUnitEnum;
 import esdl.UnitEnum;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimDuration;
 
 /**
@@ -39,6 +43,7 @@ import nl.tno.essim.time.EssimDuration;
  * @author werkmane
  *
  */
+@Slf4j
 public class Converter {
 	private static NumberFormat formatter = DecimalFormat.getNumberInstance();
 
@@ -192,26 +197,70 @@ public class Converter {
 	public static String format(double value, ProfileTypeEnum unit) {
 		return formatter.format(fromDidoUnit(value, unit));
 	}
-
-	public static double abstractQuantityToStandardizedUnits(double value, AbstractQuantityAndUnit specifiedUnit) {
-		QuantityAndUnitType standardizedUnit;
+	
+	public static QuantityAndUnitType resolveAbstractQuantityAndUnit(AbstractQuantityAndUnit specifiedUnit) {
 		if (specifiedUnit instanceof QuantityAndUnitType) {
-			standardizedUnit = (QuantityAndUnitType) specifiedUnit;
+			return (QuantityAndUnitType) specifiedUnit;
 		} else if (specifiedUnit instanceof QuantityAndUnitReference) {
 			QuantityAndUnitReference reference = (QuantityAndUnitReference) specifiedUnit;
-			standardizedUnit = reference.getReference();
+			return reference.getReference();
 		} else {
-			return value;
+			throw new IllegalArgumentException("Unknown AbstractQuantityAndUnit " + specifiedUnit);
 		}
+	}
+
+	public static double abstractQuantityToStandardizedUnits(double value, AbstractQuantityAndUnit specifiedUnit) {
+		QuantityAndUnitType standardizedUnit = resolveAbstractQuantityAndUnit(specifiedUnit); 
 
 		if (standardizedUnit == null) {
 			GenericProfile profile = (GenericProfile) specifiedUnit.eContainer();
 			throw new IllegalArgumentException("Quantity and Unit is missing for profile with id : " + profile.getId());
 		}
+		
+		// find out the energy content of the carrier (Fuel or EnergyCarrier)
+		// TODO: check if this is generic enough or that more checks are necessary than the perUnit check.
+		double energyContentFactor = 1;
+		if (standardizedUnit.eContainer() instanceof GenericProfile ) {
+			GenericProfile genericProfile = (GenericProfile) standardizedUnit.eContainer();
+			if (genericProfile.eContainer() != null && genericProfile.eContainer() instanceof Carrier) {
+				Carrier carrier = (Carrier) genericProfile.eContainer();
+				if (carrier instanceof Fuel) {
+					Fuel fuel = (Fuel) carrier;
+					double energyContent = fuel.getEnergyContent();
+					QuantityAndUnitType energyContentUnit = resolveAbstractQuantityAndUnit(fuel.getEnergyContentUnit());
+					// check if perUnit of e.g. MJ/m3 (==m3) is the same as the input unit e.g. EUR/m3 (==m3)
+					if (standardizedUnit.getPerUnit() == energyContentUnit.getPerUnit()) {
+						energyContentFactor = abstractQuantityToStandardizedUnits(energyContent, energyContentUnit);
+						//log.debug("Factor for fuel " + carrier.getName() + "=" + energyContentFactor);
+					} else {
+						String error = String.format("Incompatible units: Cannot convert energyContent unit %s/%s of %s %s such that it is usable for profile %s defined in %s/%s", 
+								energyContentUnit.getUnit(), energyContentUnit.getPerUnit(), fuel.eClass().getName(), fuel.getName(), genericProfile.getName(), standardizedUnit.getUnit(),standardizedUnit.getPerUnit());
+						log.error(error);
+						throw new IllegalArgumentException(error);
+						
+					}
+				} else if (carrier instanceof EnergyCarrier) {
+					EnergyCarrier energyCarrier = (EnergyCarrier) carrier;
+					double energyContent = energyCarrier.getEnergyContent();
+					QuantityAndUnitType energyContentUnit = resolveAbstractQuantityAndUnit(energyCarrier.getEnergyContentUnit());
+					if (standardizedUnit.getPerUnit() == energyContentUnit.getPerUnit()) {
+						energyContentFactor = abstractQuantityToStandardizedUnits(energyContent, energyContentUnit);
+						//log.debug("Factor for energy carrier " + carrier + "=" + energyContentFactor);
+					} else {
+						String error = String.format("Incompatible units: Cannot convert energyContent unit %s/%s of %s %s such that it is usable for profile %s defined in %s/%s", 
+								energyContentUnit.getUnit(), energyContentUnit.getPerUnit(), energyCarrier.eClass().getName(), energyCarrier.getName(), genericProfile.getName(), standardizedUnit.getUnit(),standardizedUnit.getPerUnit());
+						log.error(error);
+						throw new IllegalArgumentException(error);
+					}
+				}
+				
+			}
+			 
+		}		
 
 		return value * (fromMultiplier(standardizedUnit.getMultiplier()) * toSIUnit(standardizedUnit.getUnit()))
 				/ (fromMultiplier(standardizedUnit.getPerMultiplier()) * toSIUnit(standardizedUnit.getPerUnit())
-						* toSIUnit(standardizedUnit.getPerTimeUnit()));
+						* toSIUnit(standardizedUnit.getPerTimeUnit())) / energyContentFactor;
 	}
 
 	private static double toSIUnit(TimeUnitEnum unit) {
@@ -294,7 +343,7 @@ public class Converter {
 			return 1;
 		case VOLT:
 			return 1;
-		case WATT:
+		case WATT:			
 			return 1;
 		case WATTHOUR:
 			return 3600; // J (Ws)
@@ -304,6 +353,13 @@ public class Converter {
 			return 7 * 24 * 60 * 60; // sec
 		case YEAR:
 			return 365 * 24 * 60 * 60; // sec
+		case AMPERE:
+		case DEGREES:
+		case NEWTON:
+		case PASCAL:
+		case VOLT_AMPERE:
+		case VOLT_AMPERE_REACTIVE:
+			return 1;
 		default:
 			return 1;
 		}

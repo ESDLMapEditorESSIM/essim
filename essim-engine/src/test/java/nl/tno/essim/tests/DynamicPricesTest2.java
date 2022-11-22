@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import esdl.Asset;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
+import esdl.GasHeater;
+import esdl.HeatPump;
 import esdl.HeatingDemand;
 import esdl.Import;
 import esdl.Port;
@@ -53,12 +55,13 @@ class DynamicPricesTest2 {
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 2 ,19, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(  LocalDateTime.of(2019, 2, 20, 0,0,0)));
 		MarketImpl market = new MarketImpl();
-		market.setMinPrice(0.0);
-		market.setMaxPrice(1.0);
-		market.setDeltaPrice(1E-6);
+		market.setMinPrice(-100.0);
+		market.setMaxPrice(100.0);
+		market.setDeltaPrice(1E-10);
 		sim.setMarket(market);
 		
-		sim.setScenarioID("testcase1-realpriceprofile");
+		sim.setScenarioID("testcase3-realpriceprofile");
+		sim.setSimulationDescription("testcase3: Real Priceprofile Dp=1E-10");
 		String simId = mongo.addSimulation(sim);
 		File esdlFile = new File("src/test/resources/testcase1/GH-HP-HD-CarrierCosts-TimeSeriesProfile.esdl");
 		ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase1", simId, sim, esdlFile, mongo);
@@ -100,6 +103,7 @@ class DynamicPricesTest2 {
 		CsvWriter csvWriter = new CsvWriter();
 		Files.createDirectories(Path.of("output"));
 
+		// validate output of simulation by iterating through the tables
 		for (Entry<String, Table> entry : tables.entrySet()) {			
 			Table table = entry.getValue();
 			double total = table.doubleColumn("allocationEnergy").sum();
@@ -109,9 +113,25 @@ class DynamicPricesTest2 {
 			if (asset instanceof HeatingDemand) {
 				assertEquals(total, 250E6, 1E3);
 			} else if (asset instanceof Import && asset.getName().equals("Import_263a")) { // gas import
-				//assertEquals(-131.6E6, total, 1E6);
+				assertEquals(-147E6, total, 1E6); // 1 MJ difference
 			} else if (asset instanceof Import && asset.getName().equals("Import_cb54")) { // E import
-				//assertEquals(-62.5E6, total, 1E6);
+				assertEquals(-55E6, total, 1E6);
+			} else if (asset instanceof HeatPump) {
+				var carriers = table.stringColumn("carrierName");				
+				var total_elek = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Elek")).sum();
+				var total_heat = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Heat")).sum();
+				System.out.println("Total HP Elek:" + total_elek);
+				System.out.println("Total HP Heat:" + total_heat);
+				assertEquals(55E6, total_elek, 1E6);
+				assertEquals(-110E6, total_heat, 1E6);
+			} else if (asset instanceof GasHeater) {
+				var carriers = table.stringColumn("carrierName");				
+				var total_gas = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Gas")).sum();
+				var total_heat = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Heat")).sum();
+				System.out.println("Total GH gas:" + total_gas);
+				System.out.println("Total GH Heat:" + total_heat);
+				assertEquals(147E6, total_gas, 1E6);
+				assertEquals(-140E6, total_heat, 1E6);
 			}
 			csvWriter.write(table, CsvWriteOptions.builder("output/" + asset.getName() + ".csv").separator(';').build());
 		}
@@ -121,7 +141,8 @@ class DynamicPricesTest2 {
 			Table table = network.getValue();
 			double sum = table.doubleColumn("imbalanceEnergy").sum();
 			System.out.println("Network " + network.getKey() + " balance = " + sum);
-			//assertEquals(0.0, sum, 1.0);
+			assertEquals(0.0, sum, 1.0); // max 1 joule difference
+			csvWriter.write(table, CsvWriteOptions.builder("output/" + network.getKey() + ".csv").separator(';').build());
 		}
 	}
 }
