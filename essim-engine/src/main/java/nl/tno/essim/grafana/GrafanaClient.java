@@ -38,7 +38,6 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.mongo.IMongoBackend;
-import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.transportsolver.TransportSolver;
 
 @Slf4j

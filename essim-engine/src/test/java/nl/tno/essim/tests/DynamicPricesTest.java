@@ -108,6 +108,7 @@ class DynamicPricesTest {
 		EssimSimulationImpl sim = new EssimSimulationImpl();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1 ,1, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2020, 1 ,1, 0,0,0)));
+		
 		MarketImpl market = new MarketImpl();
 		sim.setMarket(market);
 		market.setMinPrice(-100.0);
@@ -121,6 +122,7 @@ class DynamicPricesTest {
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
+		
 		
 		essimEngine.startSimulation();
 		while (mongo.getSimulationStatus(simId).getState() != Status.COMPLETE) {

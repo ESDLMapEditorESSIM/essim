@@ -112,7 +112,7 @@ public class RemoteLogicNode extends Node {
 
 		JSONObject message = new JSONObject().put("timeStamp", t)
 				.put("timeStepInSeconds", now.getPeriod().getSeconds())
-				.put("minPrice", marketInfo.getMinPrice().doubleValue())
+				.put("minPrice", marketInfo.getMinPrice().doubleValue()) // TODO: check if this is the correct place to communicate min/max price
 				.put("maxPrice", marketInfo.getMaxPrice().doubleValue())
 				.put("deltaPrice", marketInfo.getDeltaPrice().doubleValue())
 				.put("carrierId", carrier.getId());
@@ -123,6 +123,7 @@ public class RemoteLogicNode extends Node {
 			e.printStackTrace();
 		}
 
+		/** wait for remote node to respond with the bidcurve (@see #receiveMessage(String topic, MqttMessage message)) **/
 		this.locks.put(t, new Object());
 		synchronized (this.locks.get(t)) {
 			try {

@@ -98,10 +98,6 @@ public class BidFunction {
 		return new BidFunction(summedCurve);
 	}
 
-	public double findEquillibrium() {
-		return findPriceFromCurve(curve, 0.0);
-	}
-
 	public double findDemandFromCurve(double price) {
 		return findDemandFromCurve(curve, price);
 	}
@@ -111,6 +107,18 @@ public class BidFunction {
 	}
 
 	public static double findDemandFromCurve(TreeMap<Double, Double> curve, double price) {
+		// Choose here which precision is required
+		return findDemandFromCurveFactor(curve, price);
+	}
+
+	/**
+	 * Calculates the demand at the input price using interpolation utilizing regular double calculation.
+	 * (the 64-bit (constrainted) precision of a Java double (max 15/16 digits)).
+	 * @param curve
+	 * @param price
+	 * @return
+	 */
+	public static double findDemandFromCurveDouble(TreeMap<Double, Double> curve, double price) {
 		if (curve.isEmpty()) {
 			return 0.0;
 		}
@@ -141,6 +149,56 @@ public class BidFunction {
 			return v1 + (((v2 - v1) / (p2 - p1)) * (price - p1));
 		}
 	}
+	
+	/**
+	 * Calculated the demand from a price in the BidFunction, but before calculating it
+	 * divides the energy axis by a factor of 1E6 (J to MJ) to deal with the precision constraints of a
+	 * 64-bit double value, when a large number is divided by a small number in this algorithm.  
+	 * @param curve
+	 * @param price
+	 * @return
+	 */
+	public static double findDemandFromCurveFactor(TreeMap<Double, Double> curve, double price) {
+		double factor = 1E6;
+		if (curve.isEmpty()) {
+			return 0.0;
+		}
+
+		if (curve.containsKey(price)) {
+			return curve.get(price);
+		}
+
+		double p1 = Double.NaN;
+		double p2 = Double.NaN;
+		double v1 = Double.NaN;
+		double v2 = Double.NaN;
+		for (double p : curve.keySet()) {
+			if (p > price) {
+				p2 = p;
+				v2 = curve.get(p2) / factor;
+				break;
+			}
+			p1 = p;
+			v1 = curve.get(p1) / factor;
+		}
+
+		if (Double.isNaN(p1)) {
+			return v2 * factor;
+		} else if (Double.isNaN(p2)) {
+			return v1;
+		} else {
+			return (v1 + (((v2 - v1) / (p2 - p1)) * (price - p1))) * factor;
+		}
+	}
+	
+	/**
+	 * Calculates the demand from the input price value using interpolation of the points in the BidFunction and utilizing
+	 * BigDecimals in this calculation to make sure that the algorithm does not throw away required precision,
+	 * compared to a 64-bit double. It calculates with 32 decimals (double = max 15/16 decimals)
+	 * @param curve
+	 * @param bidPoint
+	 * @return
+	 */
 	public static BigDecimal findDemandFromCurveBD(TreeMap<Double, Double> curve, BigDecimal price) {
 		if (curve.isEmpty()) {
 			return new BigDecimal(0.0);
@@ -188,6 +246,12 @@ public class BidFunction {
 		}
 	}
 
+	
+
+	public double findEquillibrium() {
+		return findPriceFromCurve(curve, 0.0);
+	}
+	
 	public double findPriceFromCurve(double bidPoint) {
 		return findPriceFromCurve(curve, bidPoint);
 	}
@@ -197,6 +261,20 @@ public class BidFunction {
 	}
 
 	public static double findPriceFromCurve(TreeMap<Double, Double> curve, double bidPoint) {
+		// Choose here which precision is required
+		
+		//return findPriceFromCurveBD(curve, BigDecimal.valueOf(bidPoint)).doubleValue();
+		return findPriceFromCurveFactor(curve, bidPoint);
+	}
+
+	/**
+	 * Calculates the price from the input demand using interpolation technique and utilizing regular double calculation.
+	 * (the 64-bit (constrainted) precision of a Java double (max 15 digits)).
+	 * @param curve
+	 * @param price
+	 * @return
+	 */
+	public static double findPriceFromCurveDouble(TreeMap<Double, Double> curve, double bidPoint) {
 		for (Entry<Double, Double> entry : curve.entrySet()) {
 			if (Math.abs(entry.getValue() - bidPoint) < eps) {
 				return entry.getKey();
@@ -227,6 +305,58 @@ public class BidFunction {
 		}
 	}
 	
+	
+	/**
+	 * Calculated the price from a demand in the BidFunction, but before calculating it
+	 * divides the energy axis by a factor of 1E6 (J to MJ) to deal with the precision constraints of a
+	 * 64-bit double value, when a large number is divided by a small number in this algorithm.  
+	 * @param curve
+	 * @param bidPoint demand at that point
+	 * @return
+	 */
+	public static double findPriceFromCurveFactor(TreeMap<Double, Double> curve, double bidPoint) {
+		double factor = 1E6;
+		double demand = bidPoint / factor;
+		
+		for (Entry<Double, Double> entry : curve.entrySet()) {
+			if (Math.abs(entry.getValue() - bidPoint) < eps) {
+				return entry.getKey();
+			}
+		}
+
+		double p1 = Double.NaN;
+		double p2 = Double.NaN;
+		double v1 = Double.NaN;
+		double v2 = Double.NaN;
+		for (double p : curve.keySet()) {
+			double v = curve.get(p) / factor;
+			if (v < demand) {
+				p2 = p;
+				v2 = v;
+				break;
+			}
+			p1 = p;
+			v1 = v;
+		}
+
+		if (Double.isNaN(p1)) {
+			return p2;
+		} else if (Double.isNaN(p2)) {
+			return p1;
+		} else {
+			return p1 + ((p2 - p1)  * ((demand - v1) / (v2 - v1)));
+		}
+	}
+	
+	
+	/**
+	 * Calculates the price from the demand using interpolation of the points in the BidFunction and utilizing
+	 * BigDecimals in this calculation to make sure that the algorithm does not throw away required precision,
+	 * compared to a 64-bit double. It calculates with 32 decimals (double = max 15/16 decimals)
+	 * @param curve
+	 * @param bidPoint
+	 * @return
+	 */
 	public static BigDecimal findPriceFromCurveBD(TreeMap<Double, Double> curve, BigDecimal bidPoint) {
 		for (Entry<Double, Double> entry : curve.entrySet()) {
 			if (Math.abs(entry.getValue() - bidPoint.doubleValue()) < eps) {
@@ -257,10 +387,10 @@ public class BidFunction {
 			var normalResult = p1 + ((p2 - p1)  * ((bidPoint.doubleValue() - v1) / (v2 - v1)));
 			
 			// BigDecimal
-			BigDecimal bdP1 = new BigDecimal(p1);
-			BigDecimal bdP2 = new BigDecimal(p2);
-			BigDecimal bdV1 = new BigDecimal(v1);
-			BigDecimal bdV2 = new BigDecimal(v2);
+			BigDecimal bdP1 = BigDecimal.valueOf(p1);
+			BigDecimal bdP2 = BigDecimal.valueOf(p2);
+			BigDecimal bdV1 = BigDecimal.valueOf(v1);
+			BigDecimal bdV2 = BigDecimal.valueOf(v2);
 			var p2Minp1 = bdP2.subtract(bdP1);
 			var bpMinV1 = bidPoint.subtract(bdV1);
 			var v2MinV1 = bdV2.subtract(bdV1);
