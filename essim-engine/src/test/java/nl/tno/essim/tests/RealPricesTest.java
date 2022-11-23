@@ -34,20 +34,11 @@ import tech.tablesaw.api.Table;
 import tech.tablesaw.io.csv.CsvReadOptions;
 
 
+@Disabled
 class RealPricesTest {
 	
-
-	@BeforeAll
-	static void setUpBeforeClass() throws Exception {
 	
-	}
-
-	@AfterAll
-	static void tearDownAfterClass() throws Exception {
-	}
-
-	
-	@Test @Disabled
+	@Test
 	void testReadProfiles( ) throws InterruptedException {
 		CsvReadOptions csvReadOptions = CsvReadOptions.builder("src/test/resources/profiles/consumer_dynamic_tariff.csv").separator(';').build();
 		Table tariffs = Table.read().csv(csvReadOptions);

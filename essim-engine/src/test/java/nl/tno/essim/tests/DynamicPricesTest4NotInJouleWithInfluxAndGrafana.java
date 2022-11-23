@@ -14,6 +14,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import esdl.Asset;
@@ -46,7 +47,7 @@ class DynamicPricesTest4NotInJouleWithInfluxAndGrafana {
 
 	
 	
-	//@Disabled // because it requires influxdb and grafana
+	@Disabled("Because it requires influxdb URL and grafana env configuration")
 	@Test
 	void testActualUseCaseNotInJouleWithInfluxAndGrafana() throws Exception {
 						

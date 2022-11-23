@@ -71,7 +71,10 @@ class BasicTest {
 			Thread.sleep(100);
 		}
 		
-		Thread.sleep(1000);
+		
+		// need to sleep as data is still being written in parallel threads and we don't have a handle to that.
+		Thread.sleep(1500);
+		
 		EnergySystem es = essimEngine.getEnergySystem();
 		EList<Asset> assets = es.getInstance().get(0).getArea().getAsset();
 		assets.stream().filter(a -> a instanceof EnergyAsset).map(EnergyAsset.class::cast).forEach(a -> {
