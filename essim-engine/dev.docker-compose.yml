@@ -16,8 +16,7 @@ services:
   influxdb:
     image: influxdb:1.7
     ports:
-      - 8086:8086
-      - 8998:8088
+      - 8087:8086
     volumes:
       - influxdb-storage:/var/lib/influxdb
     networks:

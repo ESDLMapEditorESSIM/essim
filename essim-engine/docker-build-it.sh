@@ -1,6 +1,7 @@
 echo ============================
 echo Building JAR
 echo ============================
+cd ..
 mvn clean package -DskipTest
 echo ============================
 echo Building Docker image

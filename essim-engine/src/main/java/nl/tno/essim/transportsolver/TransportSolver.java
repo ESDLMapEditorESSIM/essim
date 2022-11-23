@@ -249,7 +249,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			return assetList;
 		}
 
-		printTree(getId());
+		// only generate tree HTML when PRINT_TREE environmental variable is present
+		String printTreeEnv = System.getenv("PRINT_TREE");
+		if (printTreeEnv != null) {
+			printTree(getId());
+		}
 
 		return assetList;
 	}

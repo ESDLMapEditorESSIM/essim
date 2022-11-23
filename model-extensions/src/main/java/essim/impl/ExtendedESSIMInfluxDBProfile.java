@@ -65,6 +65,9 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 	}
 
 	private InfluxDB connectToInfluxHost() {
+		if (getHost().equals("") || getPort() <= 0) {
+			throw new IllegalArgumentException("InfluxDB profile not configured correctly: " + this);
+		}
 		final String serverId = getHost() + ":" + getPort();
 		final File propFile = new File("credentials.json");
 
@@ -88,10 +91,9 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 								propFile, USERNAME_PROP, PASSWORD_PROP);
 					}
 				} else {
-					log.info("Property file {} found, but no credential info for this server, not using authentication",
-							propFile);
-					log.info("serverId : {}", serverId);
-					log.info("Prop file contents: {}", root.toString());
+					log.info("Property file {} found, but no credential info for this server, not using authentication", propFile);
+					//log.debug("serverId : {}", serverId);
+					//log.debug("Prop file contents: {}", root.toString());
 				}
 			} catch (FileNotFoundException e) {
 				log.warn("Unable to load config {}: {}", propFile, e.getMessage());
@@ -182,7 +184,8 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		log.debug("Influx Call for: " + command);
 
 		synchronized (profileCache) {
-			if (!profileCache.isCached(command)) {
+			String cacheKey = calculateCacheKey();
+			if (!profileCache.isCached(cacheKey)) {
 				log.debug("Profile is not cached! Proceeding to query InfluxDB!");
 
 				influxClient = connectToInfluxHost();
@@ -200,6 +203,8 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 						}
 					} catch (InfluxDBIOException e) {
 						log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
+					} finally {
+						influxClient.close();
 					}
 				}
 				if (queryResult == null) {
@@ -219,12 +224,22 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 								simulationStepLength, annualChange);
 					}
 				}
-				profileCache.cache(command, dataCache);
+				profileCache.cache(cacheKey, dataCache);
 			} else {
-				log.debug("Profile is cached! Retrieving from cache!");
-				dataCache = profileCache.getDataCache(command);
+				log.debug("Profile is cached! Retrieving from cache! ({})", cacheKey);
+				dataCache = profileCache.getDataCache(cacheKey);
 			}
 		}
+	}
+	
+	private String calculateCacheKey() {
+		return NullStr(getHost()) + NullStr(getPort()) + NullStr(getDatabase()) + NullStr(getMeasurement())
+			+ NullStr(getField()) + NullStr(getMultiplier()) 
+			+ NullStr(getAnnualChangePercentage()); 
+	}
+	
+	private static String NullStr(Object s) {
+		return s == null ? "" : String.valueOf(s);
 	}
 
 	public String toInfluxDBTime(EssimDuration stepLength) {
