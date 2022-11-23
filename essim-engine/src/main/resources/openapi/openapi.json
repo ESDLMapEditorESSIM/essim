@@ -2,9 +2,9 @@
   "openapi": "3.0.0",
   "info": {
     "title": "ESSIM REST Services",
-    "version": "v3"
+    "version": "v4"
   },
-  "servers": [ {"url": "/essim"} ],
+  "servers": [{"url": "/essim"}],
   "paths": {
     "/simulation": {
       "post": {
@@ -613,6 +613,9 @@
             "items": {
               "$ref": "#/components/schemas/NodeConfiguration"
             }
+          },
+          "market": {
+            "$ref": "#/components/schemas/Market"
           }
         },
         "required": [
@@ -625,6 +628,28 @@
           "timeStep",
           "status",
           "mso"
+        ]
+      },
+      "Market": {
+        "type": "object",
+        "properties": {
+          "minPrice": {
+            "default": 0,
+            "type": "number"
+          },
+          "maxPrice": {
+            "default": 1,
+            "type": "number"
+          },
+          "deltaPrice": {
+            "default": "1E-6",
+            "type": "number"
+          }
+        },
+        "required": [
+          "minPrice",
+          "maxPrice",
+          "deltaPrice"
         ]
       },
       "MSOConfiguration": {
