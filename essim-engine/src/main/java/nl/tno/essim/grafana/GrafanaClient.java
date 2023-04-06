@@ -404,7 +404,7 @@ public class GrafanaClient {
 				}
 				
 
-				if (solver.hasAnyTransportAssetWithCapacity()) {
+				if (solver.hasAnyTransportAssetWithCapacity() && grafanaLoadPanelPercent) {
 
 					JSONObject ploadPanel = new JSONObject(tpSolverPLoadPanelString);
 					ploadPanel.put("title", solverId + " Transport loads (in %)");
