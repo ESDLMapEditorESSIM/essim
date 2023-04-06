@@ -23,12 +23,12 @@
 	</organization>
 
 	<properties>
-		<revision>22.11</revision> <!-- use this to set the version of all the modules -->
+		<revision>23.3</revision> <!-- use this to set the version of all the modules -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>11</java.version>
 		<emf.version>2.16.0</emf.version>
 		<emfecore.version>2.18.0</emfecore.version>
-		<esdl.version>2.22.10</esdl.version>
+		<esdl.version>2.23.3</esdl.version>
 	</properties>
 
 	<repositories>
