@@ -54,7 +54,13 @@ public class RestSimulation implements Simulation {
 	private IMongoBackend mongo;
 	private final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);
 
-	private UncaughtExceptionHandler essimExceptionHandler = new UncaughtExceptionHandler() {
+	private static class EssimExceptionHandler implements UncaughtExceptionHandler {
+		private IMongoBackend mongo;
+
+		public EssimExceptionHandler(IMongoBackend mongo) {
+			this.mongo = mongo;
+		}
+
 		@Override
 		public void uncaughtException(Thread t, Throwable e) {
 			StringWriter sw = new StringWriter();
@@ -66,7 +72,8 @@ public class RestSimulation implements Simulation {
 	};
 
 	public RestSimulation() {
-		// For now use the singleton, next version this needs to be injected such that we can test ESSIM
+		// For now use the singleton, next version this needs to be injected such that
+		// we can test ESSIM
 		// this uses the actual Backend instead of the stub in test cases...
 		mongo = MongoBackend.getInstance();
 	}
@@ -134,7 +141,7 @@ public class RestSimulation implements Simulation {
 					engine.startSimulation();
 					Thread.currentThread().interrupt();
 				}, simId);
-				thread.setUncaughtExceptionHandler(essimExceptionHandler);
+				thread.setUncaughtExceptionHandler(new EssimExceptionHandler(mongo));
 				thread.start();
 
 				mongo.getStatusMap().put(simId, engine);
@@ -302,7 +309,7 @@ public class RestSimulation implements Simulation {
 										moduleResult.put("status", "Success");
 									}
 								} catch (JSONException e) {
-									
+
 									// Running calculation, so display progress as value
 									if (Commons.isNumericString(moduleResultString)) {
 										moduleResult = new JSONObject("{status: Calculating}");
