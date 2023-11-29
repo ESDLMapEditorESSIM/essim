@@ -16,9 +16,12 @@
 
 package common;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Charsets;
@@ -29,39 +32,39 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProfileCache extends TimerTask {
 
-	private static final long CACHE_INVALIDATION_PERIOD = 2 * 60 * 60 * 1000; // 2 hours
+	private static final long CACHE_INVALIDATION_PERIOD = TimeUnit.HOURS.toMillis(2); // 2 Hours
 	private static ProfileCache instance;
-	private ConcurrentHashMap<Integer, TimeSeriesDataCache> dataCaches;
+	private HashMap<Integer, TimeSeriesDataCache> dataCaches = new HashMap<Integer, TimeSeriesDataCache>();
 	private static AtomicInteger counter;
 
 	private ProfileCache() {
-		dataCaches = new ConcurrentHashMap<Integer, TimeSeriesDataCache>();
 		counter = new AtomicInteger(0);
-		new Timer("Timer").scheduleAtFixedRate(this, 0, CACHE_INVALIDATION_PERIOD);
+		new Timer("Timer").scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10)); // Check every 10 minutes
 	}
 
 	public static synchronized ProfileCache getInstance() {
 		if (instance == null) {
-			synchronized (ProfileCache.class) {
-				instance = new ProfileCache();
-			}
+			instance = new ProfileCache();
 		}
 		counter.incrementAndGet();
 		return instance;
 	}
 
 	@Override
-	public void run() {
-		// Invalidate Cache if nobody is querying
-		log.debug("Trying to invalidate profile cache... Number of profile accessors: " + counter.get());
-		if (counter.get() <= 0) {
-			log.debug("Cleared!");
-			dataCaches.clear();
+	public synchronized void run() {
+		long now = System.currentTimeMillis();
+		for (Iterator<Entry<Integer, TimeSeriesDataCache>> it = dataCaches.entrySet().iterator(); it.hasNext();) {
+			Entry<Integer, TimeSeriesDataCache> entry = it.next();
+			if (entry.getValue().getLastAccessed() + CACHE_INVALIDATION_PERIOD <= now) {
+				log.debug("Profile cache entry {} has expired, removing", Integer.toHexString(entry.getKey()));
+			}
 		}
 	}
 
 	public synchronized void cache(String query, TimeSeriesDataCache dataCache) {
-		dataCaches.put(getQueryHash(query), dataCache);
+		int queryHash = getQueryHash(query);
+		log.debug("Add profile cache entry {} for query '{}'", Integer.toHexString(queryHash), query);
+		dataCaches.put(queryHash, dataCache);
 	}
 
 	public synchronized boolean isCached(String query) {
@@ -69,10 +72,12 @@ public class ProfileCache extends TimerTask {
 	}
 
 	public synchronized TimeSeriesDataCache getDataCache(String query) {
-		return dataCaches.get(getQueryHash(query));
+		int queryHash = getQueryHash(query);
+		log.debug("Fetch profile cache entry {} for query '{}'", Integer.toHexString(queryHash), query);
+		return dataCaches.get(queryHash);
 	}
 
-	private int getQueryHash(String query) {
+	private static int getQueryHash(String query) {
 		int hash = Hashing.murmur3_32().newHasher().putString(query, Charsets.UTF_8).hash().asInt();
 		return hash;
 	}

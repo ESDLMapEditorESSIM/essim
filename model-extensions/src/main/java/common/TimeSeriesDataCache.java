@@ -26,6 +26,7 @@ import org.eclipse.emf.common.util.EList;
 import esdl.Duration;
 import esdl.EsdlFactory;
 import esdl.ProfileElement;
+import lombok.Getter;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 
@@ -39,6 +40,8 @@ public class TimeSeriesDataCache {
 	private LocalDateTime[] timestamps;
 	private double[] values;
 	private int totalSize;
+	@Getter
+	private long lastAccessed;
 
 	public TimeSeriesDataCache(String name, List<List<Object>> influxDBSeriesData, LocalDateTime startDate,
 			LocalDateTime endDate, EssimDuration simulationStep, double annualChange) {
@@ -47,16 +50,16 @@ public class TimeSeriesDataCache {
 		totalSize = size * YEARS;
 		timestamps = new LocalDateTime[totalSize];
 		values = new double[totalSize];
-		
+
 		// validate datatypes
 		if (influxDBSeriesData.size() > 0) {
 			List<Object> mainListFirstDataPoint = influxDBSeriesData.get(0);
 			Object object = mainListFirstDataPoint.get(DATA);
 			if (!(object instanceof Number)) {
-				throw new IllegalArgumentException("Error reading timeseries data with name="+name + ", data is not a numeric datatype, but is of type " + object.getClass().getSimpleName());
+				throw new IllegalArgumentException("Error reading timeseries data with name=" + name
+						+ ", data is not a numeric datatype, but is of type " + object.getClass().getSimpleName());
 			}
 		}
-		
 
 		for (int j = 0; j < YEARS; j++) {
 			for (int i = 0; i < size; i++) {
@@ -67,6 +70,7 @@ public class TimeSeriesDataCache {
 			}
 		}
 
+		lastAccessed = System.currentTimeMillis();
 	}
 
 	public EList<ProfileElement> get(LocalDateTime start, LocalDateTime end, Duration aggregationPrecision,
@@ -83,6 +87,7 @@ public class TimeSeriesDataCache {
 			}
 		}
 
+		lastAccessed = System.currentTimeMillis();
 		return item;
 	}
 
