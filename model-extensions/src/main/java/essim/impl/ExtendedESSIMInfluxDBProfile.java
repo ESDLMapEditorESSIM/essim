@@ -107,7 +107,6 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 	public void initProfile(Date from, Date to, Duration aggregationPrecision) {
 
 		if (from == null && to == null && aggregationPrecision == null) {
-			profileCache.giveUp();
 			return;
 		}
 

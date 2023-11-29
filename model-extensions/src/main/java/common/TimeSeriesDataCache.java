@@ -75,6 +75,7 @@ public class TimeSeriesDataCache {
 
 	public EList<ProfileElement> get(LocalDateTime start, LocalDateTime end, Duration aggregationPrecision,
 			DataProcessor dataProcessor) {
+		lastAccessed = System.currentTimeMillis();
 		EList<ProfileElement> item = ECollections.newBasicEList();
 
 		for (int i = 0; (i < totalSize - 1) && (timestamps[i].isBefore(end)); i++) {
@@ -87,7 +88,6 @@ public class TimeSeriesDataCache {
 			}
 		}
 
-		lastAccessed = System.currentTimeMillis();
 		return item;
 	}
 

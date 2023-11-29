@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Charsets;
 import com.google.common.hash.Hashing;
@@ -34,19 +33,16 @@ public class ProfileCache extends TimerTask {
 
 	private static final long CACHE_INVALIDATION_PERIOD = TimeUnit.HOURS.toMillis(2); // 2 Hours
 	private static ProfileCache instance;
-	private HashMap<Integer, TimeSeriesDataCache> dataCaches = new HashMap<Integer, TimeSeriesDataCache>();
-	private static AtomicInteger counter;
+	private final HashMap<Integer, TimeSeriesDataCache> dataCaches = new HashMap<>();
 
 	private ProfileCache() {
-		counter = new AtomicInteger(0);
-		new Timer("Timer").scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10)); // Check every 10 minutes
+		new Timer("ProfileCacheCleanupTimer").scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10)); // Check every 10 minutes
 	}
 
 	public static synchronized ProfileCache getInstance() {
 		if (instance == null) {
 			instance = new ProfileCache();
 		}
-		counter.incrementAndGet();
 		return instance;
 	}
 
@@ -57,6 +53,7 @@ public class ProfileCache extends TimerTask {
 			Entry<Integer, TimeSeriesDataCache> entry = it.next();
 			if (entry.getValue().getLastAccessed() + CACHE_INVALIDATION_PERIOD <= now) {
 				log.debug("Profile cache entry {} has expired, removing", Integer.toHexString(entry.getKey()));
+				it.remove();
 			}
 		}
 	}
@@ -74,15 +71,12 @@ public class ProfileCache extends TimerTask {
 	public synchronized TimeSeriesDataCache getDataCache(String query) {
 		int queryHash = getQueryHash(query);
 		log.debug("Fetch profile cache entry {} for query '{}'", Integer.toHexString(queryHash), query);
-		return dataCaches.get(queryHash);
+		TimeSeriesDataCache cache = dataCaches.get(queryHash);
+		return cache;
 	}
 
 	private static int getQueryHash(String query) {
 		int hash = Hashing.murmur3_32().newHasher().putString(query, Charsets.UTF_8).hash().asInt();
 		return hash;
-	}
-
-	public synchronized void giveUp() {
-		counter.decrementAndGet();
 	}
 }
