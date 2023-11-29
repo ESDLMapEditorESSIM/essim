@@ -179,50 +179,44 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		}
 
 		log.debug("Influx Call for: " + command);
+		dataCache = profileCache.getDataCache(command);
+		if (dataCache == null) {
+			log.debug("Profile is not cached! Proceeding to query InfluxDB!");
 
-		synchronized (profileCache) {
-			if (!profileCache.isCached(command)) {
-				log.debug("Profile is not cached! Proceeding to query InfluxDB!");
+			influxClient = connectToInfluxHost();
 
-				influxClient = connectToInfluxHost();
-
-				QueryResult queryResult = null;
-				while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
-					try {
-						connectionAttempts++;
-						EssimQuery query = new EssimQuery(command, database);
-						log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
-						queryResult = influxClient.query(query);
-						if (queryResult.hasError() || queryResult.getResults() == null) {
-							throw new IllegalStateException("Error querying InfluxDB for query " + query.getCommand()
-									+ ", queryError: " + queryResult.getError());
-						}
-					} catch (InfluxDBIOException e) {
-						log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
+			QueryResult queryResult = null;
+			while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
+				try {
+					connectionAttempts++;
+					EssimQuery query = new EssimQuery(command, database);
+					log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
+					queryResult = influxClient.query(query);
+					if (queryResult.hasError() || queryResult.getResults() == null) {
+						throw new IllegalStateException("Error querying InfluxDB for query " + query.getCommand()
+								+ ", queryError: " + queryResult.getError());
 					}
+				} catch (InfluxDBIOException e) {
+					log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
 				}
-				if (queryResult == null) {
-					throw new IllegalArgumentException("Cannot connect to InfluxDB service at [" + getHost() + ":"
-							+ getPort() + "] to query profile with id " + getId() + ". Please verify the URL!");
-				}
-				for (Result result : queryResult.getResults()) {
-					if (result.getSeries() == null) {
-						throw new IllegalArgumentException("No results returned on querying " + command
-								+ " at database [" + database + "] at [" + getHost() + ":" + getPort()
-								+ "] for profile with id " + getId()
-								+ ". Please verify the database name, measurement and field names and timeframe of query!");
-					}
-					for (Series series : result.getSeries()) {
-						log.debug("Query returned {} values", series.getValues().size());
-						dataCache = new TimeSeriesDataCache(field, series.getValues(), simStartDate, simEndDate,
-								simulationStepLength, annualChange);
-					}
-				}
-				profileCache.cache(command, dataCache);
-			} else {
-				log.debug("Profile is cached! Retrieving from cache!");
-				dataCache = profileCache.getDataCache(command);
 			}
+			if (queryResult == null) {
+				throw new IllegalArgumentException("Cannot connect to InfluxDB service at [" + getHost() + ":"
+						+ getPort() + "] to query profile with id " + getId() + ". Please verify the URL!");
+			}
+			for (Result result : queryResult.getResults()) {
+				if (result.getSeries() == null) {
+					throw new IllegalArgumentException("No results returned on querying " + command + " at database ["
+							+ database + "] at [" + getHost() + ":" + getPort() + "] for profile with id " + getId()
+							+ ". Please verify the database name, measurement and field names and timeframe of query!");
+				}
+				for (Series series : result.getSeries()) {
+					log.debug("Query returned {} values", series.getValues().size());
+					dataCache = new TimeSeriesDataCache(field, series.getValues(), simStartDate, simEndDate,
+							simulationStepLength, annualChange);
+				}
+			}
+			profileCache.cache(command, dataCache);
 		}
 	}
 

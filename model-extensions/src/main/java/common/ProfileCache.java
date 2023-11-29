@@ -64,10 +64,6 @@ public class ProfileCache extends TimerTask {
 		dataCaches.put(queryHash, dataCache);
 	}
 
-	public synchronized boolean isCached(String query) {
-		return dataCaches.containsKey(getQueryHash(query));
-	}
-
 	public synchronized TimeSeriesDataCache getDataCache(String query) {
 		int queryHash = getQueryHash(query);
 		log.debug("Fetch profile cache entry {} for query '{}'", Integer.toHexString(queryHash), query);
