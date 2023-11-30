@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ProfileCache extends TimerTask {
 
-	private static final long CACHE_INVALIDATION_PERIOD = TimeUnit.HOURS.toMillis(2); // 2 Hours
+	private static final long CACHE_INVALIDATION_PERIOD = TimeUnit.DAYS.toMillis(2); // 2 Days
 	private static ProfileCache instance;
 	private final HashMap<Integer, TimeSeriesDataCache> dataCaches = new HashMap<>();
 
@@ -49,13 +49,14 @@ public class ProfileCache extends TimerTask {
 	@Override
 	public synchronized void run() {
 		long now = System.currentTimeMillis();
-		for (Iterator<Entry<Integer, TimeSeriesDataCache>> it = dataCaches.entrySet().iterator(); it.hasNext();) {
-			Entry<Integer, TimeSeriesDataCache> entry = it.next();
+		for (Iterator<Entry<Integer, TimeSeriesDataCache>> i = dataCaches.entrySet().iterator(); i.hasNext();) {
+			Entry<Integer, TimeSeriesDataCache> entry = i.next();
 			if (entry.getValue().getLastAccessed() + CACHE_INVALIDATION_PERIOD <= now) {
 				log.debug("Profile cache entry {} has expired, removing", Integer.toHexString(entry.getKey()));
-				it.remove();
+				i.remove();
 			}
 		}
+		log.debug("Profile cache now contains {} entries", dataCaches.size());
 	}
 
 	public synchronized void cache(String query, TimeSeriesDataCache dataCache) {
