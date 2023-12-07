@@ -34,7 +34,6 @@ import tech.tablesaw.api.Table;
 import tech.tablesaw.io.csv.CsvReadOptions;
 
 
-@Disabled
 class RealPricesTest {
 	
 	

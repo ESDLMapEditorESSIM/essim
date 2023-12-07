@@ -52,13 +52,20 @@ public class GrafanaClient {
 	private static final String GRAFANA_PROD_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-prod.json";
 //	private static final String GRAFANA_CONS_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-cons.json";
 	private static final String GRAFANA_SOLVER_PANEL = JSON_RESOURCES + "tp-solver-panel.json";
+	private static final String GRAFANA_SOLVER_PANEL_POWER = JSON_RESOURCES + "tp-solver-panel-power.json";
 	private static final String GRAFANA_JLOAD_PANEL = JSON_RESOURCES + "transport-loads-joule.json";
+	private static final String GRAFANA_WLOAD_PANEL = JSON_RESOURCES + "transport-loads-watt.json";
 	private static final String GRAFANA_PLOAD_PANEL = JSON_RESOURCES + "transport-loads-percent.json";
 
 	private static final String GRAFANA_ADMIN_USER_ENV = "GRAFANA_ADMIN_USER";
 	private static final String GRAFANA_ADMIN_PASSWORD_ENV = "GRAFANA_ADMIN_PASSWORD";
 	private static final String GRAFANA_INTERNAL_URL_ENV = "GRAFANA_INTERNAL_URL";
 	private static final String GRAFANA_EXTERNAL_URL_ENV = "GRAFANA_EXTERNAL_URL";
+	private static final String GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE = "GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE";
+	private static final String GRAFANA_TRANSPORT_SOLVER_PANEL_WATT = "GRAFANA_TRANSPORT_SOLVER_PANEL_WATT";
+	private static final String GRAFANA_LOAD_PANEL_JOULE = "GRAFANA_LOAD_PANEL_JOULE";
+	private static final String GRAFANA_LOAD_PANEL_WATT = "GRAFANA_LOAD_PANEL_WATT";
+	private static final String GRAFANA_LOAD_PANEL_PERCENT = "GRAFANA_LOAD_PANEL_PERCENT";
 	private static final String GRAFANA_KEY = "GRAFANA_KEY";
 	private static final String DATASOURCES_URL = "/api/datasources";
 	private static final String DASHBOARDS_URL = "/api/dashboards/db";
@@ -75,6 +82,12 @@ public class GrafanaClient {
 	private String grafanaAdminPassword;
 	private String grafanaAdminAuthorisation;
 
+	private Boolean grafanaTransportSolverPanelJoule;
+	private Boolean grafanaTransportSolverPanelWatt;
+	private Boolean grafanaLoadPanelJoule;
+	private Boolean grafanaLoadPanelWatt;
+	private Boolean grafanaLoadPanelPercent;
+	
 	public GrafanaClient(String user, String timeString, String influxDBURL, List<TransportSolver> solversList,
 			String energySystemId, String scenarioName, String simulationRunName, LocalDateTime simStartDate,
 			LocalDateTime simEndDate, boolean emissionRow, IMongoBackend mongo) {
@@ -108,6 +121,51 @@ public class GrafanaClient {
 		//mongo = MongoBackend.getInstance();
 		grafanaAdminKey = createGrafanaAdminKey();
 
+		String tsPanelJoule = System.getenv(GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE);
+		if (tsPanelJoule == null) {
+			grafanaTransportSolverPanelJoule = true;
+		} else if (tsPanelJoule.trim().equalsIgnoreCase("true")) {
+			grafanaTransportSolverPanelJoule = true;
+		} else {
+			grafanaTransportSolverPanelJoule = false;
+		}
+
+		String tsPanelWatt = System.getenv(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT);
+		if (tsPanelWatt == null) {
+			grafanaTransportSolverPanelWatt = true;
+		} else if (tsPanelWatt.trim().equalsIgnoreCase("true")) {
+			grafanaTransportSolverPanelWatt = true;
+		} else {
+			grafanaTransportSolverPanelWatt = false;
+		}
+
+		String loadPanelJoule = System.getenv(GRAFANA_LOAD_PANEL_JOULE);
+		if (loadPanelJoule == null) {
+			grafanaLoadPanelJoule = false;
+		} else if (loadPanelJoule.trim().equalsIgnoreCase("true")) {
+			grafanaLoadPanelJoule = true;
+		} else {
+			grafanaLoadPanelJoule = false;
+		}
+
+		String loadPanelWatt = System.getenv(GRAFANA_LOAD_PANEL_WATT);
+		if (loadPanelWatt == null) {
+			grafanaLoadPanelWatt = true;
+		} else if (loadPanelWatt.trim().equalsIgnoreCase("true")) {
+			grafanaLoadPanelWatt = true;
+		} else {
+			grafanaLoadPanelWatt = false;
+		}
+		
+		String loadPanelPercent = System.getenv(GRAFANA_LOAD_PANEL_PERCENT);
+		if (loadPanelPercent == null) {
+			grafanaLoadPanelPercent = true;
+		} else if (loadPanelPercent.trim().equalsIgnoreCase("true")) {
+			grafanaLoadPanelPercent = true;
+		} else {
+			grafanaLoadPanelPercent = false;
+		}
+		
 		String dashboardString = null;
 		String totalEmissionsString = null;
 		String emissionsPerCarrierString = null;
@@ -116,7 +174,9 @@ public class GrafanaClient {
 		String producerEmissionPanelString = null;
 //		String consumerEmissionPanelString = null;
 		String tpSolverPanelString = null;
+		String tpSolverPanelPowerString = null;
 		String tpSolverJLoadPanelString = null;
+		String tpSolverWLoadPanelString = null;
 		String tpSolverPLoadPanelString = null;
 		try {
 			dashboardString = Commons.readFileIntoString(GRAFANA_DASHBOARD_JSON);
@@ -127,7 +187,9 @@ public class GrafanaClient {
 			producerEmissionPanelString = Commons.readFileIntoString(GRAFANA_PROD_EMISSIONS_PANEL);
 //			consumerEmissionPanelString = Commons.readFileIntoString(GRAFANA_CONS_EMISSIONS_PANEL);
 			tpSolverPanelString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL);
+			tpSolverPanelPowerString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL_POWER);
 			tpSolverJLoadPanelString = Commons.readFileIntoString(GRAFANA_JLOAD_PANEL);
+			tpSolverWLoadPanelString = Commons.readFileIntoString(GRAFANA_WLOAD_PANEL);
 			tpSolverPLoadPanelString = Commons.readFileIntoString(GRAFANA_PLOAD_PANEL);
 		} catch (IOException e) {
 			return;
@@ -221,8 +283,9 @@ public class GrafanaClient {
 		for (ITransportSolver solver : solversList) {
 			String solverId = solver.getId();
 
+			if (grafanaTransportSolverPanelJoule) {
 			JSONObject solverPanel = new JSONObject(tpSolverPanelString);
-			solverPanel.put("title", solverId);
+				solverPanel.put("title", solverId + " (in J)");
 			solverPanel.put("datasource", databaseLabel);
 
 			JSONObject gridPos = solverPanel.getJSONObject("gridPos");
@@ -247,14 +310,46 @@ public class GrafanaClient {
 
 			panelArray.put(solverPanel);
 			i++;
+			}
+			
+			if (grafanaTransportSolverPanelWatt) {
+				JSONObject solverPanelW = new JSONObject(tpSolverPanelPowerString);
+				solverPanelW.put("title", solverId + " (in W)");
+				solverPanelW.put("datasource", databaseLabel);
+	
+				JSONObject gridPos = solverPanelW.getJSONObject("gridPos");
+				int solverPanelY = 25 + i * gridPos.getInt("h");
+				int solverPanelId = 7 + i;
+	
+				gridPos.put("y", solverPanelY);
+				solverPanelW.put("id", solverPanelId);
+	
+				for (Object targetObj : solverPanelW.getJSONArray("targets")) {
+					JSONObject target = (JSONObject) targetObj;
+					target.put("measurement", solverId);
+					for (Object tagObj : target.getJSONArray("tags")) {
+						JSONObject tag = (JSONObject) tagObj;
+						if (tag.has("key")) {
+							if (tag.getString("key").equals("simulationRun")) {
+								tag.put("value", simulationRunName);
+							}
+						}
+					}
+				}
+	
+				panelArray.put(solverPanelW);
+				i++;
+			}
+			
 
 			if (solver.hasAnyTransportAsset()) {
 
+				if (grafanaLoadPanelJoule) {
 				JSONObject jloadPanel = new JSONObject(tpSolverJLoadPanelString);
 				jloadPanel.put("title", solverId + " Transport flows (in J)");
 				jloadPanel.put("datasource", databaseLabel);
 
-				gridPos = jloadPanel.getJSONObject("gridPos");
+					JSONObject gridPos = jloadPanel.getJSONObject("gridPos");
 				int jloadPanelY = 25 + i * gridPos.getInt("h");
 				int jloadPanelId = 7 + i;
 
@@ -276,14 +371,45 @@ public class GrafanaClient {
 
 				panelArray.put(jloadPanel);
 				i++;
+				}
 
-				if (solver.hasAnyTransportAssetWithCapacity()) {
+				if (grafanaLoadPanelWatt) {
+					JSONObject wloadPanel = new JSONObject(tpSolverWLoadPanelString);
+					wloadPanel.put("title", solverId + " Transport flows (in W)");
+					wloadPanel.put("datasource", databaseLabel);
+	
+					JSONObject gridPos = wloadPanel.getJSONObject("gridPos");
+					int jloadPanelY = 25 + i * gridPos.getInt("h");
+					int jloadPanelId = 7 + i;
+	
+					gridPos.put("y", jloadPanelY);
+					wloadPanel.put("id", jloadPanelId);
+	
+					for (Object targetObj : wloadPanel.getJSONArray("targets")) {
+						JSONObject target = (JSONObject) targetObj;
+						target.put("measurement", solverId);
+						for (Object tagObj : target.getJSONArray("tags")) {
+							JSONObject tag = (JSONObject) tagObj;
+							if (tag.has("key")) {
+								if (tag.getString("key").equals("simulationRun")) {
+									tag.put("value", simulationRunName);
+								}
+							}
+						}
+					}
+	
+					panelArray.put(wloadPanel);
+					i++;
+				}
+				
+
+				if (solver.hasAnyTransportAssetWithCapacity() && grafanaLoadPanelPercent) {
 
 					JSONObject ploadPanel = new JSONObject(tpSolverPLoadPanelString);
 					ploadPanel.put("title", solverId + " Transport loads (in %)");
 					ploadPanel.put("datasource", databaseLabel);
 
-					gridPos = ploadPanel.getJSONObject("gridPos");
+					JSONObject gridPos = ploadPanel.getJSONObject("gridPos");
 					int ploadPanelY = 25 + i * gridPos.getInt("h");
 					int ploadPanelId = 7 + i;
 

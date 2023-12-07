@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
-import com.google.common.collect.RangeMap;
-
 import esdl.AbstractBasicConversion;
 import esdl.AbstractQuantityAndUnit;
 import esdl.Carrier;
@@ -67,9 +65,6 @@ public class Commons {
 	public static final double P_MAX = 1.0;
 	public static final String RESOURCE = ".";
 	public static final String ESSIM_REVISION = "ESSIM_REVISION";
-	public static RangeMap<Double, String> thresholdMap;
-	// TODO: this is a memory leak: as this map is never cleared!
-	private static HashMap<Port, GenericProfile> portProfileMap = new HashMap<Port, GenericProfile>();
 
 	public static enum Role {
 		TRANSPORT, PRODUCER, CONSUMER, BOTH
@@ -101,18 +96,15 @@ public class Commons {
 	}
 
 	public static GenericProfile getEnergyProfile(Port port) {
-		if (!portProfileMap.containsKey(port)) {
+		GenericProfile energyProfile = null;
 			for (GenericProfile profile : port.getProfile()) {
 				if (profile instanceof ProfileReference) {
 					profile = ((ProfileReference) profile).getReference();
 				}
 				if (isEnergyProfile(profile) || isPowerProfile(profile) || isPercentageProfile(profile)) {
-					portProfileMap.put(port, profile);
-					return profile;
+				energyProfile = profile;
 				}
 			}
-		}
-		GenericProfile energyProfile = portProfileMap.get(port);
 		return energyProfile;
 	}
 

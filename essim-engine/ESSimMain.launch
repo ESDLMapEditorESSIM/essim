@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
+    <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false"/>
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
         <listEntry value="/essim-engine/src/main/java/nl/tno/essim/ESSimMain.java"/>
     </listAttribute>
@@ -14,9 +15,14 @@
         <mapEntry key="GRAFANA_ADMIN_USER" value="admin"/>
         <mapEntry key="GRAFANA_EXTERNAL_URL" value="http://localhost:3000"/>
         <mapEntry key="GRAFANA_INTERNAL_URL" value="http://localhost:3000"/>
+        <mapEntry key="GRAFANA_LOAD_PANEL_JOULE" value="true"/>
+        <mapEntry key="GRAFANA_LOAD_PANEL_PERCENT" value="true"/>
+        <mapEntry key="GRAFANA_LOAD_PANEL_WATT" value="true"/>
+        <mapEntry key="GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE" value="true"/>
+        <mapEntry key="GRAFANA_TRANSPORT_SOLVER_PANEL_WATT" value="true"/>
         <mapEntry key="HTTP_SERVER_HOSTNAME" value="localhost"/>
         <mapEntry key="HTTP_SERVER_PATH" value="essim"/>
-        <mapEntry key="HTTP_SERVER_PORT" value="8081"/>
+        <mapEntry key="HTTP_SERVER_PORT" value="8112"/>
         <mapEntry key="HTTP_SERVER_SCHEME" value="http"/>
         <mapEntry key="LOG_FILES_SIZE_CAP" value="2GB"/>
         <mapEntry key="LOG_FILE_LOCATION" value="logs"/>
@@ -30,6 +36,8 @@
         <mapEntry key="[debug]" value="org.eclipse.jdt.launching.localJavaApplication"/>
         <mapEntry key="[run]" value="org.eclipse.jdt.launching.localJavaApplication"/>
     </mapAttribute>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_ATTR_USE_ARGFILE" value="false"/>
+    <booleanAttribute key="org.eclipse.jdt.launching.ATTR_SHOW_CODEDETAILS_IN_EXCEPTION_MESSAGES" value="true"/>
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_CLASSPATH_ONLY_JAR" value="false"/>
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
     <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="org.eclipse.m2e.launchconfig.classpathProvider"/>
