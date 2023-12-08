@@ -37,6 +37,7 @@ import org.json.JSONTokener;
 import common.DataProcessor;
 import common.EssimQuery;
 import common.ProfileCache;
+import common.ProfileCacheKey;
 import common.TimeSeriesDataCache;
 import esdl.Duration;
 import esdl.ProfileElement;
@@ -179,7 +180,9 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		}
 
 		log.debug("Influx Call for: " + command);
-		dataCache = profileCache.getDataCache(command);
+		ProfileCacheKey profileCacheKey = new ProfileCacheKey(getHost(), getPort(), getDatabase(), getMeasurement(),
+				getField(), getMultiplier(), getAnnualChangePercentage());
+		dataCache = profileCache.getDataCache(profileCacheKey);
 		if (dataCache == null) {
 			log.debug("Profile is not cached! Proceeding to query InfluxDB!");
 
@@ -198,6 +201,8 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 					}
 				} catch (InfluxDBIOException e) {
 					log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
+				} finally {
+					influxClient.close();
 				}
 			}
 			if (queryResult == null) {
@@ -216,7 +221,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 							simulationStepLength, annualChange);
 				}
 			}
-			profileCache.cache(command, dataCache);
+			profileCache.cache(profileCacheKey, dataCache);
 		}
 	}
 
