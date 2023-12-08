@@ -23,20 +23,18 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hashing;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ProfileCache extends TimerTask {
 
-	private static final long CACHE_INVALIDATION_PERIOD = TimeUnit.DAYS.toMillis(2); // 2 Days
+	private static final long CACHE_INVALIDATION_PERIOD = TimeUnit.DAYS.toMillis(14); // 2 Weeks
 	private static ProfileCache instance;
-	private final HashMap<Integer, TimeSeriesDataCache> dataCaches = new HashMap<>();
+	private final HashMap<ProfileCacheKey, TimeSeriesDataCache> dataCaches = new HashMap<>();
 
 	private ProfileCache() {
-		new Timer("ProfileCacheCleanupTimer").scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10)); // Check every 10 minutes
+		// Check every 10 minutes
+		new Timer("ProfileCacheCleanupTimer").scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10));
 	}
 
 	public static synchronized ProfileCache getInstance() {
@@ -49,31 +47,24 @@ public class ProfileCache extends TimerTask {
 	@Override
 	public synchronized void run() {
 		long now = System.currentTimeMillis();
-		for (Iterator<Entry<Integer, TimeSeriesDataCache>> i = dataCaches.entrySet().iterator(); i.hasNext();) {
-			Entry<Integer, TimeSeriesDataCache> entry = i.next();
+		for (Iterator<Entry<ProfileCacheKey, TimeSeriesDataCache>> i = dataCaches.entrySet().iterator(); i.hasNext();) {
+			Entry<ProfileCacheKey, TimeSeriesDataCache> entry = i.next();
 			if (entry.getValue().getLastAccessed() + CACHE_INVALIDATION_PERIOD <= now) {
-				log.debug("Profile cache entry {} has expired, removing", Integer.toHexString(entry.getKey()));
+				log.debug("Profile cache entry {} has expired, removing", entry.getKey());
 				i.remove();
 			}
 		}
 		log.debug("Profile cache now contains {} entries", dataCaches.size());
 	}
 
-	public synchronized void cache(String query, TimeSeriesDataCache dataCache) {
-		int queryHash = getQueryHash(query);
-		log.debug("Add profile cache entry {} for query '{}'", Integer.toHexString(queryHash), query);
-		dataCaches.put(queryHash, dataCache);
+	public synchronized void cache(ProfileCacheKey profileCacheKey, TimeSeriesDataCache dataCache) {
+		log.debug("Add profile cache entry {}", profileCacheKey);
+		dataCaches.put(profileCacheKey, dataCache);
 	}
 
-	public synchronized TimeSeriesDataCache getDataCache(String query) {
-		int queryHash = getQueryHash(query);
-		log.debug("Fetch profile cache entry {} for query '{}'", Integer.toHexString(queryHash), query);
-		TimeSeriesDataCache cache = dataCaches.get(queryHash);
+	public synchronized TimeSeriesDataCache getDataCache(ProfileCacheKey profileCacheKey) {
+		log.debug("Fetch profile cache entry {} for query '{}'", profileCacheKey, profileCacheKey);
+		TimeSeriesDataCache cache = dataCaches.get(profileCacheKey);
 		return cache;
-	}
-
-	private static int getQueryHash(String query) {
-		int hash = Hashing.murmur3_32().newHasher().putString(query, Charsets.UTF_8).hash().asInt();
-		return hash;
 	}
 }

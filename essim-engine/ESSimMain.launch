@@ -11,7 +11,7 @@
         <mapEntry key="CONSOLE_LOG_LEVEL" value="debug"/>
         <mapEntry key="EMISSION_MANAGER_ENABLE" value="false"/>
         <mapEntry key="FILE_LOG_LEVEL" value="debug"/>
-        <mapEntry key="GRAFANA_ADMIN_PASSWORD" value="e$$im4life"/>
+        <mapEntry key="GRAFANA_ADMIN_PASSWORD" value="admin"/>
         <mapEntry key="GRAFANA_ADMIN_USER" value="admin"/>
         <mapEntry key="GRAFANA_EXTERNAL_URL" value="http://localhost:3000"/>
         <mapEntry key="GRAFANA_INTERNAL_URL" value="http://localhost:3000"/>
@@ -20,7 +20,7 @@
         <mapEntry key="GRAFANA_LOAD_PANEL_WATT" value="true"/>
         <mapEntry key="GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE" value="true"/>
         <mapEntry key="GRAFANA_TRANSPORT_SOLVER_PANEL_WATT" value="true"/>
-        <mapEntry key="HTTP_SERVER_HOSTNAME" value="localhost"/>
+        <mapEntry key="HTTP_SERVER_HOSTNAME" value="0.0.0.0"/>
         <mapEntry key="HTTP_SERVER_PATH" value="essim"/>
         <mapEntry key="HTTP_SERVER_PORT" value="8112"/>
         <mapEntry key="HTTP_SERVER_SCHEME" value="http"/>
