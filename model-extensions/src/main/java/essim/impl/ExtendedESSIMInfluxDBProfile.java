@@ -228,10 +228,6 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 		}
 	}
 
-	private static String NullStr(Object s) {
-		return s == null ? "" : String.valueOf(s);
-	}
-
 	public String toInfluxDBTime(EssimDuration stepLength) {
 		switch (stepLength.getUnit()) {
 		case DAYS:
