@@ -37,6 +37,7 @@ import esdl.DrivenByProfile;
 import esdl.EnergyAsset;
 import esdl.EsdlFactory;
 import esdl.GenericProfile;
+import esdl.Import;
 import esdl.InPort;
 import esdl.OutPort;
 import esdl.Port;
@@ -64,9 +65,11 @@ import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
+import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode.PowerPricePair;
 import nl.tno.essim.util.Converter;
 
 @Slf4j
@@ -102,7 +105,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private Market market;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
-			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem, Market market) {
+			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem,
+			Market market) {
 		this.id = name;
 		this.carrier = carrier;
 		this.nodeConfig = nodeConfig;
@@ -248,6 +252,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			log.error("This network ({}) will not be created!", getId());
 			return assetList;
 		}
+		// Find the AbstractBasicConversionNodes and provide them with the price(s) of the import asset(s) in this transport solver
+		deviceNodes.stream().filter(node -> node instanceof AbstractBasicConversionNode).forEach(conversionNode -> {
+			for (Port port : ((EnergyAsset) conversionNode.getAsset()).getPort()) {
+				if (carrier.equals(port.getCarrier())) {
+					((AbstractBasicConversionNode) conversionNode).setPriceInformation(port, findPrices());
+				}
+			}
+		});
 
 		// only generate tree HTML when PRINT_TREE environmental variable is present
 		String printTreeEnv = System.getenv("PRINT_TREE");
@@ -256,6 +268,16 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		}
 
 		return assetList;
+	}
+
+	private List<PowerPricePair> findPrices() {
+		List<PowerPricePair> priceInfo = getDeviceNodes().stream().map(node -> node.getAsset())
+				.filter(asset -> asset instanceof Import && asset.getCostInformation() != null
+						&& asset.getCostInformation().getVariableMaintenanceCosts() != null)
+				.map(asset -> new PowerPricePair(asset.getCostInformation().getVariableOperationalCosts(),
+						((Import) asset).getPower()))
+				.collect(Collectors.toList());
+		return priceInfo;
 	}
 
 	public void makeTree(Node parentNode) throws Exception {
@@ -434,11 +456,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		for (Node deviceNode : deviceNodes) {
 			deviceNode.createBidCurve(timeStep, now, market);
 			// Currently: no normalization necessary
-			//double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
-			//if (marginalCost > 1.0) {
-			//	normalise = true;
-			//}
-			//marginalCostSum += marginalCost;
+			// double marginalCost = deviceNode.getDemandFunction().getMarginalCost();
+			// if (marginalCost > 1.0) {
+			// normalise = true;
+			// }
+			// marginalCostSum += marginalCost;
 		}
 
 		if (normalise) {
@@ -551,7 +573,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			if (profile instanceof ProfileReference) {
 				profile = ((ProfileReference) profile).getReference();
 			}
-			// TODO: do instanceof check on ESSIMProfile, as all not-trivial profiles implement that interface
+			// TODO: do instanceof check on ESSIMProfile, as all not-trivial profiles
+			// implement that interface
 			if (profile instanceof ESSIMInfluxDBProfile) {
 				ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
 				profileImpl.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),

@@ -28,12 +28,14 @@ import esdl.DrivenBySupply;
 import esdl.EnergyAsset;
 import esdl.EnergyCarrier;
 import esdl.GenericProfile;
+import esdl.Import;
 import esdl.InPort;
 import esdl.OutPort;
 import esdl.Port;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
@@ -49,6 +51,12 @@ import nl.tno.essim.time.Horizon;
 @Slf4j
 public class AbstractBasicConversionNode extends Node {
 
+	@Value
+	public static class PowerPricePair {
+		private GenericProfile priceProfile;
+		private double maxPower;
+	}
+
 	protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
 	protected AbstractBasicConversion conversion;
 	protected double efficiency;
@@ -57,8 +65,11 @@ public class AbstractBasicConversionNode extends Node {
 	protected ControlStrategy controlStrategy;
 	private InPort inputPort;
 	private Carrier inputCarrier;
+	private List<PowerPricePair> inputPrices;
 	private OutPort outputPort;
 	private Carrier outputCarrier;
+	private List<PowerPricePair> outputPrices;
+	private Float outputPrice;
 	private boolean specialConversion;
 	private String conversionName;
 	private GenericProfile marginalCostProfile;
@@ -67,7 +78,8 @@ public class AbstractBasicConversionNode extends Node {
 	@Builder(builderMethodName = "abstractBasicConversionNodeBuilder")
 	public AbstractBasicConversionNode(String simulationId, String nodeId, String address, String networkId,
 			EnergyAsset asset, String esdlString, int directionFactor, Role role, BidFunction demandFunction,
-			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
+			Port connectedPort) {
 		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
 				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
 		this.conversion = (AbstractBasicConversion) asset;
@@ -92,6 +104,17 @@ public class AbstractBasicConversionNode extends Node {
 		}
 
 		specialConversion = inputCarrier.equals(outputCarrier);
+		conversion.getArea().getAsset().stream().filter(a -> {
+			if (!(a instanceof Import)) {
+				return false;
+			}
+			Import i = (Import) a;
+			if (i.getPort().stream().filter(p -> p.getCarrier().equals(inputCarrier)).count() > 0) {
+				// In the same market as our inputPort
+
+			}
+			return false;
+		});
 	}
 
 	@Override
@@ -118,13 +141,14 @@ public class AbstractBasicConversionNode extends Node {
 					double energyOutput = timeStep * power;
 					if (marginalCostProfile != null) {
 						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
-						if(Double.isNaN(aggregateCost)) {
+						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
 						setCost(aggregateCost);
 					} else if (costProfile != null) {
-						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) / efficiency;
-						if(Double.isNaN(aggregateCost)) {
+						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now))
+								/ efficiency;
+						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
 						setCost(aggregateCost);
@@ -307,13 +331,13 @@ public class AbstractBasicConversionNode extends Node {
 					double energyOutput = (timeStep * power) / efficiency;
 					if (marginalCostProfile != null) {
 						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
-						if(Double.isNaN(aggregateCost)) {
+						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
 						setCost(aggregateCost);
 					} else if (costProfile != null) {
 						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
-						if(Double.isNaN(aggregateCost)) {
+						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
 						setCost(aggregateCost);
@@ -539,6 +563,18 @@ public class AbstractBasicConversionNode extends Node {
 					}
 				}
 			}
+		}
+	}
+
+	public void setPriceInformation(Port port, List<PowerPricePair> priceInfo) {
+		if (port.equals(inputPort)) {
+			inputPrices = priceInfo;
+			log.debug("Adding input prices to {}", this);
+		} else if (port.equals(outputPort)) {
+			outputPrices = priceInfo;
+			log.debug("Adding output prices to {}", this);
+		} else {
+			log.warn("Set prices called on {} but port {} is not a port of {}", this, port, this);
 		}
 	}
 
