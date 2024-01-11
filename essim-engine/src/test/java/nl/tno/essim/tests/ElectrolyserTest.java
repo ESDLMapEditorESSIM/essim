@@ -6,6 +6,7 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.eclipse.emf.common.util.EList;
@@ -18,12 +19,15 @@ import esdl.Asset;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
 import esdl.Port;
+import esdl.impl.AbstractBasicConversionImpl;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulationImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode;
 import tech.tablesaw.api.Table;
+import tech.tablesaw.columns.Column;
 
 //@Testcontainers
 class ElectrolyserTest {
@@ -89,6 +93,12 @@ class ElectrolyserTest {
 			System.out.println("- " + table.stringColumn("assetName").get(0) + ": " + total);
 			Resource eResource = es.eResource();
 			EnergyAsset asset = (EnergyAsset) eResource.getEObject(entry.getKey());
+			if (asset instanceof AbstractBasicConversionImpl) {
+				Column<?> column = table.column("bidcurve");
+				for (Object row : column.asList()) {
+					System.out.println("Bidcurve: " + row);
+				}
+			}
 //			if (asset instanceof Export) {
 //				assertEquals(total, 0.0, 1E-3);
 //			} else if (asset instanceof ElectricityDemand) {

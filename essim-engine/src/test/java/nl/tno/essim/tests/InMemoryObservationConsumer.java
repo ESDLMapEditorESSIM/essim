@@ -20,11 +20,14 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
@@ -40,7 +43,7 @@ import tech.tablesaw.api.Table;
 public class InMemoryObservationConsumer implements IObservationConsumer {
 
 	protected static final String TIME_KEY = "Time";
-	
+
 	@Getter
 	private HashMap<String, Table> assets;
 	@Getter
@@ -49,7 +52,7 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 
 	public InMemoryObservationConsumer() {
 		log.debug("Starting InMemoryObservationConsumer");
-		
+
 		assets = new HashMap<String, Table>();
 		networks = new HashMap<String, Table>();
 		pool = Executors.newWorkStealingPool();
@@ -59,7 +62,7 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 	public void init(String database) {
 
 	}
-	
+
 	private Table createTableHeader(String observationSource, IObservation observation) {
 		Table table = Table.create(observationSource);
 		table.addColumns(DateTimeColumn.create(TIME_KEY));
@@ -72,6 +75,8 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 				table.addColumns(IntColumn.create(value.getKey()));
 			} else if (value.getValue() instanceof String) {
 				table.addColumns(StringColumn.create(value.getKey()));
+			} else if (value.getValue() instanceof BidFunction) {
+				table.addColumns(StringColumn.create(value.getKey()));
 			}
 		}
 		for (Entry<String, String> value : observation.getTags().entrySet()) {
@@ -81,16 +86,14 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 	}
 
 	enum ObservationType {
-		ASSET,
-		NETWORK,		
+		ASSET, NETWORK,
 	}
-	
+
 	@Override
 	public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
-		String observationSource = observation.getTags().get("assetId"); 
-		ObservationType type = observationSource == null ? 
-				ObservationType.NETWORK : ObservationType.ASSET; 
-	
+		String observationSource = observation.getTags().get("assetId");
+		ObservationType type = observationSource == null ? ObservationType.NETWORK : ObservationType.ASSET;
+
 		HashMap<String, Table> dataframe = null;
 		switch (type) {
 		case NETWORK:
@@ -100,12 +103,13 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 		case ASSET:
 			dataframe = assets;
 			break;
-			
+
 		}
 
 		Table table = dataframe.get(observationSource);
 		if (table == null) {
-			//table = new Table(Paths.get(csvFilesLocation, subFolder).toString(), observationSource);
+			// table = new Table(Paths.get(csvFilesLocation, subFolder).toString(),
+			// observationSource);
 			table = createTableHeader(observationSource, observation);
 			dataframe.put(observationSource, table);
 		}
@@ -145,10 +149,11 @@ class TableProcessor implements Runnable {
 		this.time = time;
 		this.valueMap = valueMap;
 		this.tagMap = tagMap;
-		
+
 	}
-	
-	private void fillRow(Row row, String simulationRunName, LocalDateTime time, Map<String, Object> valueMap, Map<String, String> tagMap) {
+
+	private void fillRow(Row row, String simulationRunName, LocalDateTime time, Map<String, Object> valueMap,
+			Map<String, String> tagMap) {
 		row.setDateTime(InMemoryObservationConsumer.TIME_KEY, time);
 		for (Entry<String, Object> entry : valueMap.entrySet()) {
 			if (entry.getValue() instanceof Double) {
@@ -159,6 +164,19 @@ class TableProcessor implements Runnable {
 				row.setInt(entry.getKey(), (Integer) entry.getValue());
 			} else if (entry.getValue() instanceof String) {
 				row.setString(entry.getKey(), (String) entry.getValue());
+			} else if (entry.getValue() instanceof BidFunction) {
+				StringBuilder builder = new StringBuilder();
+				BidFunction bidFunction = (BidFunction) entry.getValue();
+				Set<Entry<Double, Double>> entrySet = bidFunction.getCurve().entrySet();
+				for (Entry<Double, Double> bidCurveEntry : entrySet) {
+					if (builder.length() != 0) {
+						builder.append(";");
+					}
+					builder.append(bidCurveEntry.getKey());
+					builder.append(":");
+					builder.append(bidCurveEntry.getValue());
+				}
+				row.setString(entry.getKey(), builder.toString());
 			} else {
 				log.warn("Unknown value type to convert {}", entry);
 			}
@@ -177,4 +195,3 @@ class TableProcessor implements Runnable {
 	}
 
 }
-

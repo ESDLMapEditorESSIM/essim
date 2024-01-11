@@ -35,6 +35,7 @@ import esdl.impl.ItemImpl;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.asm.Advice.This;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.model.Market;
@@ -351,7 +352,8 @@ public abstract class Node implements INode {
 				.tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
 				.value("allocationEnergy", energy)
 				.value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
-				.value("marginalCost", demandFunction.getMarginalCost());
+				.value("marginalCost", demandFunction.getMarginalCost())
+				.value("bidcurve", this.demandFunction);
 
 		// Tag sector if defined
 		String sectorName = "DefaultSector";

@@ -19,6 +19,7 @@ package nl.tno.essim.observation.consumers;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +91,11 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 		pointBuilder.tag("simulationRun", simulationRunName);
 		pointBuilder.tag("Year",
 				String.valueOf(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).getYear()));
-		pointBuilder.fields(observation.getValues());
+		// We don't want to put the bidcurve in the database
+		HashMap<String, Object> mapCopy = new HashMap<>();
+		mapCopy.putAll(observation.getValues());
+		mapCopy.remove("bidcurve");
+		pointBuilder.fields(mapCopy);
 		pointBuilder.time(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).toEpochSecond(),
 				TimeUnit.SECONDS);
 
