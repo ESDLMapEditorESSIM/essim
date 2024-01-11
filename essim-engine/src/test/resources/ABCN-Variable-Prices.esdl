@@ -32,7 +32,7 @@
       <asset xsi:type="esdl:GasDemand" name="GasDemand_0be4" id="0be492ce-d8d1-4b43-8c6c-431b30b16a54">
         <geometry xsi:type="esdl:Point" lat="52.39105214969493" lon="5.398871039662151"/>
         <port xsi:type="esdl:InPort" carrier="f4f43e41-34d5-42f7-98e8-5a1c489af439" connectedTo="2a091946-2759-4782-9aca-63599b5728b7" name="In" id="300349ba-129b-4317-b679-720785107b35">
-          <profile xsi:type="esdl:TimeSeriesProfile" id="3f8f623c-2b09-4fa6-8523-526650c7ee69" name="H2 Demand profile" values="4.0 3.0 2.0 1.0 0.0" startDateTime="2019-01-01T00:00:00.000000">
+          <profile xsi:type="esdl:TimeSeriesProfile" id="3f8f623c-2b09-4fa6-8523-526650c7ee69" name="H2 Demand profile" values="4.0 4.0 4.0 4.0 4.0" startDateTime="2019-01-01T00:00:00.000000">
             <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" description="Energy in MJ" id="1924e63d-fbb6-4554-a919-5a733825f38e" unit="JOULE" physicalQuantity="ENERGY" multiplier="MEGA"/>
           </profile>
         </port>
@@ -40,7 +40,7 @@
       <asset xsi:type="esdl:PVInstallation" name="PVInstallation_3b73" id="3b735a52-1920-49e8-a4f4-647c722a42e4">
         <geometry xsi:type="esdl:Point" lat="52.39126196440932" lon="5.399704128199586"/>
         <port xsi:type="esdl:OutPort" carrier="83ff3b91-32cc-40d3-953a-3f0b8698866a" connectedTo="c8bf4131-5010-479a-a9bc-8a48bbb25240" name="Out" id="be625810-1db5-482e-9274-d8115fe8b667">
-          <profile xsi:type="esdl:TimeSeriesProfile" id="e9e2a3df-c23c-4bb7-ac86-7342157af729" name="PV profile" values="0.0 2.0 4.0 2.0 0.0" startDateTime="2019-01-01T00:00:00.000000">
+          <profile xsi:type="esdl:TimeSeriesProfile" id="e9e2a3df-c23c-4bb7-ac86-7342157af729" name="PV profile" values="0.0 0.0 0.0 0.0 0.0" startDateTime="2019-01-01T00:00:00.000000">
             <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" description="Energy in MJ" id="a8ce7b69-cb5f-40c6-ba57-c1128c35b051" unit="JOULE" physicalQuantity="ENERGY" multiplier="MEGA"/>
           </profile>
         </port>
@@ -48,7 +48,7 @@
       <asset xsi:type="esdl:ElectricityDemand" name="ElectricityDemand_a061" id="a06177c6-59fc-4286-9e53-09966b30cbc0">
         <geometry xsi:type="esdl:Point" lat="52.39102927533107" lon="5.399772066686501"/>
         <port xsi:type="esdl:InPort" carrier="83ff3b91-32cc-40d3-953a-3f0b8698866a" connectedTo="ef12cf9c-8391-4488-9a08-1bf09f51cc92" name="In" id="55b61a25-081e-4b99-80f1-54ba1718b9b0">
-          <profile xsi:type="esdl:TimeSeriesProfile" id="58791b5d-81a4-4626-88d5-c01a13de553d" name="E Demand profile" values="2.0 1.0 1.0 3.0 0.0" startDateTime="2019-01-01T00:00:00.000000">
+          <profile xsi:type="esdl:TimeSeriesProfile" id="58791b5d-81a4-4626-88d5-c01a13de553d" name="E Demand profile" values="2.0 2.0 2.0 2.0 2.0 " startDateTime="2019-01-01T00:00:00.000000">
             <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" description="Energy in MJ" id="200e5ff9-7712-48c0-baa1-bb21acebc5f7" unit="JOULE" physicalQuantity="ENERGY" multiplier="MEGA"/>
           </profile>
         </port>
