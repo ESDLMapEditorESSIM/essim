@@ -327,6 +327,19 @@ public class AbstractBasicConversionNode extends Node {
 				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
+					GenericProfile inCarrierCostProfile = inputCarrier.getCost();
+					GenericProfile outCarrierCostProfile = outputCarrier.getCost();
+					if (inCarrierCostProfile != null && outCarrierCostProfile != null) {
+						Double inCarrierCost = Commons.aggregateCost(Commons.readProfile(inCarrierCostProfile, now));
+						Double outCarrierCost = Commons.aggregateCost(Commons.readProfile(outCarrierCostProfile, now));
+//						log.debug("OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", outCarrierCost, inCarrierCost, efficiency);
+						if (outCarrierCost < inCarrierCost/efficiency) {
+							// It is too expensive to produce
+							makeInflexibleConsumptionFunction(0);
+							log.debug("OutCarrierCost = {} < {}, ({} / {}) -> generating flat bidcurve ", outCarrierCost, inCarrierCost/efficiency, inCarrierCost, efficiency);
+							return;
+						}
+					}
 					// Make flexible consumption curve
 					double energyOutput = (timeStep * power) / efficiency;
 					if (marginalCostProfile != null) {

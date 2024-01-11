@@ -62,8 +62,16 @@
   </instance>
   <energySystemInformation xsi:type="esdl:EnergySystemInformation" id="fc0047bd-abec-4cef-905e-6aa5716c0925">
     <carriers xsi:type="esdl:Carriers" id="3bd5fd61-4ea9-4d95-ae12-36564b91958f">
-      <carrier xsi:type="esdl:GasCommodity" id="f4f43e41-34d5-42f7-98e8-5a1c489af439" name="Hydrogen"/>
-      <carrier xsi:type="esdl:ElectricityCommodity" id="83ff3b91-32cc-40d3-953a-3f0b8698866a" name="Electricity"/>
+      <carrier xsi:type="esdl:GasCommodity" id="f4f43e41-34d5-42f7-98e8-5a1c489af439" name="Hydrogen">
+        <cost xsi:type="esdl:TimeSeriesProfile" values="0.3 0.3 0.3 0.3 0.3" id="bc4078ca-26d6-46d4-9365-9558bb097ad7" name="Gas prices"  startDateTime="2019-01-01T00:00:00.000000">
+          <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" id="75d2da04-10c5-4837-98c5-3e287e2843ef" description="Cost in EUR/MJ" perUnit="JOULE" perMultiplier="MEGA" unit="EURO" physicalQuantity="COST"/>
+        </cost>
+        </carrier>
+      <carrier xsi:type="esdl:ElectricityCommodity" id="83ff3b91-32cc-40d3-953a-3f0b8698866a" name="Electricity">
+        <cost xsi:type="esdl:TimeSeriesProfile" values="0.1 0.2 0.3 0.2 0.1"  name="Electricity prices" id="3378e5ca-5d64-45e8-831c-a4cfd16ecdef" startDateTime="2019-01-01T00:00:00.000000">
+          <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitType" id="b2cbbafe-7196-41a7-aa69-3f1e1cfa4199" description="Cost in EUR/MJ" perUnit="JOULE" perMultiplier="MEGA" unit="EURO" physicalQuantity="COST"/>
+        </cost>
+      </carrier>
     </carriers>
   </energySystemInformation>
 </esdl:EnergySystem>

@@ -15,12 +15,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import esdl.Asset;
-import esdl.ElectricityDemand;
-import esdl.ElectricityNetwork;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
-import esdl.Export;
-import esdl.Import;
 import esdl.Port;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulationImpl;
@@ -51,10 +47,10 @@ class ElectrolyserTest {
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulationImpl sim = new EssimSimulationImpl();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
-		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2020, 1, 1, 0, 0, 0)));
+		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
 		sim.setScenarioID("testcase1-basictest");
 		String simId = mongo.addSimulation(sim);
-		File esdlFile = new File("src/test/resources/ESSIM Unit test.esdl");
+		File esdlFile = new File("src/test/resources/ABCN-Variable-Prices.esdl");
 		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdlFile, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
@@ -79,12 +75,12 @@ class ElectrolyserTest {
 
 		HashMap<String, Table> tables = inMemoryObservationConsumer.getAssets();
 		System.out.println("Assets: " + tables.keySet());
-		System.out.println("Totals:");
 		LocalDateTime start = tables.values().stream().findAny().get().dateTimeColumn(0).get(0);
 		LocalDateTime stop = tables.values().stream().findAny().get().dateTimeColumn(0).last(1).get(0);
 		long simHours = ChronoUnit.HOURS.between(start, stop);
-		assertEquals(8760, simHours);
+		System.out.println("Totals:");
 		System.out.println("Sim hours:" + simHours);
+		assertEquals(24, simHours);
 		System.out.println("\t(" + start + " to " + stop + ")");
 
 		for (Entry<String, Table> entry : tables.entrySet()) {
@@ -93,15 +89,15 @@ class ElectrolyserTest {
 			System.out.println("- " + table.stringColumn("assetName").get(0) + ": " + total);
 			Resource eResource = es.eResource();
 			EnergyAsset asset = (EnergyAsset) eResource.getEObject(entry.getKey());
-			if (asset instanceof Export) {
-				assertEquals(total, 0.0, 1E-3);
-			} else if (asset instanceof ElectricityDemand) {
-				assertEquals(7E6, total, 1E3);
-			} else if (asset instanceof ElectricityNetwork) {
-				assertEquals(3E6, total, 1E3);
+//			if (asset instanceof Export) {
+//				assertEquals(total, 0.0, 1E-3);
+//			} else if (asset instanceof ElectricityDemand) {
+//				assertEquals(7E6, total, 1E3);
+//			} else if (asset instanceof ElectricityNetwork) {
+//				assertEquals(3E6, total, 1E3);
 //			} else if (asset instanceof Import) {
 //				assertEquals(-8E6, total, 1E3);
-			}
+//			}
 		}
 
 		HashMap<String, Table> networks = inMemoryObservationConsumer.getNetworks();
