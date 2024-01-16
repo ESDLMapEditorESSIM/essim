@@ -10,7 +10,6 @@
 		<groupId>nl.tno.essim</groupId>
 		<artifactId>parent</artifactId>
 		<version>${revision}</version>
-		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<dependencies>

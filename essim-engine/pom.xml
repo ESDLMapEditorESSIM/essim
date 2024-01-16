@@ -1,19 +1,15 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>essim-engine</artifactId>
 	<name>ESSIM Engine</name>
 
-	<properties>
-		<base.package.name>nl.tno.essim</base.package.name>
-		<junit.jupiter.version>5.5.2</junit.jupiter.version>
-	</properties>
-
 	<parent>
 		<groupId>nl.tno.essim</groupId>
 		<artifactId>parent</artifactId>
 		<version>${revision}</version>
-		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<dependencyManagement>
@@ -30,15 +26,19 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-grizzly2-http</artifactId>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.eclipse.emf/org.eclipse.emf.ecore.xmi -->
+		<!--
+		https://mvnrepository.com/artifact/org.eclipse.emf/org.eclipse.emf.ecore.xmi -->
 		<dependency>
 			<groupId>org.eclipse.emf</groupId>
 			<artifactId>org.eclipse.emf.ecore.xmi</artifactId>
-			<version>2.16.0</version>
 		</dependency>
 
 		<dependency>
@@ -78,7 +78,7 @@
 			<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
 			<version>1.2.1</version>
 		</dependency>
-		
+
 
 		<!-- runtime dependencies -->
 		<dependency>
@@ -116,22 +116,14 @@
 		<dependency>
 			<groupId>nl.tno.essim</groupId>
 			<artifactId>model-extensions</artifactId>
-			<version>${project.version}</version>
 		</dependency>
+
 
 
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>${junit.jupiter.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter-api</artifactId>
-			<version>${junit.jupiter.version}</version>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>tech.tablesaw</groupId>
@@ -149,17 +141,17 @@
 
 
 	<build>
-		<plugins>	
+		<plugins>
 			<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-                <configuration>
-                    <argLine>
-                        --illegal-access=permit
-                    </argLine>
-                </configuration>
-            </plugin>	     
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
+				<configuration>
+					<argLine>
+						--illegal-access=permit
+					</argLine>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>com.github.os72</groupId>
 				<artifactId>protoc-jar-maven-plugin</artifactId>
@@ -186,12 +178,14 @@
 				<artifactId>raml-to-jaxrs-maven-plugin</artifactId>
 				<version>3.0.4</version>
 				<configuration>
-					<ramlFile>${project.basedir}/src/main/resources/raml/essim.raml
+					<ramlFile>
+						${project.basedir}/src/main/resources/raml/essim.raml
 					</ramlFile>
 					<resourcePackage>${base.package.name}</resourcePackage>
 					<modelPackage>${base.package.name}.model</modelPackage>
 					<supportPackage>${base.package.name}.support</supportPackage>
-					<outputDirectory>${project.build.directory}/generated-sources/java
+					<outputDirectory>
+						${project.build.directory}/generated-sources/java
 					</outputDirectory>
 					<generateTypesWith>jackson</generateTypesWith>
 					<jsonMapper>jackson2</jsonMapper>
@@ -235,8 +229,10 @@
 						</goals>
 						<configuration>
 							<transformers>
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
-								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<mainClass>nl.tno.essim.ESSimMain</mainClass>
 								</transformer>
 							</transformers>
