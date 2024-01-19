@@ -139,24 +139,47 @@ public class AbstractBasicConversionNode extends Node {
 					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
 					// Make Flexible Producer Curve
 					double energyOutput = timeStep * power;
+					Double aggregateCost = DEFAULT_MARGINAL_COST;
 					if (marginalCostProfile != null) {
-						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+						aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
 						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
-						setCost(aggregateCost);
 					} else if (costProfile != null) {
-						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now))
-								/ efficiency;
+						aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) / efficiency;
 						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
-						setCost(aggregateCost);
 					} else {
 						log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
 								DEFAULT_MARGINAL_COST);
-						setCost(DEFAULT_MARGINAL_COST);
 					}
+					setCost(aggregateCost);
+					GenericProfile inCarrierCostProfile = inputCarrier.getCost();
+					GenericProfile outCarrierCostProfile = outputCarrier.getCost();
+					if (inCarrierCostProfile != null) {
+						Double outCarrierCost;
+						if (outCarrierCostProfile == null) {
+							// If we have a price on the input carrier, but we don't have a price on the
+							// output carrier, we will use the marginal cost as price for comparison
+							outCarrierCost = aggregateCost;
+						} else {
+							outCarrierCost = Commons.aggregateCost(Commons.readProfile(outCarrierCostProfile, now));
+						}
+						Double inCarrierCost = Commons.aggregateCost(Commons.readProfile(inCarrierCostProfile, now));
+						log.debug("{}: OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", getConversionName(),
+								outCarrierCost, inCarrierCost, efficiency);
+						if (outCarrierCost < inCarrierCost / efficiency) {
+							// It is too expensive to consume
+							makeInflexibleConsumptionFunction(0);
+							log.debug("{}: generating flat bidcurve ", getConversionName());
+							return;
+						} else {
+							log.debug("{}: generating normal bidcurve ", getConversionName());
+
+						}
+					}
+
 					makeAdjustableProductionFunction(energyOutput);
 				} else {
 					// PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
@@ -327,37 +350,47 @@ public class AbstractBasicConversionNode extends Node {
 				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
 					// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
-					GenericProfile inCarrierCostProfile = inputCarrier.getCost();
-					GenericProfile outCarrierCostProfile = outputCarrier.getCost();
-					if (inCarrierCostProfile != null && outCarrierCostProfile != null) {
-						Double inCarrierCost = Commons.aggregateCost(Commons.readProfile(inCarrierCostProfile, now));
-						Double outCarrierCost = Commons.aggregateCost(Commons.readProfile(outCarrierCostProfile, now));
-//						log.debug("OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", outCarrierCost, inCarrierCost, efficiency);
-						if (outCarrierCost < inCarrierCost/efficiency) {
-							// It is too expensive to produce
-							makeInflexibleConsumptionFunction(0);
-							log.debug("OutCarrierCost = {} < {}, ({} / {}) -> generating flat bidcurve ", outCarrierCost, inCarrierCost/efficiency, inCarrierCost, efficiency);
-							return;
-						}
-					}
 					// Make flexible consumption curve
 					double energyOutput = (timeStep * power) / efficiency;
+					Double aggregateCost = DEFAULT_MARGINAL_COST;
 					if (marginalCostProfile != null) {
-						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+						aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
 						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
-						setCost(aggregateCost);
 					} else if (costProfile != null) {
-						Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+						aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
 						if (Double.isNaN(aggregateCost)) {
 							aggregateCost = DEFAULT_MARGINAL_COST;
 						}
-						setCost(aggregateCost);
 					} else {
 						log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
 								DEFAULT_MARGINAL_COST);
-						setCost(DEFAULT_MARGINAL_COST);
+					}
+					setCost(aggregateCost);
+					GenericProfile inCarrierCostProfile = inputCarrier.getCost();
+					GenericProfile outCarrierCostProfile = outputCarrier.getCost();
+					if (outCarrierCostProfile != null) {
+						Double inCarrierCost;
+						if (inCarrierCostProfile == null) {
+							// If we have a price on the output carrier, but we don't have a price on the
+							// input carrier, we will use the marginal cost as price for comparison
+							inCarrierCost = aggregateCost;
+						} else {
+							inCarrierCost = Commons.aggregateCost(Commons.readProfile(inCarrierCostProfile, now));
+						}
+						Double outCarrierCost = Commons.aggregateCost(Commons.readProfile(outCarrierCostProfile, now));
+						log.debug("{}: OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", getConversionName(),
+								outCarrierCost, inCarrierCost, efficiency);
+						if (outCarrierCost < inCarrierCost / efficiency) {
+							// It is too expensive to produce
+							makeInflexibleConsumptionFunction(0);
+							log.debug("{}: generating flat bidcurve ", getConversionName());
+							return;
+						} else {
+							log.debug("{}: generating normal bidcurve ", getConversionName());
+
+						}
 					}
 					makeAdjustableConsumptionFunction(energyOutput);
 				} else {

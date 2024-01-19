@@ -50,7 +50,7 @@ class ElectrolyserTestWithInfluxAndGrafana {
 	@Test
 	void testSimulation() {
 		try {
-			String[] resourceListing = Commons.getResourceListing(Commons.class, "/");
+			String[] resourceListing = Commons.getResourceListing(Commons.class, ".");
 			System.out.println(Arrays.asList(resourceListing));
 			// IMongoBackend mongo = new MongoBackend("localhost", "27017");
 			IMongoBackend mongo = new MongoBackendStub();
