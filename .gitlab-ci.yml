@@ -21,8 +21,8 @@ build-essim:
     GIT_DEPTH: 0
   script:
     - cd $CI_PROJECT_DIR
-    - apt update && apt install -y docker
-    - mvn clean package -DskipTest
+    - apt-get update && apt-get install -y docker.io libatomic1
+    - mvn clean package -DskipTests
     - cd essim-engine
     - COMMIT_SHA=`git rev-parse --short HEAD`
     - echo $COMMIT_SHA > version.txt
