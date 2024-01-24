@@ -20,9 +20,10 @@ build-essim:
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_DEPTH: 0
   script:
-    - cd "$CI_PROJECT_DIR/essim-engine"
+    - cd $CI_PROJECT_DIR
     - apt update && apt install -y docker
     - mvn clean package -DskipTest
+    - cd essim-engine
     - COMMIT_SHA=`git rev-parse --short HEAD`
     - echo $COMMIT_SHA > version.txt
     - docker build --no-cache 
