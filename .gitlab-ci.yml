@@ -1,29 +1,40 @@
 stages:
   - build
-  - push
 
 image: maven:3.9.6-eclipse-temurin-11
+
+.build-script:
+  before_script:
+    - apt-get update && apt-get install -y libatomic1 docker.io
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
 
 build-essim:
   stage: build
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_DEPTH: 0
+  extends: .build-script
   script:
     - cd $CI_PROJECT_DIR
-    - apt-get update && apt-get install -y libatomic1
     - mvn clean package -DskipTests
+  except:
+    - main
 
-
-push-essim:
-  stage: push
+build-and-push-essim:
+  stage: build
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_DEPTH: 0
+  extends: .build-script
   script:
+    - cd $CI_PROJECT_DIR
+    - mvn clean package -DskipTests
     - cd $CI_PROJECT_DIR/essim-engine
-    - apt-get update && apt-get install -y docker.io
     - COMMIT_SHA=`git rev-parse --short HEAD`
     - echo $COMMIT_SHA > version.txt
     - docker build --no-cache 
-      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:master 
+      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:main 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
       .
     - docker push  --all-tags
