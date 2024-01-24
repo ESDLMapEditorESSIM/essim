@@ -1,38 +1,33 @@
-build:
-  variables:
-    MAVEN_IMAGE: maven:3.8.6
-  only:
-    - main
-  stage: build
-  image: $MAVEN_IMAGE-jdk-11
-  before_script:
-    - 'apt-get update'
-    - 'apt-get install libatomic1'
-  script:
-    - 'mvn package -X'
-  artifacts:
-    paths:
-      - essim-engine/target/essim.jar
+stages:
+  - build
 
-deploy:
-  only:
-    - main
-  dependencies:
-    - build
+image: maven:3.9.6-eclipse-temurin-11
+# Build on:
+# - Tags
+# - Merge requests
+# - Branches
+workflow:
+  rules:
+    - if: "$CI_COMMIT_TAG"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS"
+      when: never
+    - if: "$CI_COMMIT_BRANCH"
+
+build-essim:
+  stage: build
   variables:
-    CI_CONTAINER_IMAGE: $CI_TNO_REGISTRY/essim-engine
-    DOCKERHUB_CONTAINER_IMAGE: $DOCKERHUB_REPOSITORY/essim
-  stage: deploy
-  image: docker:stable
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_TNO_REGISTRY
-    - docker login -u "$DOCKERHUB_USER" -p "$DOCKERHUB_PASSWORD"
-    - echo $CI_COMMIT_SHORT_SHA > essim-engine/version.txt
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_DEPTH: 0
   script:
-    - docker build -t $CI_CONTAINER_IMAGE:latest -t $DOCKERHUB_CONTAINER_IMAGE:latest essim-engine
-    - docker tag $CI_CONTAINER_IMAGE:latest $CI_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker tag $DOCKERHUB_CONTAINER_IMAGE:latest $DOCKERHUB_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker push $CI_CONTAINER_IMAGE:latest
-    - docker push $CI_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
-    - docker push $DOCKERHUB_CONTAINER_IMAGE:latest
-    - docker push $DOCKERHUB_CONTAINER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - cd "$CI_PROJECT_DIR/essim-engine"
+    - apt update && apt install -y docker
+    - mvn clean package -DskipTest
+    - COMMIT_SHA=`git rev-parse --short HEAD`
+    - echo $COMMIT_SHA > version.txt
+    - docker build --no-cache 
+      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:master 
+      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
+      .
+  when: always
+
