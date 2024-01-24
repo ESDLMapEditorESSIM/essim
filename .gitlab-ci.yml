@@ -1,18 +1,8 @@
 stages:
   - build
+  - push
 
 image: maven:3.9.6-eclipse-temurin-11
-# Build on:
-# - Tags
-# - Merge requests
-# - Branches
-workflow:
-  rules:
-    - if: "$CI_COMMIT_TAG"
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: "$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS"
-      when: never
-    - if: "$CI_COMMIT_BRANCH"
 
 build-essim:
   stage: build
@@ -21,14 +11,23 @@ build-essim:
     GIT_DEPTH: 0
   script:
     - cd $CI_PROJECT_DIR
-    - apt-get update && apt-get install -y docker.io libatomic1
+    - apt-get update && apt-get install -y libatomic1
     - mvn clean package -DskipTests
-    - cd essim-engine
+
+
+push-essim:
+  stage: push
+  script:
+    - cd $CI_PROJECT_DIR/essim-engine
+    - apt-get update && apt-get install -y docker.io
     - COMMIT_SHA=`git rev-parse --short HEAD`
     - echo $COMMIT_SHA > version.txt
     - docker build --no-cache 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:master 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
       .
-  when: always
+    - docker push  --all-tags
+      ci.tno.nl/essim/open-sourced-essim/essim-engine
+  only: 
+    - main
 
