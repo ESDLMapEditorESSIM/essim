@@ -24,6 +24,7 @@ import esdl.impl.AbstractBasicConversionImpl;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.model.EssimSimulationImpl;
+import nl.tno.essim.model.MarketImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
@@ -60,6 +61,12 @@ class LocalGlobalGridWithPricesInfluxAndGrafana {
 			sim.setScenarioID("LocalGlobalGrid-testcase1");
 			sim.setInfluxURL("http://localhost:8086");
 
+			MarketImpl market = new MarketImpl();
+			sim.setMarket(market);
+			market.setMinPrice(0.0);
+			market.setMaxPrice(1E-6);
+			market.setDeltaPrice(1E-18);
+			
 			String simId = mongo.addSimulation(sim);
 			File esdlFile = new File("src/test/resources/Local_and_Grid_with_Prices.esdl");
 			ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdlFile, mongo);
