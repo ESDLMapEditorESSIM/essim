@@ -31,6 +31,7 @@ import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
+import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import tech.tablesaw.api.DateTimeColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.FloatColumn;
@@ -165,18 +166,18 @@ class TableProcessor implements Runnable {
 			} else if (entry.getValue() instanceof String) {
 				row.setString(entry.getKey(), (String) entry.getValue());
 			} else if (entry.getValue() instanceof BidFunction) {
-				StringBuilder builder = new StringBuilder();
+//				StringBuilder builder = new StringBuilder();
 				BidFunction bidFunction = (BidFunction) entry.getValue();
-				Set<Entry<Double, Double>> entrySet = bidFunction.getCurve().entrySet();
-				for (Entry<Double, Double> bidCurveEntry : entrySet) {
-					if (builder.length() != 0) {
-						builder.append(";");
-					}
-					builder.append(bidCurveEntry.getKey());
-					builder.append(":");
-					builder.append(bidCurveEntry.getValue());
-				}
-				row.setString(entry.getKey(), builder.toString());
+//				Set<Entry<Double, Double>> entrySet = bidFunction.getCurve().entrySet();
+//				for (Entry<Double, Double> bidCurveEntry : entrySet) {
+//					if (builder.length() != 0) {
+//						builder.append(";");
+//					}
+//					builder.append(bidCurveEntry.getKey());
+//					builder.append(":");
+//					builder.append(bidCurveEntry.getValue());
+//				}
+				row.setString(entry.getKey(), InfluxDBObservationConsumer.createJsonFromBidcurve(bidFunction));
 			} else {
 				log.warn("Unknown value type to convert {}", entry);
 			}

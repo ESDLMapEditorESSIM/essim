@@ -19,8 +19,11 @@ package nl.tno.essim.observation.consumers;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +33,11 @@ import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
@@ -91,15 +98,31 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 		pointBuilder.tag("simulationRun", simulationRunName);
 		pointBuilder.tag("Year",
 				String.valueOf(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).getYear()));
-		// We don't want to put the bidcurve in the database
+		// We want to transform the bidcurve before putting it in the database
 		HashMap<String, Object> mapCopy = new HashMap<>();
 		mapCopy.putAll(observation.getValues());
-		mapCopy.remove("bidcurve");
+		mapCopy.put("bidcurve", createJsonFromBidcurve((BidFunction) observation.getValues().get("bidcurve")));
 		pointBuilder.fields(mapCopy);
 		pointBuilder.time(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).toEpochSecond(),
 				TimeUnit.SECONDS);
 
 		influxDbClient.write(pointBuilder.build());
+	}
+
+	public static String createJsonFromBidcurve(BidFunction bidFunction) {
+		if (bidFunction != null) {
+			Set<Entry<Double, Double>> entrySet = bidFunction.getCurve().entrySet();
+			ArrayList<Double[]> list = new ArrayList<Double[]>(entrySet.size());
+			for (Entry<Double, Double> entry : entrySet) {
+				list.add(new Double[] { entry.getKey(), entry.getValue() });
+			}
+			try {
+				return new ObjectMapper().writeValueAsString(list);
+			} catch (JsonProcessingException e) {
+				log.warn("Error creating json", e);
+			}
+		}
+		return null;
 	}
 
 	@Override
