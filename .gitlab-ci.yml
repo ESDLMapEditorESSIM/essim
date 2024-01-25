@@ -3,13 +3,13 @@ stages:
 
 image: maven:3.9.6-eclipse-temurin-11
 
-variables:
+  variables:
   REGISTRY: ci.tno.nl
 
 .build-script:
   before_script:
     - apt-get update && apt-get install -y libatomic1 docker.io
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_TNO_REGISTRY
 
 
 build-essim:
@@ -38,10 +38,11 @@ build-and-push-essim:
     - echo $COMMIT_SHA > version.txt
     - docker build --no-cache 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:main 
+      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:master
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
       .
     - docker push  --all-tags
       ci.tno.nl/essim/open-sourced-essim/essim-engine
-  only: 
+  only:
     - main
 
