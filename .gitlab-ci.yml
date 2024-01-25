@@ -3,10 +3,13 @@ stages:
 
 image: maven:3.9.6-eclipse-temurin-11
 
+variables:
+  REGISTRY: ci.tno.nl
+
 .build-script:
   before_script:
     - apt-get update && apt-get install -y libatomic1 docker.io
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY
 
 
 build-essim:
