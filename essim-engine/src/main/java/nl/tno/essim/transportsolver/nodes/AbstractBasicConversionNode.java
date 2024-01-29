@@ -166,36 +166,35 @@ public class AbstractBasicConversionNode extends Node {
     }
 
 
-    private boolean marketPricesAllowBid(Horizon now, Role role) {
-        GenericProfile mainCarrierCostProfile;
-        GenericProfile secondaryCarrierCostProfile;
-        if (role == Role.CONSUMER) {
-            mainCarrierCostProfile = inputCarrier.getCost();
-            secondaryCarrierCostProfile = outputCarrier.getCost();
-        } else {
-            mainCarrierCostProfile = outputCarrier.getCost();
-            secondaryCarrierCostProfile = inputCarrier.getCost();
+    private boolean marketPricesAllowBid(Horizon now) {
+        GenericProfile inCarrierCostProfile = inputCarrier.getCost();
+        GenericProfile outCarrierCostProfile = outputCarrier.getCost();
+        if (inCarrierCostProfile == null && outCarrierCostProfile == null) {
+            return true;
         }
-        if (secondaryCarrierCostProfile != null) {
-            Double mainCarrierCost;
-            if (mainCarrierCostProfile == null) {
-                // If we have a price on the output carrier, but we don't have a price on the
-                // input carrier, we will use the marginal cost as price for comparison
-                mainCarrierCost = getCost();
-            } else {
-                mainCarrierCost = Commons.aggregateCost(Commons.readProfile(mainCarrierCostProfile, now));
-            }
-            Double secondaryCarrierCost = Commons.aggregateCost(Commons.readProfile(secondaryCarrierCostProfile, now));
-            log.debug("{}: MainCarrierCost = {}, SecondaryCarrierCost = {}, efficiency = {}", getConversionName(),
-                    secondaryCarrierCost, mainCarrierCost, efficiency);
-            if (secondaryCarrierCost < mainCarrierCost / efficiency) {
-                // It is too expensive to produce
-                log.debug("{}: generating flat bidcurve ", getConversionName());
-                return false;
-            } else {
-                log.debug("{}: generating normal bidcurve ", getConversionName());
+        Double outCarrierCost;
+        Double inCarrierCost;
+        if (inCarrierCostProfile != null) {
+            inCarrierCost = Commons.aggregateCost(Commons.readProfile(inCarrierCostProfile, now));
+        } else {
+            inCarrierCost = getCost();
+        }
+        if (outCarrierCostProfile != null) {
+            // If we have a price on the input carrier, but we don't have a price on the
+            // output carrier, we will use the marginal cost as price for comparison
+            outCarrierCost = Commons.aggregateCost(Commons.readProfile(outCarrierCostProfile, now));
+        } else {
+            outCarrierCost = getCost();
+        }
+        log.debug("{}: OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", getConversionName(),
+                outCarrierCost, inCarrierCost, efficiency);
+        if (outCarrierCost < inCarrierCost / efficiency) {
+            // It is too expensive to consume
+            log.debug("{}: generating flat bidcurve ", getConversionName());
+            return false;
+        } else {
+            log.debug("{}: generating normal bidcurve ", getConversionName());
 
-            }
         }
         return true;
     }
@@ -270,8 +269,8 @@ public class AbstractBasicConversionNode extends Node {
             // Make Flexible Producer Curve
             double energyOutput = timeStep * power;
             updateCost(now);
-            if (marketPricesAllowBid(now, getRole())) {
-                makeAdjustableConsumptionFunction(energyOutput);
+            if (marketPricesAllowBid(now)) {
+                makeAdjustableProductionFunction(energyOutput);
             } else {
                 makeInflexibleConsumptionFunction(0);
             }
@@ -290,7 +289,7 @@ public class AbstractBasicConversionNode extends Node {
             // Make flexible consumption curve
             double energyOutput = (timeStep * power) / efficiency;
             updateCost(now);
-            if (marketPricesAllowBid(now, getRole())) {
+            if (marketPricesAllowBid(now)) {
                 makeAdjustableConsumptionFunction(energyOutput);
             } else {
                 makeInflexibleConsumptionFunction(0);
