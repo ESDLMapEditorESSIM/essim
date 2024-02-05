@@ -16,21 +16,11 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import esdl.AbstractBasicConversion;
-import esdl.Carrier;
-import esdl.ControlStrategy;
-import esdl.CostInformation;
-import esdl.DrivenByDemand;
-import esdl.DrivenByProfile;
-import esdl.DrivenBySupply;
-import esdl.EnergyAsset;
-import esdl.EnergyCarrier;
-import esdl.GenericProfile;
-import esdl.InPort;
-import esdl.OutPort;
-import esdl.Port;
+import esdl.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -44,6 +34,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import org.eclipse.emf.common.util.EList;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -58,7 +49,6 @@ public class AbstractBasicConversionNode extends Node {
 
     protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
     protected AbstractBasicConversion conversion;
-    protected double efficiency;
     protected double power;
     protected CostInformation costInformation;
     protected ControlStrategy controlStrategy;
@@ -71,8 +61,9 @@ public class AbstractBasicConversionNode extends Node {
     private Float outputPrice;
     private boolean specialConversion;
     private String conversionName;
-    private GenericProfile marginalCostProfile;
-    private GenericProfile costProfile;
+    private HashMap<Port, GenericProfile> costProfileMap = new HashMap<>();
+    private Port mainPort;
+    private HashMap<Port, Double> ratioMap = new HashMap<>();
 
     @Builder(builderMethodName = "abstractBasicConversionNodeBuilder")
     public AbstractBasicConversionNode(String simulationId, String nodeId, String address, String networkId,
@@ -83,19 +74,18 @@ public class AbstractBasicConversionNode extends Node {
                 energy, cost, parent, carrier, children, timeStep, now, connectedPort);
         this.conversion = (AbstractBasicConversion) asset;
         this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
-        this.efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY : conversion.getEfficiency();
         this.power = conversion.getPower();
         this.costInformation = conversion.getCostInformation();
-        if (costInformation != null) {
-            marginalCostProfile = costInformation.getMarginalCosts();
-        }
-
         this.controlStrategy = conversion.getControlStrategy();
         for (Port port : conversion.getPort()) {
             if (port instanceof InPort) {
                 inputPort = (InPort) port;
                 inputCarrier = inputPort.getCarrier();
-                costProfile = inputCarrier.getCost();
+                if (costInformation != null) {
+                    costProfileMap.put(inputPort, costInformation.getMarginalCosts());
+                } else {
+                    costProfileMap.put(port, inputCarrier.getCost());
+                }
             } else {
                 outputPort = (OutPort) port;
                 outputCarrier = outputPort.getCarrier();
@@ -103,6 +93,60 @@ public class AbstractBasicConversionNode extends Node {
         }
 
         specialConversion = inputCarrier.equals(outputCarrier);
+        EList<AbstractBehaviour> conversionBehaviours = conversion.getBehaviour();
+        if (conversionBehaviours != null && !conversionBehaviours.isEmpty()) {
+            for (AbstractBehaviour behaviour : conversionBehaviours) {
+                if (behaviour instanceof InputOutputRelation) {
+                    InputOutputRelation conversionTable = (InputOutputRelation) behaviour;
+                    mainPort = conversionTable.getMainPort();
+                    if (mainPort == null) {
+                        throw new IllegalArgumentException(
+                                "No main port defined in InputOutputRelation of asset " + conversionName + "!");
+                    }
+                    boolean mainPortFound = false;
+                    for (Port port : conversion.getPort()) {
+                        if (port.equals(mainPort)) {
+                            mainPortFound = true;
+                            break;
+                        }
+                    }
+                    if (!mainPortFound) {
+                        throw new IllegalArgumentException(
+                                "MainPort defined in InputOutputRelation for conversion asset " + conversionName
+                                        + " was not found in the asset!");
+                    }
+                    ratioMap.put(mainPort, 1.0);
+                    if (conversionTable.getMainPortRelation().size() < conversion.getPort().size() - 1) {
+                        throw new IllegalArgumentException("Not enough (" + conversionTable.getMainPortRelation().size()
+                                + ") InputOutput relations defined for conversion asset " + conversionName + " with "
+                                + conversion.getPort().size() + "!");
+                    }
+                    for (PortRelation portRelation : conversionTable.getMainPortRelation()) {
+                        if (portRelation.getPort() == null) {
+                            throw new IllegalArgumentException(
+                                    "InputOutputRelation defined for asset " + conversionName + " has a missing port!");
+                        }
+                        if (portRelation.getRatio() == 0.0) {
+                            throw new IllegalArgumentException("InputOutputRelation defined for asset " + conversionName
+                                    + " has ratio 0.0 for port " + portRelation.getPort().getId() + "!");
+                        }
+                        ratioMap.put(portRelation.getPort(), portRelation.getRatio());
+                    }
+                }
+            }
+        } else {
+            // We need to put the efficiency in the ratio map
+            double efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY : conversion.getEfficiency();
+            if (getRole() == Role.CONSUMER) {
+                mainPort = inputPort;
+                ratioMap.put(inputPort, 1.0);
+                ratioMap.put(outputPort, efficiency);
+            } else if (getRole() == Role.PRODUCER) {
+                mainPort = outputPort;
+                ratioMap.put(outputPort, 1.0);
+                ratioMap.put(inputPort, 1 / efficiency);
+            }
+        }
     }
 
     @Override
@@ -153,12 +197,12 @@ public class AbstractBasicConversionNode extends Node {
                         "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
             }
 
-            double eff = 1.0;
+            double efficiency = 1;
             if ((getRole() == Role.CONSUMER && drivenByProfile.getPort() instanceof OutPort) ||
                     (getRole() == Role.PRODUCER && drivenByProfile.getPort() instanceof InPort)) {
-                eff = efficiency;
+                efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
             }
-            makeInflexibleConsumptionFunction(energyOutput / eff);
+            makeInflexibleConsumptionFunction(energyOutput / efficiency);
         } else {
             // Impossible!
             throw new IllegalStateException(conversionName + ": DrivenByProfile control strategy, but profile of driving port is null!");
@@ -186,6 +230,7 @@ public class AbstractBasicConversionNode extends Node {
         } else {
             outCarrierCost = getCost();
         }
+        double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
         log.debug("{}: OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", getConversionName(),
                 outCarrierCost, inCarrierCost, efficiency);
         if (outCarrierCost < inCarrierCost / efficiency) {
@@ -292,6 +337,7 @@ public class AbstractBasicConversionNode extends Node {
         if (drivingCarrier.equals(carrier)) {
             // CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
             // Make flexible consumption curve
+            double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
             double energyOutput = (timeStep * power) / efficiency;
             updateCost(now);
             if (marketPricesAllowBid(now)) {
@@ -308,10 +354,24 @@ public class AbstractBasicConversionNode extends Node {
 
     private void updateCost(Horizon now) {
         Double aggregateCost = Double.NaN;
-        if (marginalCostProfile != null) {
-            aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
-        } else if (costProfile != null) {
-            aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now)) / efficiency;
+        if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
+            double costSum = 0.0;
+            for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
+                Port inPort = portCostPair.getKey();
+                GenericProfile costProfile = portCostPair.getValue();
+                Double cost = DEFAULT_MARGINAL_COST;
+                double ratio = 1.0;
+                if (costProfile != null) {
+                    cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+                    if (inPort != null) {
+                        ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
+                    }
+                }
+                costSum += cost * ratio;
+            }
+            if (costSum != 0.0) {
+                aggregateCost = costSum;
+            }
         } else {
             log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
                     DEFAULT_MARGINAL_COST);
@@ -387,6 +447,7 @@ public class AbstractBasicConversionNode extends Node {
                 if (drivingCarrier.equals(carrier)) {
                     // CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
                     // = Calculate OutputEnergy and write to OutPort
+                    double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
                     double outputEnergy = energy * efficiency;
                     for (Port port : conversion.getPort()) {
                         if (port instanceof OutPort) {
@@ -405,6 +466,7 @@ public class AbstractBasicConversionNode extends Node {
             } else {
                 // CONSUMER + DRIVENBYPROFILE
                 // = Calculate OutputEnergy and write to OutPort
+                double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
                 double outputEnergy = energy * efficiency;
                 Commons.writeProfile(outputPort, timestamp, outputEnergy);
 
@@ -416,6 +478,7 @@ public class AbstractBasicConversionNode extends Node {
     }
 
     private void updateInputPortProfile(EssimTime timestamp, ObservationBuilder builder) {
+        double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
         double inputEnergy = -energy / efficiency;
         Commons.writeProfile(inputPort, timestamp, inputEnergy);
 
