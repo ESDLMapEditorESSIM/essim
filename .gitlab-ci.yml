@@ -3,7 +3,7 @@ stages:
 
 image: maven:3.9.6-eclipse-temurin-11
 
-  variables:
+variables:
   REGISTRY: ci.tno.nl
 
 .build-script:
@@ -43,6 +43,6 @@ build-and-push-essim:
       .
     - docker push  --all-tags
       ci.tno.nl/essim/open-sourced-essim/essim-engine
-  only:
+  only: 
     - main
 
