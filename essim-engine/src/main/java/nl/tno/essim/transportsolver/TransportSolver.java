@@ -37,7 +37,6 @@ import esdl.DrivenByProfile;
 import esdl.EnergyAsset;
 import esdl.EsdlFactory;
 import esdl.GenericProfile;
-import esdl.Import;
 import esdl.InPort;
 import esdl.OutPort;
 import esdl.Port;
@@ -65,11 +64,9 @@ import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
-import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode.PowerPricePair;
 import nl.tno.essim.util.Converter;
 
 @Slf4j
@@ -252,15 +249,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			log.error("This network ({}) will not be created!", getId());
 			return assetList;
 		}
-		// Find the AbstractBasicConversionNodes and provide them with the price(s) of the import asset(s) in this transport solver
-		deviceNodes.stream().filter(node -> node instanceof AbstractBasicConversionNode).forEach(conversionNode -> {
-			for (Port port : ((EnergyAsset) conversionNode.getAsset()).getPort()) {
-				if (carrier.equals(port.getCarrier())) {
-					((AbstractBasicConversionNode) conversionNode).setPriceInformation(port, findPrices());
-				}
-			}
-		});
-
 		// only generate tree HTML when PRINT_TREE environmental variable is present
 		String printTreeEnv = System.getenv("PRINT_TREE");
 		if (printTreeEnv != null) {
@@ -270,15 +258,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		return assetList;
 	}
 
-	private List<PowerPricePair> findPrices() {
-		List<PowerPricePair> priceInfo = getDeviceNodes().stream().map(node -> node.getAsset())
-				.filter(asset -> asset instanceof Import && asset.getCostInformation() != null
-						&& asset.getCostInformation().getVariableMaintenanceCosts() != null)
-				.map(asset -> new PowerPricePair(asset.getCostInformation().getVariableOperationalCosts(),
-						((Import) asset).getPower()))
-				.collect(Collectors.toList());
-		return priceInfo;
-	}
 
 	public void makeTree(Node parentNode) throws Exception {
 		// if (!(Commons.isConversionToSameCarrier(parentNode.getAsset()))) {
