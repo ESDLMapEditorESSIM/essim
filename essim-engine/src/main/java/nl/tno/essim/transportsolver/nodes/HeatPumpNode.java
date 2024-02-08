@@ -369,7 +369,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 					}
 
 					if (eCarrier != null && eCarrier instanceof EnergyCarrier) {
-						AbstractBasicConversionNode.calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), eCarrier);
+						AbstractBasicConversionNode.calculateCarrierProperties(timestamp, builder, energy, eCarrier);
 					}
 				} else {
 					// PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
@@ -405,7 +405,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 				}
 
 				if (eCarrier != null && eCarrier instanceof EnergyCarrier) {
-					AbstractBasicConversionNode.calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), eCarrier);
+					AbstractBasicConversionNode.calculateCarrierProperties(timestamp, builder, energy, eCarrier);
 				}
 			}
 		} else {
@@ -481,7 +481,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 						// Other input is Heat energy
 						otherInputEnergy = energy * (cop - 1);
 						if (carrier instanceof EnergyCarrier) {
-							calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
+							calculateCarrierProperties(timestamp, builder, energy, carrier);
 						}
 					}
 					double outputEnergy = energy + otherInputEnergy;
@@ -511,7 +511,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 					// Other input is Heat energy
 					otherInputEnergy = energy * (cop - 1);
 					if (carrier instanceof EnergyCarrier) {
-						calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
+						calculateCarrierProperties(timestamp, builder, energy, carrier);
 					}
 				}
 				double outputEnergy = energy + otherInputEnergy;

@@ -342,7 +342,7 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
                     Carrier inputCarrier = inputPort.getCarrier();
                     if (inputCarrier != null) {
                         if (inputCarrier instanceof EnergyCarrier) {
-                            calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier.getCost(), inputCarrier);
+                            calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier);
                         }
                     }
                 } else {
@@ -358,7 +358,7 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
                     Carrier inputCarrier = inputPort.getCarrier();
                     if (inputCarrier != null) {
                         if (inputCarrier instanceof EnergyCarrier) {
-                            calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier.getCost(), inputCarrier);
+                            calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier);
                         }
                     }
                 }
@@ -378,7 +378,7 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
                 Carrier inputCarrier = inputPort.getCarrier();
                 if (inputCarrier != null) {
                     if (inputCarrier instanceof EnergyCarrier) {
-                        calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier.getCost(), inputCarrier);
+                        calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier);
                     }
                 }
             }

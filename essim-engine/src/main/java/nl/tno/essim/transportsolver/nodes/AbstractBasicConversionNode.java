@@ -54,9 +54,9 @@ public class AbstractBasicConversionNode extends Node {
 	protected double power;
 	protected CostInformation costInformation;
 	protected ControlStrategy controlStrategy;
-    private InPort inputPort;
-    private OutPort outputPort;
-    private boolean specialConversion;
+	private InPort inputPort;
+	private OutPort outputPort;
+	private boolean specialConversion;
 	private String conversionName;
 	private HashMap<Port, GenericProfile> costProfileMap = new HashMap<>();
 	private Port mainPort;
@@ -76,16 +76,15 @@ public class AbstractBasicConversionNode extends Node {
 		this.controlStrategy = conversion.getControlStrategy();
 		for (Port port : conversion.getPort()) {
 			if (port instanceof InPort) {
-                inputPort = (InPort) port;
-                Carrier inputCarrier = inputPort.getCarrier();
+				inputPort = (InPort) port;
+				Carrier inputCarrier = inputPort.getCarrier();
 				if (costInformation != null) {
 					costProfileMap.put(inputPort, costInformation.getMarginalCosts());
 				} else {
 					costProfileMap.put(port, inputCarrier.getCost());
 				}
-            } else {
-                outputPort = (OutPort) port;
-//                outputCarrier = outputPort.getCarrier();
+			} else {
+				outputPort = (OutPort) port;
 			}
 		}
 
@@ -392,19 +391,46 @@ public class AbstractBasicConversionNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		builder.tag("capability", "Conversion");
-
-		// Generic Conversion or Gas Heater (All single-input/single-output conversions)
 		if (getRole().equals(Role.PRODUCER)) {
 			EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));
+		} else {
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, conversion, Math.abs(energy));
+		}
+		Port controlPort = null;
+
+		if (controlStrategy instanceof DrivenByDemand) {
+			controlPort = ((DrivenByDemand) controlStrategy).getOutPort();
+		}
+		if (controlStrategy instanceof DrivenBySupply) {
+			controlPort = ((DrivenBySupply) controlStrategy).getInPort();
+		}
+		if (controlStrategy instanceof DrivenByProfile) {
+			controlPort = ((DrivenByProfile) controlStrategy).getPort();
+		}
+		if (controlPort != null && controlPort.getCarrier().equals(carrier)) {
+			updateAllocation(timestamp, builder, controlPort);
+		}
+		/*
+		// Generic Conversion or Gas Heater (All single-input/single-output conversions)
+		if (getRole().equals(Role.PRODUCER)) {
 			// PRODUCER
 			if (controlStrategy instanceof DrivenByDemand) {
 				// PRODUCER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
 				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
 				if (drivingCarrier.equals(carrier)) {
-					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
-					// = Calculate InputEnergy and write to InPort
-					updateInputPortProfile(timestamp, builder);
+					updateAllocation(timestamp, builder, drivenByDemand.getOutPort());
+//					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
+//					// = Calculate InputEnergy and write to InPort
+
+//					double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
+//					double inputEnergy = -energy / efficiency;
+//					Commons.writeProfile(inputPort, timestamp, inputEnergy);
+//					Carrier inputCarrier = inputPort.getCarrier();
+//					if (inputCarrier instanceof EnergyCarrier) {
+//						calculateCarrierProperties(timestamp, builder, inputEnergy, 
+//								inputCarrier);
+//					}
 				} else {
 					// PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
 					// = Impossible!
@@ -428,13 +454,19 @@ public class AbstractBasicConversionNode extends Node {
 					// = Do Nothing
 				}
 			} else if (controlStrategy instanceof DrivenByProfile) {
+				((DrivenByProfile) controlStrategy).getPort();
 				// PRODUCER + DRIVENBYPROFILE
 				// = Calculate InputEnergy and write to InPort
-				updateInputPortProfile(timestamp, builder);
+				double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
+				double inputEnergy = -energy / efficiency;
+				Commons.writeProfile(inputPort, timestamp, inputEnergy);
+				Carrier inputCarrier = inputPort.getCarrier();
+				if (inputCarrier instanceof EnergyCarrier) {
+					calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier);
+				}
 			}
 		} else {
 			// CONSUMER
-			EmissionManager.getInstance(simulationId).addConsumer(networkId, conversion, Math.abs(energy));
 			if (controlStrategy instanceof DrivenByDemand) {
 				// CONSUMER + DRIVENBYDEMAND
 				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
@@ -465,7 +497,7 @@ public class AbstractBasicConversionNode extends Node {
 						}
 					}
 					if (carrier instanceof EnergyCarrier) {
-						calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
+						calculateCarrierProperties(timestamp, builder, energy, carrier);
 					}
 				} else {
 					// CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
@@ -481,25 +513,36 @@ public class AbstractBasicConversionNode extends Node {
 				Commons.writeProfile(outputPort, timestamp, outputEnergy);
 
 				if (carrier instanceof EnergyCarrier) {
-					calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
+					calculateCarrierProperties(timestamp, builder, energy, carrier);
+				}
+			}
+		}
+		*/
+	}
+
+	private void updateAllocation(EssimTime timestamp, ObservationBuilder builder, Port controlPort) {
+		boolean controlIsIn = controlPort instanceof InPort;
+		for (Entry<Port, Double> entry : ratioMap.entrySet()) {
+			if (!entry.getKey().equals(controlPort) && ((controlIsIn && entry.getKey() instanceof OutPort)
+					|| (!controlIsIn && entry.getKey() instanceof InPort))) {
+				double efficiency = ratioMap.get(controlPort) / entry.getValue();
+				double portEnergy = energy * efficiency;
+				if (getRole().equals(Role.PRODUCER)) {
+					portEnergy = -portEnergy;
+				}
+				Commons.writeProfile(entry.getKey(), timestamp, portEnergy);
+				if (entry.getKey().getCarrier() instanceof EnergyCarrier) {
+					calculateCarrierProperties(timestamp, builder, portEnergy, entry.getKey().getCarrier());
+
 				}
 			}
 		}
 	}
 
-	private void updateInputPortProfile(EssimTime timestamp, ObservationBuilder builder) {
-		double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-		double inputEnergy = -energy / efficiency;
-		Commons.writeProfile(inputPort, timestamp, inputEnergy);
-		Carrier inputCarrier = inputPort.getCarrier();
-		if (inputCarrier instanceof EnergyCarrier) {
-			calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier.getCost(), inputCarrier);
-		}
-	}
-
 	static void calculateCarrierProperties(EssimTime timestamp, ObservationBuilder builder, double inputEnergy,
-			GenericProfile cost, Carrier theCarrier) {
+			Carrier theCarrier) {
 		EnergyCarrier inputEnergyCarrier = (EnergyCarrier) theCarrier;
+		GenericProfile cost = theCarrier.getCost();
 
 		double carrierEnergyContent = Commons.toStandardizedUnits(inputEnergyCarrier.getEnergyContent(),
 				inputEnergyCarrier.getEnergyContentUnit());
