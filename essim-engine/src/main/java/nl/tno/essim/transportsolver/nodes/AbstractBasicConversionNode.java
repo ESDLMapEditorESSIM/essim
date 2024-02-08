@@ -19,6 +19,8 @@ package nl.tno.essim.transportsolver.nodes;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import esdl.*;
 import lombok.Builder;
@@ -41,486 +43,482 @@ import org.eclipse.emf.common.util.EList;
 @Slf4j
 public class AbstractBasicConversionNode extends Node {
 
-    @Value
-    public static class PowerPricePair {
-        private GenericProfile priceProfile;
-        private double maxPower;
-    }
+	@Value
+	public static class PowerPricePair {
+		private GenericProfile priceProfile;
+		private double maxPower;
+	}
 
-    protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
-    protected AbstractBasicConversion conversion;
-    protected double power;
-    protected CostInformation costInformation;
-    protected ControlStrategy controlStrategy;
+	protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
+	protected AbstractBasicConversion conversion;
+	protected double power;
+	protected CostInformation costInformation;
+	protected ControlStrategy controlStrategy;
     private InPort inputPort;
-    private Carrier inputCarrier;
-    private List<PowerPricePair> inputPrices;
     private OutPort outputPort;
-    private Carrier outputCarrier;
-    private List<PowerPricePair> outputPrices;
-    private Float outputPrice;
     private boolean specialConversion;
-    private String conversionName;
-    private HashMap<Port, GenericProfile> costProfileMap = new HashMap<>();
-    private Port mainPort;
-    private HashMap<Port, Double> ratioMap = new HashMap<>();
+	private String conversionName;
+	private HashMap<Port, GenericProfile> costProfileMap = new HashMap<>();
+	private Port mainPort;
+	private HashMap<Port, Double> ratioMap = new HashMap<>();
 
-    @Builder(builderMethodName = "abstractBasicConversionNodeBuilder")
-    public AbstractBasicConversionNode(String simulationId, String nodeId, String address, String networkId,
-                                       EnergyAsset asset, String esdlString, int directionFactor, Role role, BidFunction demandFunction,
-                                       double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
-                                       Port connectedPort) {
-        super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
-                energy, cost, parent, carrier, children, timeStep, now, connectedPort);
-        this.conversion = (AbstractBasicConversion) asset;
-        this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
-        this.power = conversion.getPower();
-        this.costInformation = conversion.getCostInformation();
-        this.controlStrategy = conversion.getControlStrategy();
-        for (Port port : conversion.getPort()) {
-            if (port instanceof InPort) {
+	@Builder(builderMethodName = "abstractBasicConversionNodeBuilder")
+	public AbstractBasicConversionNode(String simulationId, String nodeId, String address, String networkId,
+			EnergyAsset asset, String esdlString, int directionFactor, Role role, BidFunction demandFunction,
+			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
+			Port connectedPort) {
+		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
+		this.conversion = (AbstractBasicConversion) asset;
+		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
+		this.power = conversion.getPower();
+		this.costInformation = conversion.getCostInformation();
+		this.controlStrategy = conversion.getControlStrategy();
+		for (Port port : conversion.getPort()) {
+			if (port instanceof InPort) {
                 inputPort = (InPort) port;
-                inputCarrier = inputPort.getCarrier();
-                if (costInformation != null) {
-                    costProfileMap.put(inputPort, costInformation.getMarginalCosts());
-                } else {
-                    costProfileMap.put(port, inputCarrier.getCost());
-                }
+                Carrier inputCarrier = inputPort.getCarrier();
+				if (costInformation != null) {
+					costProfileMap.put(inputPort, costInformation.getMarginalCosts());
+				} else {
+					costProfileMap.put(port, inputCarrier.getCost());
+				}
             } else {
                 outputPort = (OutPort) port;
-                outputCarrier = outputPort.getCarrier();
-            }
-        }
+//                outputCarrier = outputPort.getCarrier();
+			}
+		}
 
-        specialConversion = inputCarrier.equals(outputCarrier);
-        EList<AbstractBehaviour> conversionBehaviours = conversion.getBehaviour();
-        if (conversionBehaviours != null && !conversionBehaviours.isEmpty()) {
-            for (AbstractBehaviour behaviour : conversionBehaviours) {
-                if (behaviour instanceof InputOutputRelation) {
-                    InputOutputRelation conversionTable = (InputOutputRelation) behaviour;
-                    mainPort = conversionTable.getMainPort();
-                    if (mainPort == null) {
-                        throw new IllegalArgumentException(
-                                "No main port defined in InputOutputRelation of asset " + conversionName + "!");
-                    }
-                    boolean mainPortFound = false;
-                    for (Port port : conversion.getPort()) {
-                        if (port.equals(mainPort)) {
-                            mainPortFound = true;
-                            break;
-                        }
-                    }
-                    if (!mainPortFound) {
-                        throw new IllegalArgumentException(
-                                "MainPort defined in InputOutputRelation for conversion asset " + conversionName
-                                        + " was not found in the asset!");
-                    }
-                    ratioMap.put(mainPort, 1.0);
-                    if (conversionTable.getMainPortRelation().size() < conversion.getPort().size() - 1) {
-                        throw new IllegalArgumentException("Not enough (" + conversionTable.getMainPortRelation().size()
-                                + ") InputOutput relations defined for conversion asset " + conversionName + " with "
-                                + conversion.getPort().size() + "!");
-                    }
-                    for (PortRelation portRelation : conversionTable.getMainPortRelation()) {
-                        if (portRelation.getPort() == null) {
-                            throw new IllegalArgumentException(
-                                    "InputOutputRelation defined for asset " + conversionName + " has a missing port!");
-                        }
-                        if (portRelation.getRatio() == 0.0) {
-                            throw new IllegalArgumentException("InputOutputRelation defined for asset " + conversionName
-                                    + " has ratio 0.0 for port " + portRelation.getPort().getId() + "!");
-                        }
-                        ratioMap.put(portRelation.getPort(), portRelation.getRatio());
-                    }
-                }
-            }
-        } else {
-            // We need to put the efficiency in the ratio map
-            double efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY : conversion.getEfficiency();
-            if (getRole() == Role.CONSUMER) {
-                mainPort = inputPort;
-                ratioMap.put(inputPort, 1.0);
-                ratioMap.put(outputPort, efficiency);
-            } else if (getRole() == Role.PRODUCER) {
-                mainPort = outputPort;
-                ratioMap.put(outputPort, 1.0);
-                ratioMap.put(inputPort, 1 / efficiency);
-            }
-        }
-    }
+		EList<AbstractBehaviour> conversionBehaviours = conversion.getBehaviour();
+		if (conversionBehaviours != null && !conversionBehaviours.isEmpty()) {
+			for (AbstractBehaviour behaviour : conversionBehaviours) {
+				if (behaviour instanceof InputOutputRelation) {
+					InputOutputRelation conversionTable = (InputOutputRelation) behaviour;
+					mainPort = conversionTable.getMainPort();
+					if (mainPort == null) {
+						throw new IllegalArgumentException(
+								"No main port defined in InputOutputRelation of asset " + conversionName + "!");
+					}
+					boolean mainPortFound = false;
+					for (Port port : conversion.getPort()) {
+						if (port.equals(mainPort)) {
+							mainPortFound = true;
+							break;
+						}
+					}
+					if (!mainPortFound) {
+						throw new IllegalArgumentException(
+								"MainPort defined in InputOutputRelation for conversion asset " + conversionName
+										+ " was not found in the asset!");
+					}
+					ratioMap.put(mainPort, 1.0);
+					if (conversionTable.getMainPortRelation().size() < conversion.getPort().size() - 1) {
+						throw new IllegalArgumentException("Not enough (" + conversionTable.getMainPortRelation().size()
+								+ ") InputOutput relations defined for conversion asset " + conversionName + " with "
+								+ conversion.getPort().size() + "!");
+					}
+					for (PortRelation portRelation : conversionTable.getMainPortRelation()) {
+						if (portRelation.getPort() == null) {
+							throw new IllegalArgumentException(
+									"InputOutputRelation defined for asset " + conversionName + " has a missing port!");
+						}
+						if (portRelation.getRatio() == 0.0) {
+							throw new IllegalArgumentException("InputOutputRelation defined for asset " + conversionName
+									+ " has ratio 0.0 for port " + portRelation.getPort().getId() + "!");
+						}
+						ratioMap.put(portRelation.getPort(), portRelation.getRatio());
+					}
+				}
+			}
+		} else {
+			InPort inputPort = null;
+			OutPort outputPort = null;
+			for (Port port : conversion.getPort()) {
+				if (port instanceof InPort) {
+					inputPort = (InPort) port;
+				} else {
+					outputPort = (OutPort) port;
+				}
+			} // We need to put the efficiency in the ratio map
+			double efficiency = conversion.getEfficiency() == 0.0 ? Commons.DEFAULT_EFFICIENCY
+					: conversion.getEfficiency();
+			if (getRole() == Role.CONSUMER) {
+				mainPort = inputPort;
+				ratioMap.put(inputPort, 1.0);
+				ratioMap.put(outputPort, efficiency);
+			} else if (getRole() == Role.PRODUCER) {
+				mainPort = outputPort;
+				ratioMap.put(outputPort, 1.0);
+				ratioMap.put(inputPort, 1 / efficiency);
+			}
+			specialConversion = inputPort.getCarrier().equals(outputPort.getCarrier());
+		}
+	}
 
-    @Override
-    public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
-        super.createBidCurve(timeStep, now, marketInfo);
-        // Generic Conversion or Gas Heater (All single-input/single-output conversions)
+	@Override
+	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
+		super.createBidCurve(timeStep, now, marketInfo);
+		// Generic Conversion or Gas Heater (All single-input/single-output conversions)
 
-        // Checks if an asset is operational (accounts for Commissioning and
-        // Decommissioning date)
-        if (!isOperational(now)) {
-            makeInflexibleConsumptionFunction(0);
-            return;
-        }
-        if (controlStrategy instanceof DrivenByProfile) {
-            bidCurveDrivenByProfile(timeStep, now);
-        } else {
-            if (getRole().equals(Role.PRODUCER)) {
-                // PRODUCER
-                if (controlStrategy instanceof DrivenByDemand) {
-                    producerBidCurveDrivenByDemand(timeStep, now);
-                } else if (controlStrategy instanceof DrivenBySupply) {
-                    producerBidCurveDrivenBySupply(timeStep, now);
-                }
-            } else {
-                // CONSUMER
-                if (controlStrategy instanceof DrivenByDemand) {
-                    // CONSUMER + DRIVENBYDEMAND
-                    consumerBidCurveDrivenByDemand(timeStep, now);
-                } else if (controlStrategy instanceof DrivenBySupply) {
-                    // CONSUMER + DRIVENBYSUPPLY
-                    consumerBidCurveDrivenBySupply(timeStep, now);
-                }
-            }
-        }
-    }
+		// Checks if an asset is operational (accounts for Commissioning and
+		// Decommissioning date)
+		if (!isOperational(now)) {
+			makeInflexibleConsumptionFunction(0);
+			return;
+		}
+		if (controlStrategy instanceof DrivenByProfile) {
+			bidCurveDrivenByProfile(timeStep, now);
+		} else {
+			if (getRole().equals(Role.PRODUCER)) {
+				// PRODUCER
+				if (controlStrategy instanceof DrivenByDemand) {
+					producerBidCurveDrivenByDemand(timeStep, now);
+				} else if (controlStrategy instanceof DrivenBySupply) {
+					producerBidCurveDrivenBySupply(timeStep, now);
+				}
+			} else {
+				// CONSUMER
+				if (controlStrategy instanceof DrivenByDemand) {
+					// CONSUMER + DRIVENBYDEMAND
+					consumerBidCurveDrivenByDemand(timeStep, now);
+				} else if (controlStrategy instanceof DrivenBySupply) {
+					// CONSUMER + DRIVENBYSUPPLY
+					consumerBidCurveDrivenBySupply(timeStep, now);
+				}
+			}
+		}
+	}
 
-    private void bidCurveDrivenByProfile(long timeStep, Horizon now) {
-        DrivenByProfile drivenByProfile = (DrivenByProfile) controlStrategy;
-        GenericProfile convProfile = drivenByProfile.getProfile();
-        double energyOutput;
-        if (convProfile != null) {
-            if (Commons.isPowerProfile(convProfile)) {
-                energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
-            } else if (Commons.isEnergyProfile(convProfile)) {
-                energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
-            } else {
-                throw new IllegalStateException(
-                        "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
-            }
+	private void bidCurveDrivenByProfile(long timeStep, Horizon now) {
+		DrivenByProfile drivenByProfile = (DrivenByProfile) controlStrategy;
+		GenericProfile convProfile = drivenByProfile.getProfile();
+		Port drivenByProfilePort = drivenByProfile.getPort();
+		double energyOutput;
+		if (convProfile != null) {
+			if (Commons.isPowerProfile(convProfile)) {
+				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
+			} else if (Commons.isEnergyProfile(convProfile)) {
+				energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
+			} else {
+				throw new IllegalStateException(
+						"Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
+			}
 
-            double efficiency = 1;
-            if ((getRole() == Role.CONSUMER && drivenByProfile.getPort() instanceof OutPort) ||
-                    (getRole() == Role.PRODUCER && drivenByProfile.getPort() instanceof InPort)) {
-                efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-            }
-            makeInflexibleConsumptionFunction(energyOutput / efficiency);
-        } else {
-            // Impossible!
-            throw new IllegalStateException(conversionName + ": DrivenByProfile control strategy, but profile of driving port is null!");
-        }
-    }
+			double efficiency = ratioMap.get(getConnectedPort()) / ratioMap.get(drivenByProfilePort);
 
+			makeInflexibleConsumptionFunction(energyOutput * efficiency);
+		} else {
+			// Impossible!
+			throw new IllegalStateException(
+					conversionName + ": DrivenByProfile control strategy, but profile of driving port is null!");
+		}
+	}
 
-    private boolean marketPricesAllowBid(Horizon now) {
-        GenericProfile inCarrierCostProfile = inputCarrier.getCost();
-        GenericProfile outCarrierCostProfile = outputCarrier.getCost();
-        if (inCarrierCostProfile == null && outCarrierCostProfile == null) {
-            return true;
-        }
-        Double outCarrierCost;
-        Double inCarrierCost;
-        if (inCarrierCostProfile != null) {
-            inCarrierCost = Commons.aggregateCost(Commons.readProfile(inCarrierCostProfile, now));
-        } else {
-            inCarrierCost = getCost();
-        }
-        if (outCarrierCostProfile != null) {
-            // If we have a price on the input carrier, but we don't have a price on the
-            // output carrier, we will use the marginal cost as price for comparison
-            outCarrierCost = Commons.aggregateCost(Commons.readProfile(outCarrierCostProfile, now));
-        } else {
-            outCarrierCost = getCost();
-        }
-        double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-        log.debug("{}: OutCarrierCost = {}, InCarrierCost = {}, efficiency = {}", getConversionName(),
-                outCarrierCost, inCarrierCost, efficiency);
-        if (outCarrierCost < inCarrierCost / efficiency) {
-            // It is too expensive to convert
-            log.debug("{}: generating flat bidcurve ", getConversionName());
-            return false;
-        } else {
-            log.debug("{}: generating normal bidcurve ", getConversionName());
+	private boolean marketPricesAllowBid(Horizon now) {
+		Set<Entry<Port, Double>> entries = ratioMap.entrySet();
+		boolean allInAvailable = true;
+		boolean allOutAvailable = true;
+		double sumIn = 0;
+		double sumOut = 0;
+		for (Entry<Port, Double> entry : entries) {
+			GenericProfile carrierCostProfile = entry.getKey().getCarrier().getCost();
+			Double carrierCost;
+			if (carrierCostProfile == null) {
+				if (entry.getKey() instanceof InPort) {
+					allInAvailable = false;
+				} else {
+					allOutAvailable = false;
+				}
+				carrierCost = getCost();
+			} else {
+				carrierCost = Commons.aggregateCost(Commons.readProfile(carrierCostProfile, now));
+			}
+			if (entry.getKey() instanceof InPort) {
+				sumIn += entry.getValue() * carrierCost;
+			} else {
+				sumOut += entry.getValue() * carrierCost;
+			}
+		}
+		if (!(allOutAvailable || allInAvailable)) {
+			log.debug("Not enough cost information for {}, using normal bidcurves", getConversionName());
+			return true;
+		}
+		if (sumOut < sumIn) {
+			// It is too expensive to convert
+			log.debug("{}: generating flat bidcurve ", getConversionName());
+			return false;
+		} else {
+			log.debug("{}: generating normal bidcurve ", getConversionName());
 
-        }
-        return true;
-    }
+		}
+		return true;
+	}
 
-    private void consumerBidCurveDrivenByDemand(long timeStep, Horizon now) {
-        DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-        Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
-        if (!drivingCarrier.equals(carrier) || specialConversion) {
-            GenericProfile convProfile;
-            double energyOutput;
-            if (inputPort != null) {
-                convProfile = Commons.getEnergyProfile(inputPort);
-            } else {
-                // Impossible!
-                throw new IllegalStateException(
-                        "Conversion " + conversionName + " should not exist in this network!");
-            }
+	private void consumerBidCurveDrivenByDemand(long timeStep, Horizon now) {
+		DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
+		Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
+		if (!drivingCarrier.equals(carrier) || specialConversion) {
+			GenericProfile convProfile;
+			double energyOutput;
+			InPort inputPort = (InPort) getConnectedPort();
+			if (inputPort != null) {
+				convProfile = Commons.getEnergyProfile(inputPort);
+			} else {
+				// Impossible!
+				throw new IllegalStateException("Conversion " + conversionName + " should not exist in this network!");
+			}
 
-            if (convProfile != null) {
-                if (Commons.isPowerProfile(convProfile)) {
-                    energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
-                } else if (Commons.isEnergyProfile(convProfile)) {
-                    energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
-                } else {
-                    throw new IllegalStateException(
-                            "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
-                }
-                makeInflexibleConsumptionFunction(energyOutput);
-            } else {
-                throw new IllegalStateException("Profile in the outPort of " + conversionName + " is null!");
-            }
-        }
-    }
+			if (convProfile != null) {
+				if (Commons.isPowerProfile(convProfile)) {
+					energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
+				} else if (Commons.isEnergyProfile(convProfile)) {
+					energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
+				} else {
+					throw new IllegalStateException(
+							"Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
+				}
+				makeInflexibleConsumptionFunction(energyOutput);
+			} else {
+				throw new IllegalStateException("Profile in the outPort of " + conversionName + " is null!");
+			}
+		}
+	}
 
-    private void producerBidCurveDrivenBySupply(long timeStep, Horizon now) {
-        DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-        Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
-        if (!drivingCarrier.equals(carrier) || specialConversion) {
-            // PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
-            GenericProfile convProfile;
-            double energyOutput;
-            if (outputPort != null) {
-                convProfile = Commons.getEnergyProfile(outputPort);
-            } else {
-                // Impossible!
-                throw new IllegalStateException(
-                        "Conversion " + conversionName + " should not exist in this network!");
-            }
+	private void producerBidCurveDrivenBySupply(long timeStep, Horizon now) {
+		DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+		Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+		if (!drivingCarrier.equals(carrier) || specialConversion) {
+			// PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
+			GenericProfile convProfile;
+			double energyOutput;
+			OutPort outputPort = (OutPort) getConnectedPort();
+			if (outputPort != null) {
+				convProfile = Commons.getEnergyProfile(outputPort);
+			} else {
+				// Impossible!
+				throw new IllegalStateException("Conversion " + conversionName + " should not exist in this network!");
+			}
 
-            makeInflexibleProductionFunction(convProfile, conversionName, timeStep, now);
-        }
-    }
+			makeInflexibleProductionFunction(convProfile, conversionName, timeStep, now);
+		}
+	}
 
-    protected void makeInflexibleProductionFunction(GenericProfile convProfile, String name, long timeStep, Horizon now) {
-        double energyOutput;
-        if (convProfile != null) {
-            if (Commons.isPowerProfile(convProfile)) {
-                energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
-            } else if (Commons.isEnergyProfile(convProfile)) {
-                energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
-            } else {
-                throw new IllegalStateException(
-                        "Profile in the outPort of " + name + " is neither Power nor Energy!");
-            }
-            makeInflexibleProductionFunction(energyOutput);
-        } else {
-            throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
-        }
-    }
+	protected void makeInflexibleProductionFunction(GenericProfile convProfile, String name, long timeStep,
+			Horizon now) {
+		double energyOutput;
+		if (convProfile != null) {
+			if (Commons.isPowerProfile(convProfile)) {
+				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
+			} else if (Commons.isEnergyProfile(convProfile)) {
+				energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
+			} else {
+				throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
+			}
+			makeInflexibleProductionFunction(energyOutput);
+		} else {
+			throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
+		}
+	}
 
-    private void producerBidCurveDrivenByDemand(long timeStep, Horizon now) {
-        // PRODUCER + DRIVENBYDEMAND
-        DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-        Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
-        if (drivingCarrier.equals(carrier)) {
-            // PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
-            // Make Flexible Producer Curve
-            double energyOutput = timeStep * power;
-            updateCost(now);
-            if (marketPricesAllowBid(now)) {
-                makeAdjustableProductionFunction(energyOutput);
-            } else {
-                makeInflexibleConsumptionFunction(0);
-            }
-        } else {
-            // PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
-            // = Impossible!
-            throw new IllegalStateException(conversion.getName() + " cannot be a producer of " + carrier.getName());
-        }
-    }
+	private void producerBidCurveDrivenByDemand(long timeStep, Horizon now) {
+		// PRODUCER + DRIVENBYDEMAND
+		DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
+		Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
+		if (drivingCarrier.equals(carrier)) {
+			// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
+			// Make Flexible Producer Curve
+			double energyOutput = timeStep * power;
+			updateCost(now);
+			if (marketPricesAllowBid(now)) {
+				makeAdjustableProductionFunction(energyOutput);
+			} else {
+				makeInflexibleConsumptionFunction(0);
+			}
+		} else {
+			// PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
+			// = Impossible!
+			throw new IllegalStateException(conversion.getName() + " cannot be a producer of " + carrier.getName());
+		}
+	}
 
-    private void consumerBidCurveDrivenBySupply(long timeStep, Horizon now) {
-        DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-        Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
-        if (drivingCarrier.equals(carrier)) {
-            // CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
-            // Make flexible consumption curve
-            double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-            double energyOutput = (timeStep * power) / efficiency;
-            updateCost(now);
-            if (marketPricesAllowBid(now)) {
-                makeAdjustableConsumptionFunction(energyOutput);
-            } else {
-                makeInflexibleConsumptionFunction(0);
-            }
-        } else {
-            // CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-            // = Impossible!
-            throw new IllegalStateException(conversionName + " cannot be a consumer of " + carrier.getName());
-        }
-    }
+	private void consumerBidCurveDrivenBySupply(long timeStep, Horizon now) {
+		DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+		Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+		if (drivingCarrier.equals(carrier)) {
+			// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
+			// Make flexible consumption curve
+			double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
+			double energyOutput = (timeStep * power) / efficiency;
+			updateCost(now);
+			if (marketPricesAllowBid(now)) {
+				makeAdjustableConsumptionFunction(energyOutput);
+			} else {
+				makeInflexibleConsumptionFunction(0);
+			}
+		} else {
+			// CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
+			// = Impossible!
+			throw new IllegalStateException(conversionName + " cannot be a consumer of " + carrier.getName());
+		}
+	}
 
-    private void updateCost(Horizon now) {
-        Double aggregateCost = Double.NaN;
-        if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
-            double costSum = 0.0;
-            for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
-                Port inPort = portCostPair.getKey();
-                GenericProfile costProfile = portCostPair.getValue();
-                Double cost = DEFAULT_MARGINAL_COST;
-                double ratio = 1.0;
-                if (costProfile != null) {
-                    cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
-                    if (inPort != null) {
-                        ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
-                    }
-                }
-                costSum += cost * ratio;
-            }
-            if (costSum != 0.0) {
-                aggregateCost = costSum;
-            }
-        } else {
-            log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
-                    DEFAULT_MARGINAL_COST);
-        }
-        setCost(Double.isNaN(aggregateCost) ? DEFAULT_MARGINAL_COST : aggregateCost);
-    }
+	private void updateCost(Horizon now) {
+		Double aggregateCost = Double.NaN;
+		if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
+			double costSum = 0.0;
+			for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
+				Port inPort = portCostPair.getKey();
+				GenericProfile costProfile = portCostPair.getValue();
+				Double cost = DEFAULT_MARGINAL_COST;
+				double ratio = 1.0;
+				if (costProfile != null) {
+					cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+					if (inPort != null) {
+						ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
+					}
+				}
+				costSum += cost * ratio;
+			}
+			if (costSum != 0.0) {
+				aggregateCost = costSum;
+			}
+		} else {
+			log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
+					DEFAULT_MARGINAL_COST);
+		}
+		setCost(Double.isNaN(aggregateCost) ? DEFAULT_MARGINAL_COST : aggregateCost);
+	}
 
-    @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
-        builder.tag("capability", "Conversion");
+	@Override
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+		builder.tag("capability", "Conversion");
 
-        // Generic Conversion or Gas Heater (All single-input/single-output conversions)
-        if (getRole().equals(Role.PRODUCER)) {
-            EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));
-            // PRODUCER
-            if (controlStrategy instanceof DrivenByDemand) {
-                // PRODUCER + DRIVENBYDEMAND
-                DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-                Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
-                if (drivingCarrier.equals(carrier)) {
-                    // PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
-                    // = Calculate InputEnergy and write to InPort
-                    updateInputPortProfile(timestamp, builder);
-                } else {
-                    // PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
-                    // = Impossible!
-                    throw new IllegalStateException(
-                            conversion.getName() + " cannot be a producer of " + carrier.getName());
-                }
-            } else if (controlStrategy instanceof DrivenBySupply) {
-                DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-                Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
-                if (drivingCarrier.equals(carrier)) {
-                    // PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
-                    if (!specialConversion) {
-                        // This is NOT a conversion with input and output carriers the same (in which
-                        // case, do nothing).
-                        // So Impossible!
-                        throw new IllegalStateException(
-                                conversion.getName() + " cannot be a producer of " + carrier.getName());
-                    }
-                } else {
-                    // PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-                    // = Do Nothing
-                }
-            } else if (controlStrategy instanceof DrivenByProfile) {
-                // PRODUCER + DRIVENBYPROFILE
-                // = Calculate InputEnergy and write to InPort
-                updateInputPortProfile(timestamp, builder);
-            }
-        } else {
-            // CONSUMER
-            EmissionManager.getInstance(simulationId).addConsumer(networkId, conversion, Math.abs(energy));
-            if (controlStrategy instanceof DrivenByDemand) {
-                // CONSUMER + DRIVENBYDEMAND
-                DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
-                Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
-                if (drivingCarrier.equals(carrier)) {
-                    // CONSUMER + DRIVENBYDEMAND + DRIVINGCARRIER
-                    // Impossible (iff it is not a special conversion)!
-                    if (!specialConversion) {
-                        throw new IllegalStateException(
-                                conversion.getName() + " cannot be a consumer of " + carrier.getName());
-                    }
-                } else {
-                    // CONSUMER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
-                    // Do Nothing
-                }
-            } else if (controlStrategy instanceof DrivenBySupply) {
-                // CONSUMER + DRIVENBYSUPPLY
-                DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-                Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
-                if (drivingCarrier.equals(carrier)) {
-                    // CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
-                    // = Calculate OutputEnergy and write to OutPort
-                    double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-                    double outputEnergy = energy * efficiency;
-                    for (Port port : conversion.getPort()) {
-                        if (port instanceof OutPort) {
-                            Commons.writeProfile(port, timestamp, outputEnergy);
-                        }
-                    }
-                    if (carrier instanceof EnergyCarrier) {
-                        calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
-                    }
-                } else {
-                    // CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-                    // = Impossible!
-                    throw new IllegalStateException(
-                            conversion.getName() + " cannot be a consumer of " + carrier.getName());
-                }
-            } else {
-                // CONSUMER + DRIVENBYPROFILE
-                // = Calculate OutputEnergy and write to OutPort
-                double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-                double outputEnergy = energy * efficiency;
-                Commons.writeProfile(outputPort, timestamp, outputEnergy);
+		// Generic Conversion or Gas Heater (All single-input/single-output conversions)
+		if (getRole().equals(Role.PRODUCER)) {
+			EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));
+			// PRODUCER
+			if (controlStrategy instanceof DrivenByDemand) {
+				// PRODUCER + DRIVENBYDEMAND
+				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
+				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
+				if (drivingCarrier.equals(carrier)) {
+					// PRODUCER + DRIVENBYDEMAND + DRIVINGCARRIER
+					// = Calculate InputEnergy and write to InPort
+					updateInputPortProfile(timestamp, builder);
+				} else {
+					// PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
+					// = Impossible!
+					throw new IllegalStateException(
+							conversion.getName() + " cannot be a producer of " + carrier.getName());
+				}
+			} else if (controlStrategy instanceof DrivenBySupply) {
+				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+				if (drivingCarrier.equals(carrier)) {
+					// PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
+					if (!specialConversion) {
+						// This is NOT a conversion with input and output carriers the same (in which
+						// case, do nothing).
+						// So Impossible!
+						throw new IllegalStateException(
+								conversion.getName() + " cannot be a producer of " + carrier.getName());
+					}
+				} else {
+					// PRODUCER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
+					// = Do Nothing
+				}
+			} else if (controlStrategy instanceof DrivenByProfile) {
+				// PRODUCER + DRIVENBYPROFILE
+				// = Calculate InputEnergy and write to InPort
+				updateInputPortProfile(timestamp, builder);
+			}
+		} else {
+			// CONSUMER
+			EmissionManager.getInstance(simulationId).addConsumer(networkId, conversion, Math.abs(energy));
+			if (controlStrategy instanceof DrivenByDemand) {
+				// CONSUMER + DRIVENBYDEMAND
+				DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
+				Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
+				if (drivingCarrier.equals(carrier)) {
+					// CONSUMER + DRIVENBYDEMAND + DRIVINGCARRIER
+					// Impossible (iff it is not a special conversion)!
+					if (!specialConversion) {
+						throw new IllegalStateException(
+								conversion.getName() + " cannot be a consumer of " + carrier.getName());
+					}
+				} else {
+					// CONSUMER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
+					// Do Nothing
+				}
+			} else if (controlStrategy instanceof DrivenBySupply) {
+				// CONSUMER + DRIVENBYSUPPLY
+				DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+				Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+				if (drivingCarrier.equals(carrier)) {
+					// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
+					// = Calculate OutputEnergy and write to OutPort
+					double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
+					double outputEnergy = energy * efficiency;
+					for (Port port : conversion.getPort()) {
+						if (port instanceof OutPort) {
+							Commons.writeProfile(port, timestamp, outputEnergy);
+						}
+					}
+					if (carrier instanceof EnergyCarrier) {
+						calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
+					}
+				} else {
+					// CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
+					// = Impossible!
+					throw new IllegalStateException(
+							conversion.getName() + " cannot be a consumer of " + carrier.getName());
+				}
+			} else {
+				// CONSUMER + DRIVENBYPROFILE
+				// = Calculate OutputEnergy and write to OutPort
+				double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
+				double outputEnergy = energy * efficiency;
+				Commons.writeProfile(outputPort, timestamp, outputEnergy);
 
-                if (carrier instanceof EnergyCarrier) {
-                    calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
-                }
-            }
-        }
-    }
+				if (carrier instanceof EnergyCarrier) {
+					calculateCarrierProperties(timestamp, builder, energy, carrier.getCost(), carrier);
+				}
+			}
+		}
+	}
 
-    private void updateInputPortProfile(EssimTime timestamp, ObservationBuilder builder) {
-        double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
-        double inputEnergy = -energy / efficiency;
-        Commons.writeProfile(inputPort, timestamp, inputEnergy);
+	private void updateInputPortProfile(EssimTime timestamp, ObservationBuilder builder) {
+		double efficiency = ratioMap.get(getInputPort()) / ratioMap.get(getOutputPort());
+		double inputEnergy = -energy / efficiency;
+		Commons.writeProfile(inputPort, timestamp, inputEnergy);
+		Carrier inputCarrier = inputPort.getCarrier();
+		if (inputCarrier instanceof EnergyCarrier) {
+			calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier.getCost(), inputCarrier);
+		}
+	}
 
-        if (inputCarrier instanceof EnergyCarrier) {
-            calculateCarrierProperties(timestamp, builder, inputEnergy, inputCarrier.getCost(), inputCarrier);
-        }
-    }
+	static void calculateCarrierProperties(EssimTime timestamp, ObservationBuilder builder, double inputEnergy,
+			GenericProfile cost, Carrier theCarrier) {
+		EnergyCarrier inputEnergyCarrier = (EnergyCarrier) theCarrier;
 
-    static void calculateCarrierProperties(EssimTime timestamp, ObservationBuilder builder, double inputEnergy, GenericProfile cost, Carrier inputCarrier) {
-        EnergyCarrier inputEnergyCarrier = (EnergyCarrier) inputCarrier;
+		double carrierEnergyContent = Commons.toStandardizedUnits(inputEnergyCarrier.getEnergyContent(),
+				inputEnergyCarrier.getEnergyContentUnit());
+		double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
+				inputEnergyCarrier.getEmissionUnit());
 
-        double carrierEnergyContent = Commons.toStandardizedUnits(inputEnergyCarrier.getEnergyContent(),
-                inputEnergyCarrier.getEnergyContentUnit());
-        double carrierEmission = Commons.toStandardizedUnits(inputEnergyCarrier.getEmission(),
-                inputEnergyCarrier.getEmissionUnit());
+		if (carrierEnergyContent > Commons.eps) {
+			double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
+			double emission = inputCarrierQuantity * carrierEmission;
+			builder.value("emission", emission);
+			builder.value("fuelConsumption", inputCarrierQuantity);
 
-        if (carrierEnergyContent > Commons.eps) {
-            double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
-            double emission = inputCarrierQuantity * carrierEmission;
-            builder.value("emission", emission);
-            builder.value("fuelConsumption", inputCarrierQuantity);
-
-            double currentInputCarrierCost = Commons
-                    .aggregateCost(Commons.readProfile(cost,
-                            new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
-            if (!Double.isNaN(currentInputCarrierCost)) {
-                double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
-                builder.value("cost", inputCarrierCost);
-            }
-        }
-    }
-
-    public void setPriceInformation(Port port, List<PowerPricePair> priceInfo) {
-        if (port.equals(inputPort)) {
-            inputPrices = priceInfo;
-            log.debug("Adding input prices to {}", this);
-        } else if (port.equals(outputPort)) {
-            outputPrices = priceInfo;
-            log.debug("Adding output prices to {}", this);
-        } else {
-            log.warn("Set prices called on {} but port {} is not a port of {}", this, port, this);
-        }
-    }
+			double currentInputCarrierCost = Commons.aggregateCost(
+					Commons.readProfile(cost, new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+			if (!Double.isNaN(currentInputCarrierCost)) {
+				double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
+				builder.value("cost", inputCarrierCost);
+			}
+		}
+	}
 
 }
