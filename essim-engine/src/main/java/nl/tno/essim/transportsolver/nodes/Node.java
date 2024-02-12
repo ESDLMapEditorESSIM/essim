@@ -396,6 +396,10 @@ public abstract class Node implements INode {
 		if (this.now == null) {
 			this.now = now;
 		}
+		updateMarketInfo(marketInfo);
+	}
+
+	public void updateMarketInfo(Market marketInfo) {
 		this.minMarketPrice = marketInfo.getMinPrice().doubleValue();
 		this.maxMarketPrice = marketInfo.getMaxPrice().doubleValue();
 		this.deltaPrice = marketInfo.getDeltaPrice().doubleValue();
