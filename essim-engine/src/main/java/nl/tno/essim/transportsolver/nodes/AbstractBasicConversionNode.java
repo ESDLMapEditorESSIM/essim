@@ -320,7 +320,8 @@ public class AbstractBasicConversionNode extends Node {
 			} else {
 				throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
 			}
-			makeInflexibleProductionFunction(energyOutput);
+			makeInflexibleProductionFunction(
+					energyOutput);
 		} else {
 			throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
 		}
@@ -341,9 +342,9 @@ public class AbstractBasicConversionNode extends Node {
 				makeInflexibleConsumptionFunction(0);
 			}
 		} else {
-			// PRODUCER + DRIVENBYDEMAND + NON-DRIVINGCARRIER
-			// = Impossible!
-			throw new IllegalStateException(conversion.getName() + " cannot be a producer of " + carrier.getName());
+			// PRODUCER + DRIVENBYDEMAND + OTHER OUTPUT CARRIER
+			GenericProfile convProfile = Commons.getEnergyProfile(getConnectedPort());
+			makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
 		}
 	}
 
@@ -363,8 +364,8 @@ public class AbstractBasicConversionNode extends Node {
 			}
 		} else {
 			// CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-			// = Impossible!
-			throw new IllegalStateException(conversionName + " cannot be a consumer of " + carrier.getName());
+			GenericProfile convProfile = Commons.getEnergyProfile(getConnectedPort());
+			makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
 		}
 	}
 
@@ -420,12 +421,10 @@ public class AbstractBasicConversionNode extends Node {
 	}
 
 	private void updateAllocation(EssimTime timestamp, ObservationBuilder builder, Port controlPort) {
-		boolean controlIsIn = controlPort instanceof InPort;
 		for (Entry<Port, Double> entry : ratioMap.entrySet()) {
-			if (!entry.getKey().equals(controlPort) && ((controlIsIn && entry.getKey() instanceof OutPort)
-					|| (!controlIsIn && entry.getKey() instanceof InPort))) {
+			if (!entry.getKey().equals(controlPort)) {
 				double efficiency = ratioMap.get(controlPort) / entry.getValue();
-				double portEnergy = energy * efficiency;
+				double portEnergy = energy / efficiency;
 				if (getRole().equals(Role.PRODUCER)) {
 					portEnergy = -portEnergy;
 				}
