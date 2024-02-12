@@ -26,8 +26,8 @@
 		<revision>23.4</revision> <!-- use this to set the version of all the modules -->
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>11</java.version>
-		<emf.version>2.16.0</emf.version>
-		<emfecore.version>2.18.0</emfecore.version>
+		<emf.version>2.29.0</emf.version>
+		<emfecore.version>2.35.0</emfecore.version>
 		<esdl.version>2.23.3</esdl.version>
 		<junit.jupiter.version>5.10.1</junit.jupiter.version>
 		<base.package.name>nl.tno.essim</base.package.name>
@@ -109,7 +109,7 @@
 			<dependency>
 				<groupId>org.eclipse.emf</groupId>
 				<artifactId>org.eclipse.emf.ecore.xmi</artifactId>
-				<version>${emf.version}</version>
+				<version>${emfecore.version}</version>
 			</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
