@@ -261,6 +261,27 @@ public class AbstractBasicConversionNode extends Node {
 		return true;
 	}
 
+	private void consumerBidCurveDrivenBySupply(long timeStep, Horizon now) {
+		DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
+		Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
+		if (drivingCarrier.equals(carrier)) {
+			// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
+			// Make flexible consumption curve
+			double efficiency = ratioMap.get(drivenBySupply.getInPort()) / ratioMap.get(getMainPort());
+			double portEnergy = (timeStep * power) / efficiency;
+			updateCost(now);
+			if (marketPricesAllowBid(now)) {
+				makeAdjustableConsumptionFunction(portEnergy);
+			} else {
+				makeInflexibleConsumptionFunction(0);
+			}
+		} else {
+			// CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
+			GenericProfile convProfile = Commons.getEnergyProfile(getConnectedPort());
+			makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
+		}
+	}
+
 	private void consumerBidCurveDrivenByDemand(long timeStep, Horizon now) {
 		DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
 		Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
@@ -309,24 +330,6 @@ public class AbstractBasicConversionNode extends Node {
 		}
 	}
 
-	protected void makeInflexibleProductionFunction(GenericProfile convProfile, String name, long timeStep,
-			Horizon now) {
-		double energyOutput;
-		if (convProfile != null) {
-			if (Commons.isPowerProfile(convProfile)) {
-				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
-			} else if (Commons.isEnergyProfile(convProfile)) {
-				energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
-			} else {
-				throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
-			}
-			makeInflexibleProductionFunction(
-					energyOutput);
-		} else {
-			throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
-		}
-	}
-
 	private void producerBidCurveDrivenByDemand(long timeStep, Horizon now) {
 		// PRODUCER + DRIVENBYDEMAND
 		DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
@@ -348,24 +351,21 @@ public class AbstractBasicConversionNode extends Node {
 		}
 	}
 
-	private void consumerBidCurveDrivenBySupply(long timeStep, Horizon now) {
-		DrivenBySupply drivenBySupply = (DrivenBySupply) controlStrategy;
-		Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
-		if (drivingCarrier.equals(carrier)) {
-			// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
-			// Make flexible consumption curve
-			double efficiency = ratioMap.get(drivenBySupply.getInPort()) / ratioMap.get(getMainPort());
-			double portEnergy = (timeStep * power) / efficiency;
-			updateCost(now);
-			if (marketPricesAllowBid(now)) {
-				makeAdjustableConsumptionFunction(portEnergy);
+	protected void makeInflexibleProductionFunction(GenericProfile convProfile, String name, long timeStep,
+			Horizon now) {
+		double energyOutput;
+		if (convProfile != null) {
+			if (Commons.isPowerProfile(convProfile)) {
+				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
+			} else if (Commons.isEnergyProfile(convProfile)) {
+				energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
 			} else {
-				makeInflexibleConsumptionFunction(0);
+				throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
 			}
+			makeInflexibleProductionFunction(
+					energyOutput);
 		} else {
-			// CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-			GenericProfile convProfile = Commons.getEnergyProfile(getConnectedPort());
-			makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
+			throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
 		}
 	}
 

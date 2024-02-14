@@ -7,13 +7,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map.Entry;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import esdl.Asset;
@@ -27,11 +27,11 @@ import nl.tno.essim.model.EssimSimulationImpl;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 
 //@Testcontainers
+@Disabled
 class ElectrolyserTestWithInfluxAndGrafana {
 
 //	@Container
