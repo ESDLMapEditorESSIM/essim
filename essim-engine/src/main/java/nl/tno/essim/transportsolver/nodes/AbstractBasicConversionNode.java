@@ -247,7 +247,7 @@ public class AbstractBasicConversionNode extends Node {
 			}
 		}
 		if (!(allOutAvailable || allInAvailable)) {
-			log.debug("Not enough cost information for {}, using normal bidcurves", getConversionName());
+//			log.debug("Not enough cost information for {}, using normal bidcurves", getConversionName());
 			return true;
 		}
 		if (sumOut < sumIn) {
