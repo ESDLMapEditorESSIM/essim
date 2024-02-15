@@ -77,7 +77,7 @@ public class CoolingDemandNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
-		super.createBidCurve(timeStep, now, marketInfo);
+		updateMarketInfo(marketInfo);
 		double energyOutput = Double.NaN;
 		GenericProfile convProfile = null;
 		if (profilePort != null) {

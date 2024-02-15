@@ -87,7 +87,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
-		super.createBidCurve(timeStep, now, marketInfo);
+		updateMarketInfo(marketInfo);
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
 		if (!isOperational(now)) {

@@ -106,7 +106,7 @@ public class RemoteLogicNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
-		super.createBidCurve(timeStep, now, marketInfo);
+		updateMarketInfo(marketInfo);
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
 

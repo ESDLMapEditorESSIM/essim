@@ -90,7 +90,7 @@ public class ProducerNode extends Node {
 
 	@Override
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
-		super.createBidCurve(timeStep, now, marketInfo);
+		updateMarketInfo(marketInfo);
 		
 		double energyOutput = Double.NaN;
 
