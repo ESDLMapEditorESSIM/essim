@@ -147,13 +147,13 @@ class ConversionTest {
 		runTest(esdlFile, null);
 	}
 
-//	@Test
+	@Test
 	void testSimulationMarketPrices() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion.esdl");
 		MarketImpl market = new MarketImpl();
 		market.setMinPrice(0.0);
 		market.setMaxPrice(1E-6);
-		market.setDeltaPrice(1E-18);
+		market.setDeltaPrice(1E-12);
 		runTest(esdlFile, market);
 
 	}

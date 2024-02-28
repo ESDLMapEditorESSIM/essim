@@ -22,7 +22,7 @@
           <marginalCosts xsi:type="esdl:SingleValue" name="ElectricityDemand_7321-MarginalCosts" id="3089aff0-0978-4159-a72b-1aa537968fe4" value="0.5"/>
         </costInformation>
         <port xsi:type="esdl:InPort" connectedTo="8edd7b44-0eb8-46af-9648-99729f5f4a4e" id="e2db9700-0ae4-460f-89de-5c76be3e3cfa" carrier="5c1d7e2d-54e8-42b6-983d-5b804c6c6094" name="In">
-          <profile xsi:type="esdl:SingleValue" id="949fea7e-3314-41d7-a42e-49a0f02c3ad1" value="12.0">
+          <profile xsi:type="esdl:TimeSeriesProfile" name="E Demand profile" id="e9e2a3df-c23c-4bb7-ac86-7342157af729" startDateTime="2019-01-01T00:00:00.000000" values="12.0 0.0 1.0 2.0 3.0 5.0 7.0 12.0 3.0 0.0 1.0 0.0">
             <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitReference" reference="12c481c0-f81e-49b6-9767-90457684d24a"/>
           </profile>
         </port>
