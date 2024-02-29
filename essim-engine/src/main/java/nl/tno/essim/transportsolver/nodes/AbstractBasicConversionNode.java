@@ -268,7 +268,7 @@ public class AbstractBasicConversionNode extends Node {
 			// CONSUMER + DRIVENBYSUPPLY + DRIVINGCARRIER
 			// Make flexible consumption curve
 			double efficiency = ratioMap.get(drivenBySupply.getInPort()) / ratioMap.get(getMainPort());
-			double portEnergy = (timeStep * power) / efficiency;
+			double portEnergy = (timeStep * power) * efficiency;
 			updateCost(now);
 			if (marketPricesAllowBid(now)) {
 				makeAdjustableConsumptionFunction(portEnergy);
