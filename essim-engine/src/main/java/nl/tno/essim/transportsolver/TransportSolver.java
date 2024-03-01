@@ -442,12 +442,12 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			// marginalCostSum += marginalCost;
 		}
 
-		if (normalise) {
-			for (Node deviceNode : deviceNodes) {
-				log.warn("Normalizing bid for " + deviceNode.getAsset().getName());
-				deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
-			}
-		}
+//		if (normalise) {
+//			for (Node deviceNode : deviceNodes) {
+//				log.warn("Normalizing bid for " + deviceNode.getAsset().getName());
+//				deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
+//			}
+//		}
 
 		// Send demand functions upwards
 		BidFunction summedFunction = tree.aggregateDemandFunction();

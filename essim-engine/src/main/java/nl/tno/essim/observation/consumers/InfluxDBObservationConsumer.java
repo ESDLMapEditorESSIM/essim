@@ -111,10 +111,9 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 
 	public static String createJsonFromBidcurve(BidFunction bidFunction) {
 		if (bidFunction != null) {
-			Set<Entry<Double, Double>> entrySet = bidFunction.getCurve().entrySet();
-			ArrayList<Double[]> list = new ArrayList<Double[]>(entrySet.size());
-			for (Entry<Double, Double> entry : entrySet) {
-				list.add(new Double[] { entry.getKey(), entry.getValue() });
+			ArrayList<Double[]> list = new ArrayList<Double[]>(bidFunction.getPoints().size());
+			for (var point : bidFunction.getPoints()) {
+				list.add(new Double[] { point.getPrice(), point.getPower() });
 			}
 			try {
 				return new ObjectMapper().writeValueAsString(list);

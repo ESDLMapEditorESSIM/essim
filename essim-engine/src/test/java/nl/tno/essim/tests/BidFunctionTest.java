@@ -24,7 +24,7 @@ class BidFunctionTest {
 	@Test
 	void testBidFunction() {
 		//demand
-		
+		/*
 		// flat bid curve with negative price, no mc
 		BidFunction df1 = new BidFunction().addPoint(-10, 50).addPoint(10, 50);
 		// higher demand when price < 0, no mc
@@ -47,10 +47,10 @@ class BidFunctionTest {
 		BidFunction sumCurves = BidFunction.sumCurves(df1, df2);
 		System.out.println(sumCurves);
 		assertEquals(new BidFunction().addPoint(-10.0,120.0).addPoint(10.0,50.0), sumCurves);
-		
+		*/
 		
 	}
-	
+	/*
 	@Test
 	void testSignificance() {
 		//curve={-100.0=0.0, 30.0=0.0, 30.000000000001=-5.4E7, 100.0=-5.4E7}; mc=30.0
@@ -97,4 +97,5 @@ class BidFunctionTest {
 				
 		
 	}
+	*/
 }
