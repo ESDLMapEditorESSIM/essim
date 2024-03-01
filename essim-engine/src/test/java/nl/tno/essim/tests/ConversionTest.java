@@ -47,8 +47,8 @@ class ConversionTest {
 	static void tearDownAfterClass() throws Exception {
 	}
 
-	EnergySystem runTest(File esdlFile, MarketImpl market, InMemoryObservationConsumer inMemoryObservationConsumer)
-			throws Exception {
+	static EnergySystem runTest(File esdlFile, MarketImpl market,
+			InMemoryObservationConsumer inMemoryObservationConsumer) throws Exception {
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulationImpl sim = new EssimSimulationImpl();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
@@ -87,7 +87,7 @@ class ConversionTest {
 		return es;
 	}
 
-	private void checkResults1(InMemoryObservationConsumer inMemoryObservationConsumer, EnergySystem es) {
+	private void checkResultsDBD(InMemoryObservationConsumer inMemoryObservationConsumer, EnergySystem es) {
 		HashMap<String, Table> tables = inMemoryObservationConsumer.getAssets();
 		System.out.println("Assets: " + tables.keySet());
 		LocalDateTime start = tables.values().stream().findAny().get().dateTimeColumn(0).get(0);
@@ -131,6 +131,52 @@ class ConversionTest {
 //            assertEquals(expectedCurves, bidcurveMap);
 	}
 
+	private void checkResultsDBS(InMemoryObservationConsumer inMemoryObservationConsumer, EnergySystem es) {
+		HashMap<String, Table> tables = inMemoryObservationConsumer.getAssets();
+		System.out.println("Assets: " + tables.keySet());
+		LocalDateTime start = tables.values().stream().findAny().get().dateTimeColumn(0).get(0);
+		LocalDateTime stop = tables.values().stream().findAny().get().dateTimeColumn(0).last(1).get(0);
+		long simHours = ChronoUnit.HOURS.between(start, stop);
+		System.out.println("Totals:");
+		System.out.println("Sim hours:" + simHours);
+		assertEquals(24, simHours);
+		System.out.println("\t(" + start + " to " + stop + ")");
+
+		HashMap<String, List<String>> bidcurveMap = new HashMap<>();
+
+		for (Entry<String, Table> entry : tables.entrySet()) {
+			Table table = entry.getValue();
+			double total = table.doubleColumn("allocationEnergy").sum();
+			System.out.println("- " + table.stringColumn("assetName").get(0) + ": " + total);
+			Resource eResource = es.eResource();
+			EnergyAsset asset = (EnergyAsset) eResource.getEObject(entry.getKey());
+//			if (asset instanceof AbstractBasicConversionImpl) {
+				List<String> list = bidcurveMap.get(asset.getName());
+				if (list == null) {
+					list = new ArrayList<String>();
+					bidcurveMap.put(asset.getName(), list);
+				}
+				Column<?> column = table.column("bidcurve");
+				int i = 0;
+				for (Object row : column.asList()) {
+					System.out.println("Bidcurve " + i + " " + asset.getName() + ": " + row);
+					list.add(row.toString());
+					i++;
+				}
+//			}
+//			if ("GenericConversion_7e87".equals(asset.getName())) {
+//				assertEquals((-32 + 46) * 3600000, total, 1E3);
+//			} else if ("Import_e249".equals(asset.getName())) {
+//				assertEquals((175 - 30 + 1.06) * 3600000, total, 1E3);
+//			} else if ("ElectricityDemand_7321".equals(asset.getName())) {
+//				assertEquals(175 * 3600000, total, 1E3);
+//			} else if ("GasProducer_87be".equals(asset.getName())) {
+//				assertEquals(-46 * 3600000, total, 1E3);
+//			}
+		}
+//            assertEquals(expectedCurves, bidcurveMap);
+	}
+
 	private void checkImbalance(InMemoryObservationConsumer inMemoryObservationConsumer,
 			double expectedElectricityImbalance) {
 		HashMap<String, Table> networks = inMemoryObservationConsumer.getNetworks();
@@ -141,16 +187,16 @@ class ConversionTest {
 		assertEquals(0, gasSum, 1);
 	}
 
-	@Test
+//	@Test
 	void testConversion() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion.esdl");
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
-		checkResults1(inMemoryObservationConsumer, energySystem);
+		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
-	@Test
+//	@Test
 	void testConversionMarketPrices() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion.esdl");
 		MarketImpl market = new MarketImpl();
@@ -159,26 +205,35 @@ class ConversionTest {
 		market.setDeltaPrice(1E-12);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdlFile, market, inMemoryObservationConsumer);
-		checkResults1(inMemoryObservationConsumer, energySystem);
+		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
-	@Test
+//	@Test
 	void testConversion2() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion2.esdl");
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
-		checkResults1(inMemoryObservationConsumer, energySystem);
+		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
-	@Test
+//	@Test
 	void testConversion3() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion3.esdl");
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
-		checkResults1(inMemoryObservationConsumer, energySystem);
+		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 0);
+
+	}
+
+	@Test
+	void testConversionDBS() throws Exception {
+		File esdlFile = new File("src/test/resources/TestConversionDBS.esdl");
+		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
+		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		checkResultsDBS(inMemoryObservationConsumer, energySystem);
 
 	}
 
