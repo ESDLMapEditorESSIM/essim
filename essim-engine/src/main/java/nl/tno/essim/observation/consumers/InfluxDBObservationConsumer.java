@@ -19,7 +19,6 @@ package nl.tno.essim.observation.consumers;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
@@ -30,9 +29,6 @@ import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
@@ -99,7 +95,10 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 		// We want to transform the bidcurve before putting it in the database
 		HashMap<String, Object> mapCopy = new HashMap<>();
 		mapCopy.putAll(observation.getValues());
-		mapCopy.put("bidcurve", ((BidFunction) observation.getValues().get("bidcurve")).toJsonArray());
+		BidFunction bidFunction = (BidFunction) observation.getValues().get("bidcurve");
+		if (bidFunction != null) {
+			mapCopy.put("bidcurve", bidFunction.toJsonArray());
+		}
 		pointBuilder.fields(mapCopy);
 		pointBuilder.time(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).toEpochSecond(),
 				TimeUnit.SECONDS);
