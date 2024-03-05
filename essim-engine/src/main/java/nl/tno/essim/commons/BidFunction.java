@@ -8,11 +8,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @EqualsAndHashCode
+@Slf4j
 public class BidFunction {
 	private final static double MIN_PRICE = 0.0;
 	private final static double MAX_PRICE = 1.0;
@@ -243,6 +248,19 @@ public class BidFunction {
 		}
 		listString = listString.substring(0, listString.length() - 2);
 		return "BidCurve " + listString + "], mc=" + getMarginalCost();
+	}
+
+	public String toJsonArray() {
+		ArrayList<Double[]> list = new ArrayList<Double[]>(getPoints().size());
+		for (BidFunction.Point point : getPoints()) {
+			list.add(new Double[] { point.getPrice(), point.getPower() });
+		}
+		try {
+			return new ObjectMapper().writeValueAsString(list);
+		} catch (JsonProcessingException e) {
+			log.warn("Error creating json", e);
+		}
+		return null;
 	}
 
 	public List<BidFunction.Point> getPoints() {

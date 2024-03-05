@@ -20,10 +20,9 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,6 @@ import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
-import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import tech.tablesaw.api.DateTimeColumn;
 import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.FloatColumn;
@@ -56,7 +54,7 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 
 		assets = new HashMap<String, Table>();
 		networks = new HashMap<String, Table>();
-		pool = Executors.newWorkStealingPool();
+		pool = Executors.newSingleThreadExecutor();
 	}
 
 	@Override
@@ -125,6 +123,12 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 //		}
 //
 //		log.debug("Cleaning up InMemoryObservationConsumer");
+		try {
+			pool.shutdown();
+			pool.awaitTermination(1, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -166,18 +170,8 @@ class TableProcessor implements Runnable {
 			} else if (entry.getValue() instanceof String) {
 				row.setString(entry.getKey(), (String) entry.getValue());
 			} else if (entry.getValue() instanceof BidFunction) {
-//				StringBuilder builder = new StringBuilder();
 				BidFunction bidFunction = (BidFunction) entry.getValue();
-//				Set<Entry<Double, Double>> entrySet = bidFunction.getCurve().entrySet();
-//				for (Entry<Double, Double> bidCurveEntry : entrySet) {
-//					if (builder.length() != 0) {
-//						builder.append(";");
-//					}
-//					builder.append(bidCurveEntry.getKey());
-//					builder.append(":");
-//					builder.append(bidCurveEntry.getValue());
-//				}
-				row.setString(entry.getKey(), InfluxDBObservationConsumer.createJsonFromBidcurve(bidFunction));
+				row.setString(entry.getKey(), bidFunction.toJsonArray());
 			} else {
 				log.warn("Unknown value type to convert {}", entry);
 			}

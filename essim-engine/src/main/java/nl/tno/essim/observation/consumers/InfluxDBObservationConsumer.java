@@ -99,27 +99,12 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 		// We want to transform the bidcurve before putting it in the database
 		HashMap<String, Object> mapCopy = new HashMap<>();
 		mapCopy.putAll(observation.getValues());
-		mapCopy.put("bidcurve", createJsonFromBidcurve((BidFunction) observation.getValues().get("bidcurve")));
+		mapCopy.put("bidcurve", ((BidFunction) observation.getValues().get("bidcurve")).toJsonArray());
 		pointBuilder.fields(mapCopy);
 		pointBuilder.time(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).toEpochSecond(),
 				TimeUnit.SECONDS);
 
 		influxDbClient.write(pointBuilder.build());
-	}
-
-	public static String createJsonFromBidcurve(BidFunction bidFunction) {
-		if (bidFunction != null) {
-			ArrayList<Double[]> list = new ArrayList<Double[]>(bidFunction.getPoints().size());
-			for (BidFunction.Point point : bidFunction.getPoints()) {
-				list.add(new Double[] { point.getPrice(), point.getPower() });
-			}
-			try {
-				return new ObjectMapper().writeValueAsString(list);
-			} catch (JsonProcessingException e) {
-				log.warn("Error creating json", e);
-			}
-		}
-		return null;
 	}
 
 	@Override

@@ -54,7 +54,7 @@ class ConversionTest {
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
 		sim.setScenarioID("TestConversion-" + counter.getAndIncrement());
-		sim.setInfluxURL("http://localhost:8086");
+//		sim.setInfluxURL("http://localhost:8086");
 		if (market != null) {
 			sim.setMarket(market);
 		}
@@ -68,10 +68,6 @@ class ConversionTest {
 		while (mongo.getSimulationStatus(simId).getState() != Status.COMPLETE) {
 			Thread.sleep(100);
 		}
-
-		// need to sleep as data is still being written in parallel threads and we don't
-		// have a handle to that.
-		Thread.sleep(1500);
 
 		String grafanaDashboard = essimEngine.createGrafanaDashboard();
 		System.out.println("Grafana  dashboard at: " + grafanaDashboard);
