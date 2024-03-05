@@ -159,13 +159,13 @@ public class HybridHeatPumpNode extends Node {
 				if (marginalCostProfile != null) {
 					Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
 					if (Double.isNaN(aggregateCost)) {
-						aggregateCost = DEFAULT_MARGINAL_COST;
+						aggregateCost = getDefaultMarginalCost();
 					}
 					setCost(aggregateCost);
 				} else {
 					log.warn("Hybrid heat pump {} is missing cost information! Defaulting to {}", hhpName,
-							DEFAULT_MARGINAL_COST);
-					setCost(DEFAULT_MARGINAL_COST);
+							getDefaultMarginalCost());
+					setCost(getDefaultMarginalCost());
 				}
 
 				makeAdjustableProductionFunction(energyOutput);
@@ -237,7 +237,7 @@ public class HybridHeatPumpNode extends Node {
 					if (elecCostProfile != null) {
 						carrierCost = Commons.aggregateCost(Commons.readProfile(elecCostProfile, now));
 						if (Double.isNaN(carrierCost)) {
-							carrierCost = DEFAULT_MARGINAL_COST;
+							carrierCost = getDefaultMarginalCost();
 						}
 					}
 				} else if (connectedPort.equals(gInPort)) {
@@ -245,7 +245,7 @@ public class HybridHeatPumpNode extends Node {
 					if (gasCostProfile != null) {
 						carrierCost = Commons.aggregateCost(Commons.readProfile(gasCostProfile, now));
 						if (Double.isNaN(carrierCost)) {
-							carrierCost = DEFAULT_MARGINAL_COST;
+							carrierCost = getDefaultMarginalCost();
 						}
 					}
 				} else {
@@ -255,15 +255,15 @@ public class HybridHeatPumpNode extends Node {
 				if (marginalCostProfile != null) {
 					Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
 					if(Double.isNaN(aggregateCost)) {
-						aggregateCost = DEFAULT_MARGINAL_COST;
+						aggregateCost = getDefaultMarginalCost();
 					}
 					setCost(aggregateCost);
 				} else if (carrierCost != null) {
 					setCost(carrierCost);
 				} else {
 					log.warn("Hybrid heat pump {} is missing cost information! Defaulting to {}", hhpName,
-							DEFAULT_MARGINAL_COST);
-					setCost(DEFAULT_MARGINAL_COST);
+							getDefaultMarginalCost());
+					setCost(getDefaultMarginalCost());
 				}
 				makeAdjustableConsumptionFunction(energyInput);
 

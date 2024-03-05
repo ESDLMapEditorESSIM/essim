@@ -103,19 +103,19 @@ public class ConsumerNode extends Node {
 			if (marginalCostProfile != null) {
 				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
 				if(Double.isNaN(aggregateCost)) {
-					aggregateCost = DEFAULT_MARGINAL_COST;
+					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
 				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
 				if(Double.isNaN(aggregateCost)) {
-					aggregateCost = DEFAULT_MARGINAL_COST;
+					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else {
 				log.warn("Consumer {} is missing cost information! Defaulting to {}", consumerName,
-						DEFAULT_MARGINAL_COST);
-				setCost(DEFAULT_MARGINAL_COST);
+						getDefaultMarginalCost());
+				setCost(getDefaultMarginalCost());
 			}
 			makeAdjustableConsumptionFunction(energyOutput);
 		}

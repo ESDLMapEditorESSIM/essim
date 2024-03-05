@@ -18,6 +18,7 @@ package nl.tno.essim.transportsolver.nodes;
 
 import java.nio.ByteBuffer;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -93,8 +94,7 @@ public class RemoteLogicNode extends Node {
 		try {
 			JSONObject message = new JSONObject()
 					.put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
-					.put("simulationId", simulationId)
-					.put("config", remoteConfig);
+					.put("simulationId", simulationId).put("config", remoteConfig);
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
 		} catch (MqttException e) {
@@ -110,12 +110,11 @@ public class RemoteLogicNode extends Node {
 
 		long t = now.getStartTime().toEpochSecond(ZoneOffset.UTC);
 
-		JSONObject message = new JSONObject().put("timeStamp", t)
-				.put("timeStepInSeconds", now.getPeriod().getSeconds())
-				.put("minPrice", marketInfo.getMinPrice().doubleValue()) // TODO: check if this is the correct place to communicate min/max price
+		JSONObject message = new JSONObject().put("timeStamp", t).put("timeStepInSeconds", now.getPeriod().getSeconds())
+				.put("minPrice", marketInfo.getMinPrice().doubleValue()) // TODO: check if this is the correct place to
+																			// communicate min/max price
 				.put("maxPrice", marketInfo.getMaxPrice().doubleValue())
-				.put("deltaPrice", marketInfo.getDeltaPrice().doubleValue())
-				.put("carrierId", carrier.getId());
+				.put("deltaPrice", marketInfo.getDeltaPrice().doubleValue()).put("carrierId", carrier.getId());
 		try {
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
 			this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/createBid", msg);
@@ -123,7 +122,10 @@ public class RemoteLogicNode extends Node {
 			e.printStackTrace();
 		}
 
-		/** wait for remote node to respond with the bidcurve (@see #receiveMessage(String topic, MqttMessage message)) **/
+		/**
+		 * wait for remote node to respond with the bidcurve (@see
+		 * #receiveMessage(String topic, MqttMessage message))
+		 **/
 		this.locks.put(t, new Object());
 		synchronized (this.locks.get(t)) {
 			try {
@@ -141,8 +143,7 @@ public class RemoteLogicNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
 		JSONObject message = new JSONObject().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
-				.put("price", price)
-				.put("carrierId", carrier.getId());
+				.put("price", price).put("carrierId", carrier.getId());
 
 		try {
 			MqttMessage msg = new MqttMessage(message.toString().getBytes());
@@ -177,16 +178,18 @@ public class RemoteLogicNode extends Node {
 				long timestep = buf.getLong();
 
 				if (this.locks.containsKey(timestep)) {
-					this.demandFunction = new BidFunction();
+					ArrayList<double[]> list = new ArrayList<double[]>();
 					String point = "";
 					while (buf.remaining() >= 16) {
 						double price = buf.getDouble();
 						double energy = buf.getDouble();
 						point += "[" + price + "," + energy + "],";
-						this.demandFunction.addPoint(price, energy);
+						list.add(new double[] { price, energy });
 					}
-					log.debug("Received for timestep " + timestep + ", carrier " + carrierId
-							+ ", bid curve is " + point.substring(0, point.length() - 1));
+					this.demandFunction = new BidFunction(getMinMarketPrice(), getMaxMarketPrice(), getDeltaPrice(),
+							list.toArray(new double[][] {}));
+					log.debug("Received for timestep " + timestep + ", carrier " + carrierId + ", bid curve is "
+							+ point.substring(0, point.length() - 1));
 
 					// Resume the createBidCurve thread
 					synchronized (this.locks.get(timestep)) {

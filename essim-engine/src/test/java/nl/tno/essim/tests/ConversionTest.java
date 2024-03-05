@@ -192,7 +192,7 @@ class ConversionTest {
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
-//	@Test
+	@Test
 	void testConversionMarketPrices() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion.esdl");
 		MarketImpl market = new MarketImpl();

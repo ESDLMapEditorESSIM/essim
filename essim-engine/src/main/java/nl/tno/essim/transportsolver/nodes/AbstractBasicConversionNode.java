@@ -376,7 +376,7 @@ public class AbstractBasicConversionNode extends Node {
 			for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
 				Port inPort = portCostPair.getKey();
 				GenericProfile costProfile = portCostPair.getValue();
-				Double cost = DEFAULT_MARGINAL_COST;
+				Double cost = getDefaultMarginalCost();
 				double ratio = 1.0;
 				if (costProfile != null) {
 					cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
@@ -391,9 +391,9 @@ public class AbstractBasicConversionNode extends Node {
 			}
 		} else {
 			log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
-					DEFAULT_MARGINAL_COST);
+					getDefaultMarginalCost());
 		}
-		setCost(Double.isNaN(aggregateCost) ? DEFAULT_MARGINAL_COST : aggregateCost);
+		setCost(Double.isNaN(aggregateCost) ? getDefaultMarginalCost() : aggregateCost);
 	}
 
 	@Override
