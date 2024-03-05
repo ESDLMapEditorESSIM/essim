@@ -151,28 +151,28 @@ class ConversionTest {
 			Resource eResource = es.eResource();
 			EnergyAsset asset = (EnergyAsset) eResource.getEObject(entry.getKey());
 //			if (asset instanceof AbstractBasicConversionImpl) {
-				List<String> list = bidcurveMap.get(asset.getName());
-				if (list == null) {
-					list = new ArrayList<String>();
-					bidcurveMap.put(asset.getName(), list);
-				}
-				Column<?> column = table.column("bidcurve");
-				int i = 0;
-				for (Object row : column.asList()) {
-					System.out.println("Bidcurve " + i + " " + asset.getName() + ": " + row);
-					list.add(row.toString());
-					i++;
-				}
+			List<String> list = bidcurveMap.get(asset.getName());
+			if (list == null) {
+				list = new ArrayList<String>();
+				bidcurveMap.put(asset.getName(), list);
+			}
+			Column<?> column = table.column("bidcurve");
+			int i = 0;
+			for (Object row : column.asList()) {
+				System.out.println("Bidcurve " + i + " " + asset.getName() + ": " + row);
+				list.add(row.toString());
+				i++;
+			}
 //			}
-//			if ("GenericConversion_7e87".equals(asset.getName())) {
-//				assertEquals((-32 + 46) * 3600000, total, 1E3);
-//			} else if ("Import_e249".equals(asset.getName())) {
-//				assertEquals((175 - 30 + 1.06) * 3600000, total, 1E3);
-//			} else if ("ElectricityDemand_7321".equals(asset.getName())) {
-//				assertEquals(175 * 3600000, total, 1E3);
-//			} else if ("GasProducer_87be".equals(asset.getName())) {
-//				assertEquals(-46 * 3600000, total, 1E3);
-//			}
+			if ("GenericConversion_7e87".equals(asset.getName())) {
+				assertEquals(9.4 * 3600000, total, 1E3);
+			} else if ("Import_e249".equals(asset.getName())) {
+				assertEquals(-(175 - 47 * .8 + 6) * 3600000, total, 1E3);
+			} else if ("ElectricityDemand_7321".equals(asset.getName())) {
+				assertEquals(175 * 3600000, total, 1E3);
+			} else if ("GasProducer_87be".equals(asset.getName())) {
+				assertEquals(-49.5 * 3600000, total, 1E3);
+			}
 		}
 //            assertEquals(expectedCurves, bidcurveMap);
 	}
@@ -187,7 +187,7 @@ class ConversionTest {
 		assertEquals(0, gasSum, 1);
 	}
 
-//	@Test
+	@Test
 	void testConversion() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion.esdl");
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
@@ -209,7 +209,7 @@ class ConversionTest {
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
-//	@Test
+	@Test
 	void testConversion2() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion2.esdl");
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
@@ -218,7 +218,7 @@ class ConversionTest {
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
-//	@Test
+	@Test
 	void testConversion3() throws Exception {
 		File esdlFile = new File("src/test/resources/TestConversion3.esdl");
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
@@ -234,7 +234,17 @@ class ConversionTest {
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
 		checkResultsDBS(inMemoryObservationConsumer, energySystem);
+		checkImbalance(inMemoryObservationConsumer, 0);
 
+	}
+
+	@Test
+	void testConversionDBSImbalance() throws Exception {
+		File esdlFile = new File("src/test/resources/TestConversionDBS2.esdl");
+		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
+		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		checkResultsDBS(inMemoryObservationConsumer, energySystem);
+		checkImbalance(inMemoryObservationConsumer, -6*3600000);
 	}
 
 }

@@ -22,8 +22,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -112,7 +110,7 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 	public static String createJsonFromBidcurve(BidFunction bidFunction) {
 		if (bidFunction != null) {
 			ArrayList<Double[]> list = new ArrayList<Double[]>(bidFunction.getPoints().size());
-			for (var point : bidFunction.getPoints()) {
+			for (BidFunction.Point point : bidFunction.getPoints()) {
 				list.add(new Double[] { point.getPrice(), point.getPower() });
 			}
 			try {

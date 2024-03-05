@@ -97,5 +97,5 @@ class BidFunctionTest {
 				
 		
 	}
-	*/
+	 */
 }
