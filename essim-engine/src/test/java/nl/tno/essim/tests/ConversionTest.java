@@ -54,7 +54,9 @@ class ConversionTest {
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
 		sim.setScenarioID("TestConversion-" + counter.getAndIncrement());
-//		sim.setInfluxURL("http://localhost:8086");
+		if (System.getenv("INFLUX_URL") != null) {
+			sim.setInfluxURL(System.getenv("INFLUX_URL"));
+		}
 		if (market != null) {
 			sim.setMarket(market);
 		}
