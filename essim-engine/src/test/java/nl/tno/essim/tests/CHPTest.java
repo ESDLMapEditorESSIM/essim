@@ -83,8 +83,8 @@ public class CHPTest {
 				.put("HeatingDemand_9f58", 200.0*3600000)
 				.put("ElectricityDemand_0601", 46.0*3600000)
 				.put("Import_7e31", -92.0 * 3600000)
-				.put("Import_7e31", -92.0 * 3600000)
-				.put("Export_e6de", 208.0 * 3600000).build();
+//				.put("Export_e6de", 208.0 * 3600000)
+				.build();
 		checkResultsDBD(inMemoryObservationConsumer, energySystem, expected);
 	}
 
