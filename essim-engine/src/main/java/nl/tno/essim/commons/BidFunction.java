@@ -77,8 +77,8 @@ public class BidFunction {
 		points = new ArrayList<BidFunction.Point>();
 		for (double[] point : pointsList) {
 			points.add(new Point(point[0], point[1]));
-			verifyAndUpdateBitCurve();
 		}
+		verifyAndUpdateBitCurve();
 	}
 
 	private void verifyAndUpdateBitCurve() {

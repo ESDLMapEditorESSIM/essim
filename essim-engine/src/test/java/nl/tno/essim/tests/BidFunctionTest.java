@@ -21,81 +21,51 @@ class BidFunctionTest {
 	static void tearDownAfterClass() throws Exception {
 	}
 
+	static void compareBidFunctions(BidFunction expected, BidFunction actual, double powerAccuracy) {
+		for (BidFunction.Point point : expected.getPoints()) {
+			assertEquals(point.getPower(), actual.findDemandFromCurve(point.getPrice()), powerAccuracy);
+		}
+	}
+
 	@Test
 	void testBidFunction() {
-		//demand
-		/*
+		// demand
+//		new BidFunction(Commons.P_MIN, Commons.P_MAX, Commons.MIN_DELTA_PRICE);
 		// flat bid curve with negative price, no mc
-		BidFunction df1 = new BidFunction().addPoint(-10, 50).addPoint(10, 50);
+		BidFunction df1 = new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
+				new double[][] { { -10, 50E6 }, { 10, 50E6 } });
 		// higher demand when price < 0, no mc
-		BidFunction df2 = new BidFunction().addPoint(-10, 70).addPoint(10, 0);
+		BidFunction df2 = new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
+				new double[][] { { -10, 70E6 }, { 10, 0 } });
 		// stop consuming if price to high, mc=5
-		BidFunction df3 = new BidFunction().addPoint(-10, 50).addPoint(0, 50).addPoint(5, 0);
+		BidFunction df3 = new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
+				new double[][] { { -10, 50E6 }, { 0, 50E6 }, { 5, 0 } });
 		df3.setMarginalCost(5);
-		
-		
-		//production, produce at mc=4
-		BidFunction pf1 = new BidFunction().addPoint(-10, 0).addPoint(0, 0).addPoint(4, 0).addPoint(4+Commons.eps, 50);
+
+		// production, produce at mc=4
+		BidFunction pf1 = new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
+				new double[][] { { -10, 0 }, { 0, 0 }, { 4, 0 }, { 4 + Commons.eps, -50E6 } });
 
 		// buffer consume when price is low, produce when price is high, mc1=2, mc2=4
-		BidFunction bf1 = new BidFunction().addPoint(-10, 50).addPoint(0, 50)
-				.addPoint(2, 50).addPoint(2+Commons.eps, 0)
-				.addPoint(4, 0).addPoint(4+Commons.eps, -50);
-		
-		System.out.println(df1);
-		System.out.println(df2);
-		BidFunction sumCurves = BidFunction.sumCurves(df1, df2);
-		System.out.println(sumCurves);
-		assertEquals(new BidFunction().addPoint(-10.0,120.0).addPoint(10.0,50.0), sumCurves);
-		*/
-		
+		BidFunction bf1 = new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE, new double[][] { { -10, 50E6 }, { 0, 50E6 },
+				{ 2, 50E6 }, { 2 + Commons.eps, 0 }, { 4, 0 }, { 4 + Commons.eps, -50E6 } });
+
+		System.out.println("df1: " + df1);
+		System.out.println("df2: " + df2);
+		System.out.println("df3: " + df3);
+		BidFunction sumCurves1 = BidFunction.sumCurves(df1, df2);
+		System.out.println("SC1: " + sumCurves1);
+		compareBidFunctions(
+				new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
+						new double[][] { { -10.0, 120E6 }, { 10.0, 50.0E6 } }),
+				sumCurves1, BidFunction.MIN_DELTA_POWER);
+		BidFunction sumCurves2 = BidFunction.sumCurves(sumCurves1, df3);
+		System.out.println("SC2: " + sumCurves2);
+		compareBidFunctions(
+				new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
+						new double[][] { { -10, 170E6 }, { 0, 135E6 }, { 5, 67.5E6 } }),
+				sumCurves2, BidFunction.MIN_DELTA_POWER * 2);
+
 	}
-	/*
-	@Test
-	void testSignificance() {
-		//curve={-100.0=0.0, 30.0=0.0, 30.000000000001=-5.4E7, 100.0=-5.4E7}; mc=30.0
-		BidFunction bf1 = new BidFunction().addPoint(-100, 0).addPoint(30, 0)
-				.addPoint(30.01,-5.4E7).addPoint(100.0,-5.4E7);
-		System.out.println(bf1);
-		
-		BidFunction demand = new BidFunction().addPoint(-100.0,179730.0).addPoint(100.0,179730.0);
-		
-		BidFunction sumCurves = BidFunction.sumCurves(bf1, demand);
-		System.out.println(sumCurves);
-		var price = sumCurves.findPriceFromCurveBD(BigDecimal.ZERO);
-		System.out.println("** BD price: " + price);
-		System.out.println("** Allocation: " + bf1.findDemandFromCurveBD(price));
-		
-		var findPriceFromCurve = bf1.findPriceFromCurveBD(new BigDecimal(-179730.0));
-		System.out.println("** Manual price from curve: " + findPriceFromCurve);
-		System.out.println("** Allocations: (anwser = 179730.0)");
-		String input = "30.00000000000000";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000001";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000002";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000003";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000004";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000005";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000006";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000007";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000008";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.000000000000009";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-		input = "30.00000000000001";
-		System.out.println(input + " = " + bf1.findDemandFromCurveBD(new BigDecimal(input)));
-	
-		
-		//179730.0
-				
-		
-	}
-	 */
+
 }
