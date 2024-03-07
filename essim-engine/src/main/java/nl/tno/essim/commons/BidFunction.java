@@ -109,8 +109,8 @@ public class BidFunction {
 				BigDecimal powerDelta = previous.power.subtract(bidCurvePoint.power);
 				// Correct minor errors
 				BigDecimal minDeltaPower = new BigDecimal(MIN_DELTA_POWER, MathContext.DECIMAL128);
-				if (powerDelta.compareTo(BigDecimal.ZERO) > 0 && powerDelta.compareTo(minDeltaPower) <= 0) {
-					bidCurvePoint.power = previous.power;
+				if (powerDelta.compareTo(BigDecimal.ZERO) >= 0 && powerDelta.compareTo(minDeltaPower) <= 0) {
+					bidCurvePoint.power = previous.power.add(minDeltaPower);
 				} else if (powerDelta.compareTo(minDeltaPower) > 0) {
 					// Don't allow big errors
 					throw new InvalidBidCurveException("BidCurve is not mathematically decreasing: " + this);
