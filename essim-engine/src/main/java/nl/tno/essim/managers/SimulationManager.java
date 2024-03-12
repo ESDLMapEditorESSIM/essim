@@ -47,14 +47,10 @@ import nl.tno.essim.transportsolver.TransportSolver;
 @Slf4j
 public class SimulationManager implements ISimulationManager, IStatusProvider {
 
-	private static long TIME_OUT_IN_SEC;
+	private final static long TIME_OUT_IN_SEC = getTimeout();
 	private String simulationId;
-	private LocalDateTime startDateTime;
-	private LocalDateTime endDateTime;
 	private EssimTime time;
 	private ThreadPoolExecutor simulationExecutor;
-	private CountDownLatch barrier;
-	private Duration precheckTime;
 	private AtomicInteger solverTypeIndex;
 	private int numOfSolvers;
 	@Getter
@@ -74,47 +70,41 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private CountDownLatch msoBarrier;
 	private long modelDeployTimeout;
 
+	private static long getTimeout() {
+		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
+		if (timeout == null) {
+			return 45;
+		}
+		return Long.parseLong(timeout);
+	}
+
 	public SimulationManager(String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
 			EssimDuration simStepLength, IMongoBackend mongo) {
 		this.mongo = mongo;
-		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
-		if (timeout == null) {
-			timeout = "45";
-		}
-		TIME_OUT_IN_SEC = Long.parseLong(timeout);
 		this.simulationId = simulationId;
-		this.startDateTime = startDateTime;
-		this.endDateTime = endDateTime;
 		solverTypeIndex = new AtomicInteger();
 		solverBlock = new HashMap<Integer, List<TransportSolver>>();
 		otherSims = new ArrayList<Simulatable>();
 		time = new EssimTime(startDateTime, endDateTime, simStepLength);
-		precheckTime = Duration.of(0, ChronoUnit.SECONDS);
-		//mongo = MongoBackend.getInstance();
 		interrupted = false;
 		interruptedCause = "";
 
 		simulationExecutor = (ThreadPoolExecutor) Executors
 				.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		statusUpdater = Executors.newScheduledThreadPool(1);
-		statusUpdater.scheduleAtFixedRate(statusUpdaterService, 0, 1, TimeUnit.SECONDS);
+		statusUpdater.scheduleAtFixedRate(
+				() -> mongo.updateSimulationStatus(simulationId, Status.RUNNING, String.valueOf(status)), 0, 1,
+				TimeUnit.SECONDS);
 
 		log.debug("Simulation " + simulationId + " is initialised!");
 	}
-
-	private Runnable statusUpdaterService = new Runnable() {
-		@Override
-		public void run() {
-			mongo.updateSimulationStatus(simulationId, Status.RUNNING, String.valueOf(status));
-		}
-	};
 
 	/**
 	 * @return the startDateTime
 	 */
 	@Override
 	public LocalDateTime getStartDateTime() {
-		return startDateTime;
+		return time.getSimulationStartTime();
 	}
 
 	/**
@@ -122,7 +112,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	 */
 	@Override
 	public LocalDateTime getEndDateTime() {
-		return endDateTime;
+		return time.getSimulationEndTime();
 	}
 
 	/*
@@ -155,6 +145,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	}
 
 	public void startSimulation() {
+		startSimulation(Duration.of(0, ChronoUnit.SECONDS));
+	}
+
+	public void startSimulation(Duration precheckTime) {
 		try {
 			if (msoClient != null) {
 				log.debug("Waiting for {} seconds for external models to be deployed.", modelDeployTimeout);
@@ -166,28 +160,17 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 			started = true;
 			// Run init() for all simulatables
-			barrier = new CountDownLatch(numOfSolvers);
-			for (List<TransportSolver> simulatables : solverBlock.values()) {
-				for (TransportSolver solver : simulatables) {
-					simulationExecutor.submit(new ExceptionRunnable(() -> {
-						solver.init(time);
-					}));
-				}
-			}
-			// Wait until everybody is initialised
-			boolean result = barrier.await(TIME_OUT_IN_SEC, TimeUnit.SECONDS);
-			if (!result) {
-				throw new IllegalStateException("Error in Simulation Init: " + description);
-			}
+			initializeSolvers();
 
 			Instant startTime = Instant.now();
 
-			log.debug("Starting simulation");
+			log.info("Starting simulation {}", simulationId);
 			// Step through until end of simulation
 			long start = time.getTime().toEpochSecond(ZoneOffset.UTC);
-			long end = endDateTime.toEpochSecond(ZoneOffset.UTC);
+			long end = time.getSimulationEndTime().toEpochSecond(ZoneOffset.UTC);
 			double log_stat = 0.0;
-			while (time.getTime().isBefore(endDateTime) || time.getTime().isEqual(endDateTime)) {
+			while (time.getTime().isBefore(time.getSimulationEndTime())
+					|| time.getTime().isEqual(time.getSimulationEndTime())) {
 				if (interrupted) {
 					throw new InterruptedException(interruptedCause);
 				}
@@ -195,48 +178,18 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
 				if (status >= log_stat) {
-					log.debug("Next timestep {} [{} %]", time.getTime().toString(), String.format("%.0f", status * 100));
+					log.debug("Next timestep {} [{} %]", time.getTime().toString(),
+							String.format("%.0f", status * 100));
 					log_stat = log_stat + 0.1;
-					System.gc();
 				}
-
-				for (Integer simulatableType : solverBlock.keySet()) {
-					List<TransportSolver> simulatablesOfSameType = solverBlock.get(simulatableType);
-					barrier = new CountDownLatch(simulatablesOfSameType.size());
-					for (Simulatable simulatable : simulatablesOfSameType) {
-						simulationExecutor.submit(new ExceptionRunnable(() -> {
-							simulatable.step(time);
-						}));
-					}
-
-					barrier.await();
-				}
-
-				barrier = new CountDownLatch(otherSims.size());
-				for (Simulatable simulatable : otherSims) {
-					simulationExecutor.submit(new ExceptionRunnable(() -> {
-						simulatable.step(time);
-					}));
-				}
-				barrier.await();
-
+				runStep();
+				runOtherSimulatables();
 				time = time.nextTimeStep();
 			}
-			System.gc();
-
-			barrier = new CountDownLatch(numOfSolvers);
-			for (Integer simTypeNumber : solverBlock.keySet()) {
-				for (Simulatable simulatable : solverBlock.get(simTypeNumber)) {
-					simulationExecutor.submit(new ExceptionRunnable(() -> {
-						simulatable.stop();
-					}));
-				}
-			}
-			barrier.await();
-
-			log.debug("Please wait while the data is flushed to the database. This could take a few seconds...");
+			stopSolvers();
 
 			if (observationConsumers != null) {
+				log.debug("Please wait while the data is flushed to the database. This could take a few seconds...");
 				for (IObservationConsumer consumer : observationConsumers) {
 					consumer.cleanup();
 				}
@@ -266,6 +219,62 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 	}
 
+	private void stopSolvers() throws InterruptedException {
+		CountDownLatch barrier = new CountDownLatch(numOfSolvers);
+		log.trace("Stopping {} solvers", numOfSolvers);
+		for (Integer simTypeNumber : solverBlock.keySet()) {
+			for (Simulatable simulatable : solverBlock.get(simTypeNumber)) {
+				simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
+					simulatable.stop();
+				}));
+			}
+		}
+		barrier.await();
+	}
+
+	private void runOtherSimulatables() throws InterruptedException {
+		// log.trace("Running {} other simulatables", otherSims.size());
+		CountDownLatch barrier = new CountDownLatch(otherSims.size());
+		for (Simulatable simulatable : otherSims) {
+			simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
+				simulatable.step(time);
+			}));
+		}
+		barrier.await();
+	}
+
+	private void runStep() throws InterruptedException {
+		for (Integer simulatableType : solverBlock.keySet()) {
+			List<TransportSolver> simulatablesOfSameType = solverBlock.get(simulatableType);
+//					log.trace("Running {} steps", simulatablesOfSameType.size());
+			CountDownLatch barrier = new CountDownLatch(simulatablesOfSameType.size());
+			for (Simulatable simulatable : simulatablesOfSameType) {
+				simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
+					simulatable.step(time);
+				}));
+			}
+
+			barrier.await();
+		}
+	}
+
+	private void initializeSolvers() throws InterruptedException {
+		log.debug("Initializing {} solvers", numOfSolvers);
+		CountDownLatch barrier = new CountDownLatch(numOfSolvers);
+		for (List<TransportSolver> simulatables : solverBlock.values()) {
+			for (TransportSolver solver : simulatables) {
+				simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
+					solver.init(time);
+				}));
+			}
+		}
+		// Wait until everybody is initialised
+		boolean result = barrier.await(TIME_OUT_IN_SEC, TimeUnit.SECONDS);
+		if (!result) {
+			throw new IllegalStateException("Error in Simulation Init: " + description);
+		}
+	}
+
 	public void shutdown() {
 		statusUpdater.shutdownNow();
 		simulationExecutor.shutdownNow();
@@ -285,8 +294,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	 */
 	public class ExceptionRunnable implements Runnable {
 		private Runnable runnable;
+		private CountDownLatch countDownLatch;
 
-		public ExceptionRunnable(Runnable r) {
+		public ExceptionRunnable(CountDownLatch barrier, Runnable r) {
+			countDownLatch = barrier;
 			this.runnable = r;
 		}
 
@@ -294,7 +305,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		public void run() {
 			try {
 				runnable.run();
-				barrier.countDown();
+				countDownLatch.countDown();
 			} catch (Throwable e) {
 				statusUpdater.shutdownNow();
 				log.error("Error in scheduled runnable", e);
@@ -303,15 +314,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
 				mongo.updateStatus("Ready");
 				simulationExecutor.shutdownNow();
-				Thread.currentThread().interrupt();
+//				Thread.currentThread().interrupt();
 			}
 		}
 
-	}
-
-	public void startSimulation(Duration precheckTime) throws InterruptedException {
-		this.precheckTime = precheckTime;
-		startSimulation();
 	}
 
 	@Override

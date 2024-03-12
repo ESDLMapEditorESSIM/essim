@@ -140,7 +140,7 @@ public class RestSimulation implements Simulation {
 
 				Thread thread = new Thread(() -> {
 					engine.startSimulation();
-					Thread.currentThread().interrupt();
+//					Thread.currentThread().interrupt();
 				}, simId);
 				thread.setUncaughtExceptionHandler(new EssimExceptionHandler(mongo));
 				thread.start();

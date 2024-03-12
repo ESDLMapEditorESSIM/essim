@@ -301,11 +301,11 @@ public class ESSimEngine implements IStatusProvider {
 				for (int k : transportSolveOrder.keySet()) {
 					List<TransportSolver> solvers = transportSolveOrder.get(k);
 					log.debug(" - {}: {}", k, solvers.toString());
-					simulationManager.addSolvers(solvers);
 					for (TransportSolver solver : solvers) {
 						solver.setSimulationManager(simulationManager);
 						solver.setObservationManager(observationManager);
 					}
+					simulationManager.addSolvers(solvers);
 				}
 				EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
 				emissionManager.setObservationManager(observationManager);
