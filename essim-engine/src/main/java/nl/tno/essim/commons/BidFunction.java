@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BidFunction {
 	public final static double MIN_DELTA_POWER = 10;
+	private final static BigDecimal TWO = new BigDecimal(2, MathContext.DECIMAL128);
 
 	@EqualsAndHashCode
 	public static class Point implements Comparable<Point> {
@@ -110,7 +111,7 @@ public class BidFunction {
 				// Correct minor errors
 				BigDecimal minDeltaPower = new BigDecimal(MIN_DELTA_POWER, MathContext.DECIMAL128);
 				if (powerDelta.compareTo(BigDecimal.ZERO) >= 0 && powerDelta.compareTo(minDeltaPower) <= 0) {
-					bidCurvePoint.power = previous.power.add(minDeltaPower);
+					bidCurvePoint.power = previous.power.add(minDeltaPower.divide(TWO));
 				} else if (powerDelta.compareTo(minDeltaPower) > 0) {
 					// Don't allow big errors
 					throw new InvalidBidCurveException("BidCurve is not mathematically decreasing: " + this);

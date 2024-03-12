@@ -147,7 +147,7 @@ public abstract class Node implements INode {
 
 	public BidFunction aggregateDemandFunction() {
 		if (children != null) {
-			BidFunction aggregatedFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice);
+			BidFunction aggregatedFunction = null;
 			;
 			for (Node child : children) {
 				BidFunction nodeFunction = child.aggregateDemandFunction();
