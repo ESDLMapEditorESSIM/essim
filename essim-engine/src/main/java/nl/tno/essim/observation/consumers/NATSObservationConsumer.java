@@ -47,7 +47,7 @@ public class NATSObservationConsumer implements IObservationConsumer {
 	@Override
 	public void init(String scenarioName) {
 		observationTopic = scenarioName + "." + OBSERVATION_TOPIC;
-		pool = Executors.newWorkStealingPool();
+		pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 		try {
 			nc = Nats.connect(url);

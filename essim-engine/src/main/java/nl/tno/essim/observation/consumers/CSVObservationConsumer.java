@@ -46,7 +46,7 @@ public class CSVObservationConsumer implements IObservationConsumer {
 	public CSVObservationConsumer(String csvFilesLocation) {
 		this.csvFilesLocation = csvFilesLocation;
 		tables = new HashMap<String, Table>();
-		pool = Executors.newWorkStealingPool();
+		pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	}
 
 	@Override

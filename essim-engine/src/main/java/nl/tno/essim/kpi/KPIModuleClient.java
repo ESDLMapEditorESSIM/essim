@@ -51,7 +51,7 @@ public class KPIModuleClient {
 		this.natsURL = simulation.getNatsURL() == null ? "nats://nats:4222" : simulation.getNatsURL();
 		this.messages = messages;
 		this.topicsOfInterest = new ArrayList<String>();
-		this.processPool = Executors.newWorkStealingPool();
+		this.processPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
 		processPool.submit(starter);
 	}
