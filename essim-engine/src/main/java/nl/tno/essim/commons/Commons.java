@@ -183,7 +183,7 @@ public class Commons {
 
 	public static GenericProfile writeProfile(GenericProfile profile, EssimTime timestamp, double value) {
 		if (profile == null) {
-			profile = EssimESDLFactory.eINSTANCE.createDateTimeProfile();
+			profile = EssimESDLFactory.eINSTANCE.createTimeSeriesProfile();
 		}
 
 		EList<ProfileElement> profileElementList = ECollections.newBasicEList();
