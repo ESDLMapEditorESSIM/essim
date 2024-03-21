@@ -101,24 +101,24 @@ public class StorageNode extends Node {
 			double maxDischargableEnergy = soc * capacity;
 			double ecmax = Math.min(maxChargeRate * timeStep, maxChargableEnergy);
 			double edmax = Math.min(maxDischargeRate * timeStep, maxDischargableEnergy);
-			Double mc1 = null;
-			Double mc2 = null;
+			Double mcCharge = null;
+			Double mcDischarge = null;
 
 			if (controlStrategy != null) {
 				if (controlStrategy instanceof StorageStrategy) {
 					StorageStrategy storageStrategy = (StorageStrategy) controlStrategy;
 					GenericProfile marginalChargeCosts = storageStrategy.getMarginalChargeCosts();
 					if (marginalChargeCosts != null) {
-						mc1 = Commons.aggregateCost(Commons.readProfile(marginalChargeCosts, now));
+						mcCharge = Commons.aggregateCost(Commons.readProfile(marginalChargeCosts, now));
 					}
 					GenericProfile marginalDischargeCosts = storageStrategy.getMarginalDischargeCosts();
 					if (marginalDischargeCosts != null) {
-						mc2 = Commons.aggregateCost(Commons.readProfile(marginalDischargeCosts, now));
+						mcDischarge = Commons.aggregateCost(Commons.readProfile(marginalDischargeCosts, now));
 					}
 				}
 			}
 
-			makeStorageFunction(ecmax, edmax, soc, mc1, mc2);
+			makeStorageFunction(ecmax, edmax, soc, mcCharge, mcDischarge);
 		}
 	}
 
