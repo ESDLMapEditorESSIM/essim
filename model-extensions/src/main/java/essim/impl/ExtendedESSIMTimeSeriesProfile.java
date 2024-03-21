@@ -111,9 +111,12 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
             } else {
                 fromIndex = (int) ((from.getTime() / 1000L - profileStart) / stepSize);
                 toIndex = (int) ((to.getTime() / 1000L - profileStart) / stepSize);
-            }
-            if (toIndex > dataPoints.size()) {
-                toIndex = dataPoints.size();
+                if (toIndex > dataPoints.size()) {
+                    toIndex = dataPoints.size();
+                }
+                if (fromIndex < 0) {
+                    fromIndex = 0;
+                }
             }
             for (int i = fromIndex; i < toIndex; i++) {
                 ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
