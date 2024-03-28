@@ -30,6 +30,7 @@ import esdl.StorageStrategy;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
@@ -42,6 +43,7 @@ import nl.tno.essim.time.Horizon;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@Slf4j
 public class StorageNode extends Node {
 
 	private Storage storage;
@@ -95,6 +97,10 @@ public class StorageNode extends Node {
 		} else {
 			double deltaSoC = energy / capacity;
 			double soc = storage.getFillLevel() + deltaSoC;
+			if (soc > 1) {
+				log.warn("SOC > 1 : {}", soc);
+				soc = 1;
+			}
 			storage.setFillLevel(soc);
 
 			double maxChargableEnergy = (1 - soc) * capacity;

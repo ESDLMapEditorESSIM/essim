@@ -302,10 +302,10 @@ public abstract class Node implements INode {
 
         demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
                 new double[][]{{minMarketPrice, ecmax},
-                        {Math.max(minMarketPrice, Math.min(mcDischarge, maxMarketPrice)), ecmax},
-                        {Math.max(minMarketPrice, Math.min(mcDischarge + delta, maxMarketPrice)), 0.0},
-                        {Math.max(minMarketPrice, Math.min(mcCharge, maxMarketPrice)), 0.0},
-                        {Math.max(minMarketPrice, Math.min(mcCharge + delta, maxMarketPrice)), -edmax},
+                        {Math.max(minMarketPrice, Math.min(mcCharge, maxMarketPrice)), ecmax},
+                        {Math.max(minMarketPrice, Math.min(mcCharge + delta, maxMarketPrice)), 0.0},
+                        {Math.max(minMarketPrice, Math.min(mcDischarge, maxMarketPrice)), 0.0},
+                        {Math.max(minMarketPrice, Math.min(mcDischarge + delta, maxMarketPrice)), -edmax},
                         {maxMarketPrice, -edmax}});
         demandFunction.setMarginalCost(mcCharge);
     }
