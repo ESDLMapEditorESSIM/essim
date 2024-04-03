@@ -72,7 +72,7 @@
 			<dependency>
 				<groupId>org.projectlombok</groupId>
 				<artifactId>lombok</artifactId>
-				<version>1.18.24</version>
+				<version>1.18.32</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -83,7 +83,7 @@
 			<dependency>
 				<groupId>org.json</groupId>
 				<artifactId>json</artifactId>
-				<version>20180813</version>
+				<version>20240303</version>
 			</dependency>
 			<dependency>
 				<groupId>nl.tno.esdl</groupId>
