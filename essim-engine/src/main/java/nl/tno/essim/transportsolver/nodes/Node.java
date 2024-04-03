@@ -2,12 +2,12 @@
  * This work is based on original code developed and copyrighted by TNO 2020.
  * Subsequent contributions are licensed to you by the developers of such code and are
  * made available to the Project under one or several contributor license agreements.
- *
+ * <p>
  * This work is licensed to you under the Apache License, Version 2.0.
  * You may obtain a copy of the license at
- * 
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Contributors:
  * TNO         - Initial implementation
  * Manager:
@@ -47,6 +47,7 @@ import nl.tno.essim.time.Horizon;
 @Data
 @Slf4j
 public abstract class Node implements INode {
+    private static boolean storeBidCurves = System.getenv().containsKey("STORE_BIDCURVES");
 
     protected String simulationId;
     protected String nodeId;
@@ -160,12 +161,12 @@ public abstract class Node implements INode {
             }
             return aggregatedFunction;
         } else {
-			BidFunction demandFunction = getDemandFunction();
-			if (demandFunction == null) {
-				demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-						new double[][] { { minMarketPrice, 0.0 }, { maxMarketPrice, 0.0 } });
-				setDemandFunction(demandFunction);
-			}
+            BidFunction demandFunction = getDemandFunction();
+            if (demandFunction == null) {
+                demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
+                        new double[][]{{minMarketPrice, 0.0}, {maxMarketPrice, 0.0}});
+                setDemandFunction(demandFunction);
+            }
             return demandFunction;
         }
     }
@@ -334,7 +335,7 @@ public abstract class Node implements INode {
 
     private void propagate(double price, List<Observation> observations, EssimTime timestamp) {
         // Allocate
-		energy = findDemandFromCurve(demandFunction, price);
+        energy = findDemandFromCurve(demandFunction, price);
 
         // print curve to stdout
         // log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(),
@@ -348,7 +349,11 @@ public abstract class Node implements INode {
                 .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
                 .value("allocationEnergy", energy)
                 .value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
-                .value("marginalCost", demandFunction.getMarginalCost()).value("bidcurve", this.demandFunction);
+                .value("marginalCost", demandFunction.getMarginalCost());
+
+        if (storeBidCurves) {
+            builder.value("bidcurve", this.demandFunction);
+        }
 
         // Tag sector if defined
         String sectorName = "DefaultSector";
