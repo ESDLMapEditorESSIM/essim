@@ -1,0 +1,72 @@
+package kpimodule.kpi.imbalance;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.kpimodule.KPIProcessor;
+import nl.tno.kpimodule.data.KPIData;
+import nl.tno.kpimodule.data.ModuleInfo;
+import nl.tno.kpimodule.kpi.KPIProcessorFactory;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.Map;
+
+@Slf4j
+public class ImbalanceCalculator implements KPIProcessor {
+
+    private final String simulationID;
+    private final ObjectMapper objectMapper;
+    private Map<String, String> configuration;
+    private int messageCount;
+
+    public static void main(String[] args) throws IOException {
+        ModuleInfo moduleInfo = ModuleInfo.builder()
+                .title("Total Energy Imbalance")
+                .typeId("TotalEnergyImbalanceID")
+                .description("")
+                .upSince(new Date())
+                .sampleOutput(new String(ImbalanceCalculator.class.getResourceAsStream("/imbalance_sample.json").readAllBytes(), StandardCharsets.UTF_8))
+                .build();
+        new KPIProcessorFactory() {
+            @Override
+            public KPIProcessor createKPIProcessor(String simulationID) {
+                return new ImbalanceCalculator(simulationID);
+            }
+
+            @Override
+            public ModuleInfo getModuleInfo() {
+                return moduleInfo;
+            }
+        };
+    }
+
+    public ImbalanceCalculator(String simulationID) {
+        this.simulationID = simulationID;
+        objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+
+    @Override
+    public void configure(Map<String, String> configuration, int messageCount) {
+        this.configuration = configuration;
+        this.messageCount = messageCount;
+    }
+
+    @Override
+    public void messageReceived(KPIData measurement) {
+        log.info("Measurement: {}", measurement);
+    }
+
+    @Override
+    public String getJSONResult() {
+        return "{}";
+    }
+
+    @Override
+    public void reset() {
+
+    }
+}
