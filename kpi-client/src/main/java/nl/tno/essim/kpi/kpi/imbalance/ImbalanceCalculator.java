@@ -1,12 +1,12 @@
-package kpimodule.kpi.imbalance;
+package nl.tno.essim.kpi.kpi.imbalance;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.kpimodule.KPIProcessor;
-import nl.tno.kpimodule.data.KPIData;
-import nl.tno.kpimodule.data.ModuleInfo;
-import nl.tno.kpimodule.kpi.KPIProcessorFactory;
+import nl.tno.essim.kpi.KPIProcessor;
+import nl.tno.essim.kpi.data.KPIData;
+import nl.tno.essim.kpi.data.ModuleInfo;
+import nl.tno.essim.kpi.kpi.KPIProcessorFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

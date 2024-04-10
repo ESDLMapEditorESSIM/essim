@@ -1,6 +1,6 @@
-package kpimodule;
+package nl.tno.essim.kpi;
 
-import nl.tno.kpimodule.data.KPIData;
+import nl.tno.essim.kpi.data.KPIData;
 
 import java.util.Map;
 

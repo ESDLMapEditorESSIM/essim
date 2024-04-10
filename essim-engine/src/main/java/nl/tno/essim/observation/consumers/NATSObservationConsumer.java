@@ -15,9 +15,10 @@
  */
 package nl.tno.essim.observation.consumers;
 
-import io.nats.client.Connection;
-import io.nats.client.Nats;
-import io.nats.client.Options;
+import io.nats.client.*;
+import io.nats.client.api.StorageType;
+import io.nats.client.api.StreamConfiguration;
+import io.nats.client.api.StreamInfo;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
@@ -37,6 +38,7 @@ public class NATSObservationConsumer implements IObservationConsumer {
     private String observationTopic;
     private Connection nc;
     private String url;
+    private JetStream jetStream;
 
     public NATSObservationConsumer(String url) {
         this.url = url;
@@ -45,13 +47,27 @@ public class NATSObservationConsumer implements IObservationConsumer {
     @Override
     public void init(String scenarioName) {
         observationTopic = scenarioName + "." + OBSERVATION_TOPIC;
-
         try {
-            Options options = Options.builder().server(url).maxMessagesInOutgoingQueue(Integer.MAX_VALUE).build();
+            Options options = Options.builder().server(url).maxMessagesInOutgoingQueue(100000).useDispatcherWithExecutor().build();
             nc = Nats.connect(options);
-        } catch (IOException | InterruptedException e) {
+            configureJetStream();
+        } catch (IOException | JetStreamApiException | InterruptedException e) {
+//        } catch (IOException | InterruptedException e) {
             log.warn("Could not create nats connection", e);
         }
+    }
+
+    private void configureJetStream() throws IOException, JetStreamApiException {
+        jetStream = nc.jetStream();
+        JetStreamManagement jsm = nc.jetStreamManagement();
+        String streamName = "EssimObservations";
+        StreamConfiguration sc = StreamConfiguration.builder()
+                .name(streamName)
+                .storageType(StorageType.File)
+                .subjects("*" + "." + OBSERVATION_TOPIC)
+                .build();
+        StreamInfo si = jsm.addStream(sc);
+        log.info("Created stream {} with subject(s) {}", streamName, si.getConfiguration().getSubjects());
     }
 
     @Override
@@ -89,8 +105,11 @@ public class NATSObservationConsumer implements IObservationConsumer {
         point.put("tags", tagSet);
 
         if (nc != null) {
-            nc.publish(observationTopic, point.toString()
-                    .getBytes());
+            try {
+                jetStream.publish(observationTopic, point.toString().getBytes("UTF-8"));
+            } catch (IOException | JetStreamApiException e) {
+                log.warn("Could not publish nats message", e);
+            }
         }
     }
 

@@ -1,9 +1,8 @@
-package kpimodule.kpi;
+package nl.tno.essim.kpi.kpi;
 
-import nl.tno.kpimodule.KPIProcessor;
-import nl.tno.kpimodule.data.ModuleInfo;
+import nl.tno.essim.kpi.KPIProcessor;
 
 public interface KPIProcessorFactory {
     KPIProcessor createKPIProcessor(String simulationID);
-    ModuleInfo getModuleInfo();
+    nl.tno.essim.kpi.data.ModuleInfo getModuleInfo();
 }

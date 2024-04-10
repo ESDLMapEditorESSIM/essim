@@ -1,4 +1,4 @@
-package kpimodule;
+package nl.tno.essim.kpi;
 
 import lombok.Data;
 

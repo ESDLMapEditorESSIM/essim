@@ -1,13 +1,13 @@
-package kpimodule;
+package nl.tno.essim.kpi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jcustenborder.kafka.serialization.jackson.JacksonDeserializer;
 import com.github.jcustenborder.kafka.serialization.jackson.JacksonSerializer;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.kpimodule.data.KPIControlMessage;
-import nl.tno.kpimodule.data.KPIData;
-import nl.tno.kpimodule.data.KPIResponseMessage;
-import nl.tno.kpimodule.kpi.KPIProcessorFactory;
+import nl.tno.essim.kpi.data.KPIControlMessage;
+import nl.tno.essim.kpi.data.KPIData;
+import nl.tno.essim.kpi.data.KPIResponseMessage;
+import nl.tno.essim.kpi.kpi.KPIProcessorFactory;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
