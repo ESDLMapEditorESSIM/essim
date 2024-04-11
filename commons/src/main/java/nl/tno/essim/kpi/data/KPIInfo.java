@@ -1,26 +1,27 @@
 package nl.tno.essim.kpi.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @RequiredArgsConstructor
+@Builder
 public class KPIInfo {
     @Data
     @AllArgsConstructor
     @RequiredArgsConstructor
     public static class KpiCalculator {
         private String id;
-        private HashMap<String, String> config;
+        private Map<String, String> config;
     }
 
     private String simulationId;
     private long noOfMessages;
-    private ArrayList<KpiCalculator> kpiCalculators;
+    @Singular
+    private List<KpiCalculator> kpiCalculators;
 }
 

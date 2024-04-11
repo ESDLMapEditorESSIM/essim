@@ -14,6 +14,7 @@ public class KPIResponseMessage {
     public static class SimulationProgress {
         private String simulationID;
         private int messageCount;
+        private String statusMessage;
     }
     private ModuleInfo moduleInfo;
     private String uuid;

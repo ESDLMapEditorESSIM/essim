@@ -27,6 +27,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
+import nl.tno.essim.kpi.KPIManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -387,8 +388,8 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public GetSimulationKpiModulesResponse getSimulationKpiModules() {
-		List<KPIModuleInfo> allKpiModules = mongo.getAllKpiModules();
-		return GetSimulationKpiModulesResponse.respond200WithApplicationJson(allKpiModules);
+		List<KPIModuleInfo> allKPIModules = KPIManager.getInstance().getAllKPIModules();
+		return GetSimulationKpiModulesResponse.respond200WithApplicationJson(allKPIModules);
 	}
 
 	@Override

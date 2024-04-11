@@ -25,18 +25,17 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.TreeMap;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import nl.tno.essim.kpi.KPICommunicator;
+import nl.tno.essim.kpi.KPIManager;
+import nl.tno.essim.kpi.data.KPIInfo;
+import nl.tno.essim.model.*;
+import nl.tno.essim.observation.consumers.*;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -76,29 +75,16 @@ import nl.tno.essim.kpi.KPIModuleClient;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
-import nl.tno.essim.model.EssimSimulation;
-import nl.tno.essim.model.MSOConfiguration;
-import nl.tno.essim.model.Market;
-import nl.tno.essim.model.MarketImpl;
-import nl.tno.essim.model.NodeConfiguration;
-import nl.tno.essim.model.RemoteKPIModule;
-import nl.tno.essim.model.TransportNetwork;
-import nl.tno.essim.model.TransportNetworkImpl;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
-import nl.tno.essim.observation.consumers.AMQPObservationConsumer;
-import nl.tno.essim.observation.consumers.CSVObservationConsumer;
-import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
-import nl.tno.essim.observation.consumers.KafkaObservationConsumer;
-import nl.tno.essim.observation.consumers.MQTTObservationConsumer;
-import nl.tno.essim.observation.consumers.NATSObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
 import nl.tno.essim.transportsolver.TransportSolver;
+import org.json.JSONObject;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
@@ -224,10 +210,15 @@ public class ESSimEngine implements IStatusProvider {
 				log.debug("Registering Kafka Observation Consumer");
 			}
 			if (simulation.getNatsURL() != null) {
-				NATSObservationConsumer natsObservationConsumer = new NATSObservationConsumer(simulation.getNatsURL());
-				natsObservationConsumer.init(simulationId);
-				observationManager.registerConsumer(natsObservationConsumer);
-				simulationManager.addObservationConsumer(natsObservationConsumer);
+				KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getNatsURL());
+				KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
+				kpiObservationConsumer.init(simulationId);
+				observationManager.registerConsumer(kpiObservationConsumer);
+				simulationManager.addObservationConsumer(kpiObservationConsumer);
+//				NATSObservationConsumer natsObservationConsumer = new NATSObservationConsumer(simulation.getNatsURL());
+//				natsObservationConsumer.init(simulationId);
+//				observationManager.registerConsumer(natsObservationConsumer);
+//				simulationManager.addObservationConsumer(natsObservationConsumer);
 				log.debug("Registering NATS Observation Consumer");
 			}
 			if (simulation.getMqttURL() != null) {
@@ -326,7 +317,14 @@ public class ESSimEngine implements IStatusProvider {
 		double messages = totalSteps * (numAssets + numSolvers);
 
 		if (kpiModules != null) {
-			new KPIModuleClient(simulationId, simulation, messages);
+			KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getNatsURL());
+			List<KPIModule> modules = simulation.getKpiModule().getModules();
+			KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);
+			for (KPIModule module : modules) {
+				Map<String, String> config = (Map<String, String>) module.getConfig();
+				kpiInfoBuilder.kpiCalculator(new KPIInfo.KpiCalculator(module.getId(), config));
+			}
+			kpiCommunicator.sendKPIStart(kpiInfoBuilder.build());
 		}
 
 		if (msoConfiguration != null) {

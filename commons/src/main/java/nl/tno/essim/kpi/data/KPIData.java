@@ -11,6 +11,6 @@ public class KPIData {
     private String simulationId;
     private String simulationRun;
 
-    private Map<String, String> fields;
+    private Map<String, Object> fields;
     private Map<String, String> tags;
 }
