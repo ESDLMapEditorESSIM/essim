@@ -6,7 +6,8 @@ import com.github.jcustenborder.kafka.serialization.jackson.JacksonSerializer;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIControlMessage;
 import nl.tno.essim.kpi.data.KPIData;
-import nl.tno.essim.kpi.data.KPIResponseMessage;
+import nl.tno.essim.kpi.data.KPIModuleMessage;
+import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.kpi.kpi.KPIProcessorFactory;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -26,7 +27,7 @@ public class KPIModule {
     private final static Properties consumerProperties;
     //    private final static int BATCH_SIZE = 2000; // whichever is first, before publishing
     private final static int PARTITIONS = 3;
-    private KafkaProducer<String, KPIResponseMessage> producer;
+    private KafkaProducer<String, KPIModuleMessage> producer;
     private static final String OBSERVATION_TOPIC = "observation";
     private static String url;
 
@@ -41,17 +42,11 @@ public class KPIModule {
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
         consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, KPIModule.class.getSimpleName());
         consumerProperties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000); // Default 500
-
-
     }
 
     private final KPIProcessorFactory kpiProcessorFactory;
     ObjectMapper objectMapper;
     private String uuid;
-    //    private KPIResponseMessage.ModuleStatus status = KPIResponseMessage.ModuleStatus.Available;
-//    private String simulationId;
-//    private AtomicInteger messageCounter = new AtomicInteger(0);
-//    private int expectedMessageCount;
     private KafkaConsumer<String, KPIControlMessage> controlConsumer;
     private KafkaConsumer<String, KPIData> dataConsumer;
     private HashMap<String, SimulationState> simulationStateMap = new HashMap<>();
@@ -80,7 +75,7 @@ public class KPIModule {
                 ConsumerRecords<String, KPIData> records = dataConsumer.poll(POLL_DURATION);
                 records.forEach(r -> handleDataMessage(r.key(), r.value()));
             }
-        }, "ObservationConsumer").run();
+        }, "ObservationConsumer").start();
         while (true) {
             ConsumerRecords<String, KPIControlMessage> records = controlConsumer.poll(POLL_DURATION);
             records.forEach(r -> handleKPIControlMessage(r.value()));
@@ -123,17 +118,19 @@ public class KPIModule {
 
     private void handleStatus(KPIControlMessage.Status status) {
         if (status.getUuid() == null || uuid.equals(status.getUuid())) {
-            KPIResponseMessage.KPIResponseMessageBuilder builder = KPIResponseMessage.builder().uuid(uuid).moduleInfo(kpiProcessorFactory.getModuleInfo());
+            KPIStatus.KPIStatusBuilder builder = KPIStatus.builder().uuid(uuid).moduleInfo(kpiProcessorFactory.getModuleInfo());
             for (var e : simulationStateMap.entrySet()) {
-                builder.simulationProgress(KPIResponseMessage.SimulationProgress.builder().simulationID(e.getKey()).messageCount(e.getValue().getMessageCounter().get()).build());
+                builder.simulationProgress(KPIStatus.SimulationProgress.builder().simulationID(e.getKey()).messageCount(e.getValue().getMessageCounter().get()).build());
             }
             sendMessage(builder.build());
         }
     }
 
 
-    private void sendMessage(KPIResponseMessage message) {
-        producer.send(new ProducerRecord<>(uuid, message));
+    private void sendMessage(KPIStatus status) {
+        KPIModuleMessage m = new KPIModuleMessage();
+        m.setStatus(status);
+        producer.send(new ProducerRecord<>(uuid, m));
     }
 
     private void handleDataMessage(String simulationId, KPIData message) {

@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class KPIResponseMessage {
+public class KPIStatus {
     @Data
     @Builder
     public static class SimulationProgress {

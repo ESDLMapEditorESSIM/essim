@@ -1,14 +1,13 @@
 package nl.tno.essim.kpi;
 
 import lombok.Getter;
-import nl.tno.essim.kpi.data.KPIResponseMessage;
-import nl.tno.essim.kpi.data.KPIResultMessage;
+import nl.tno.essim.kpi.data.KPIStatus;
+import nl.tno.essim.kpi.data.KPIResult;
 import nl.tno.essim.kpi.data.ModuleInfo;
 import nl.tno.essim.model.KPIModuleInfo;
 import nl.tno.essim.model.KPIModuleInfoImpl;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -23,9 +22,9 @@ public class KPIManager {
     private final static KPIManager instance = new KPIManager();
     private final ScheduledExecutorService executor;
     private final HashMap<String, KPICommunicator> communicatorMap = new HashMap<>();
-    private HashMap<String, KPIModuleState> moduleStates;
+    private final HashMap<String, KPIModuleState> moduleStates = new HashMap<>();
 
-    public void resultReceived(KPIResultMessage result) {
+    public void resultReceived(KPIResult result) {
     }
     private class StateRemover implements Runnable {
         private final String uuid;
@@ -52,7 +51,7 @@ public class KPIManager {
         }
     }
 
-    public void processKPIMessage(KPIResponseMessage message) {
+    public void processKPIMessage(KPIStatus message) {
         KPIModuleState moduleState = moduleStates.get(message.getUuid());
         if (moduleState == null) {
             moduleState = new KPIModuleState(message.getModuleInfo());
@@ -64,7 +63,7 @@ public class KPIManager {
         }
         future = executor.schedule(new StateRemover(message.getUuid()), STATUS_INTERVAL * 4, TimeUnit.SECONDS);
         moduleState.setFuture(future);
-        for (KPIResponseMessage.SimulationProgress p : message.getSimulationProgresses()) {
+        for (KPIStatus.SimulationProgress p : message.getSimulationProgresses()) {
             moduleState.setSimulationProgresses(p.getSimulationID(), p);
         }
     }

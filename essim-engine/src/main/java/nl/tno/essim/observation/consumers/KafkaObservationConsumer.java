@@ -122,27 +122,4 @@ public class KafkaObservationConsumer implements IObservationConsumer {
         producer.flush();
         producer.close();
     }
-
-    private static void createTopic(Properties props, String topics) {
-        Properties adminProperties = new Properties();
-        adminProperties.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, props.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG));
-        adminProperties.setProperty(AdminClientConfig.CLIENT_ID_CONFIG, props.getProperty(ProducerConfig.CLIENT_ID_CONFIG));
-
-        AdminClient kafkaAdminClient = KafkaAdminClient.create(adminProperties);
-        try {
-            Set<String> existingTopics = kafkaAdminClient.listTopics().names().get();
-            List<String> newTopics = Stream.of(topics).filter(topic -> !existingTopics.contains(topic)).collect(Collectors.toList());
-            if (!newTopics.isEmpty()) {
-                log.info("Creating topic(s): {}", newTopics);
-
-                CreateTopicsResult result = kafkaAdminClient.createTopics(
-                        newTopics.stream().map(topic -> new NewTopic(topic, PARTITIONS, (short) 1)).collect(Collectors.toList()));
-                result.all().get();
-            }
-            kafkaAdminClient.close();
-        } catch (InterruptedException | ExecutionException e) {
-            log.error("Error creating kafka topic", e);
-        }
-    }
-
 }
