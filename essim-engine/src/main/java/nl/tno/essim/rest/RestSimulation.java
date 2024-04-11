@@ -16,45 +16,34 @@
 
 package nl.tno.essim.rest;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.ESSimEngine;
+import nl.tno.essim.Simulation;
+import nl.tno.essim.commons.Commons;
+import nl.tno.essim.kpi.KPIManager;
+import nl.tno.essim.kpi.data.KPIStatus;
+import nl.tno.essim.model.*;
+import nl.tno.essim.mongo.IMongoBackend;
+import nl.tno.essim.mongo.MongoBackend;
+
+import java.io.*;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.URLDecoder;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
-import nl.tno.essim.kpi.KPIManager;
-import nl.tno.essim.kpi.data.KPIStatus;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.Simulation;
-import nl.tno.essim.commons.Commons;
-import nl.tno.essim.model.CreatedStatusImpl;
-import nl.tno.essim.model.ErrorStatusImpl;
-import nl.tno.essim.model.EssimSimulation;
-import nl.tno.essim.model.KPIModule;
-import nl.tno.essim.model.KPIModuleInfo;
-import nl.tno.essim.model.RemoteKPIModule;
-import nl.tno.essim.model.SimulationStatus;
-import nl.tno.essim.model.SimulationStatusImpl;
-import nl.tno.essim.model.Status;
-import nl.tno.essim.model.TransportNetwork;
-import nl.tno.essim.mongo.IMongoBackend;
-import nl.tno.essim.mongo.MongoBackend;
-
 @Slf4j
 public class RestSimulation implements Simulation {
 
     private IMongoBackend mongo;
     private final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);
+    private final static ObjectMapper mapper = new ObjectMapper();
 
     private static class EssimExceptionHandler implements UncaughtExceptionHandler {
         private IMongoBackend mongo;
@@ -227,10 +216,10 @@ public class RestSimulation implements Simulation {
     public GetSimulationStatusBySimulationIdResponse getSimulationStatusBySimulationId(String simulationId) {
         SimulationStatus simStatus = mongo.getSimulationStatus(simulationId);
         if (simStatus != null) {
-            JSONObject simStatusJSON = new JSONObject();
-            simStatusJSON.put("State", simStatus.getState());
-            simStatusJSON.put("Description", simStatus.getDescription());
-            return GetSimulationStatusBySimulationIdResponse.respond200WithApplicationJson(simStatusJSON.toString());
+            ObjectNode statusJson = mapper.createObjectNode();
+            statusJson.put("State", simStatus.getState().toString());
+            statusJson.put("Description", simStatus.getDescription());
+            return GetSimulationStatusBySimulationIdResponse.respond200WithApplicationJson(statusJson.toString());
         } else {
             ErrorStatusImpl error = new ErrorStatusImpl();
             error.setStatus(Status.ERROR);
@@ -300,34 +289,47 @@ public class RestSimulation implements Simulation {
                 if (kpiModule.getModules() == null || kpiModule.getModules().isEmpty()) {
                     error = "SimulationID " + simulationId + " had no KPIs defined!";
                 } else {
-                    JSONArray result = new JSONArray();
+                    ArrayNode arrayNode = mapper.createArrayNode();
                     for (KPIModule module : kpiModule.getModules()) {
                         if (module.getId() != null) {
-                            JSONObject moduleJSON = new JSONObject();
-                            JSONObject moduleResult = createKPIResult(module, simulationId);
-                            moduleJSON.put(module.getId(), moduleResult);
-                            result.put(moduleJSON);
+                            arrayNode.add(getKPIResult(simulationId, module));
                         }
                     }
-                    return GetSimulationKpiBySimulationIdResponse.respond200WithApplicationJson(result.toString());
+                    return GetSimulationKpiBySimulationIdResponse.respond200WithApplicationJson(arrayNode.toString());
                 }
             }
         }
         return GetSimulationKpiBySimulationIdResponse.respond404WithApplicationJson(error);
     }
 
-    private JSONObject createKPIResult(KPIModule module, String simulationId) {
-        JSONObject moduleResult;
-        KPIStatus.SimulationProgress simulationProgress = KPIManager.getInstance().getKPIModuleInfo(module.getId(), simulationId);
-        if (simulationProgress == null || simulationProgress.getStatusMessage() == null) {
-            moduleResult = new JSONObject().put("status", "Not yet started");
-        } else {
-            moduleResult = new JSONObject();
-            moduleResult.put("status", simulationProgress.getStatusMessage());
-            moduleResult.put("progress", simulationProgress.getProgress());
+    private JsonNode getKPIResult(String simulationId, KPIModule module) {
+        String moduleResultString = module.getResult();
+        JsonNode result = null;
+        if (moduleResultString != null) {
+            try {
+                result = mapper.readTree(moduleResultString);
+                if (!result.has("status")) {
+                    ((ObjectNode) result).put("status", "Success");
+                }
+
+            } catch (JsonProcessingException e) {
+                log.warn("Could not parse json", e);
+            }
 
         }
-        return moduleResult;
+        if (result == null) {
+            KPIStatus.SimulationProgress simulationProgress = KPIManager.getInstance().getKPIModuleInfo(module.getId(), simulationId);
+            if (simulationProgress == null || simulationProgress.getStatusMessage() == null) {
+                result = mapper.createObjectNode();
+                ((ObjectNode) result).put("status", "Not yet started");
+            } else {
+                result = mapper.valueToTree(simulationProgress);
+            }
+
+        }
+        ObjectNode objectNode = mapper.createObjectNode();
+        objectNode.put(module.getId(), result);
+        return objectNode;
     }
 
     @Override
@@ -349,9 +351,8 @@ public class RestSimulation implements Simulation {
                     for (KPIModule module : kpiModule.getModules()) {
                         if (module.getId() != null) {
                             if (module.getId().equals(kpiId)) {
-                                JSONObject moduleResult = createKPIResult(module, simulationId);
                                 return GetSimulationKpiBySimulationIdAndKpiIdResponse
-                                        .respond200WithApplicationJson(moduleResult.toString());
+                                        .respond200WithApplicationJson(getKPIResult(simulationId, module).toString());
                             }
                         }
                     }

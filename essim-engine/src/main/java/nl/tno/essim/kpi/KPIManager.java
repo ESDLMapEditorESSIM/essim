@@ -40,7 +40,7 @@ public class KPIManager {
     public void resultReceived(KPIResult result) {
         log.debug("KPI Result received : {}", result);
         KPIModuleState kpiModuleState = moduleStates.get(result.getUuid());
-        MongoBackend.getInstance().updateKPIForSimulation(result.getSimulationId(), kpiModuleState.getModuleInfo().getTypeId(), result.getResult().toString());
+        MongoBackend.getInstance().updateKPIForSimulation(result.getSimulationId(), kpiModuleState.getModuleInfo().getTypeId(), result.getResult().asText());
     }
 
     private class StateRemover implements Runnable {
@@ -88,6 +88,7 @@ public class KPIManager {
         log.trace("KPI status received: {}", message);
         KPIModuleState moduleState = moduleStates.get(message.getUuid());
         if (moduleState == null) {
+            log.info("Registering KPI module '{}' ({}): {}", message.getModuleInfo().getTitle(), message.getModuleInfo().getTypeId(), message.getModuleInfo().getDescription());
             moduleState = new KPIModuleState(message.getModuleInfo());
             moduleStates.put(message.getUuid(), moduleState);
         }

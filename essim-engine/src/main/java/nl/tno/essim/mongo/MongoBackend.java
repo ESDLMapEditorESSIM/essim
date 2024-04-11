@@ -17,6 +17,8 @@
 package nl.tno.essim.mongo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.mongodb.*;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
@@ -64,7 +66,12 @@ public class MongoBackend implements IMongoBackend {
         testMongoConnection(serverAddress);
 
         com.mongodb.client.MongoCollection<?> collection = essimDB.getCollection(ESSIM_COLL_NAME, Document.class);
-        JacksonCodecRegistry jacksonCodecRegistry = new JacksonCodecRegistry(ObjectMapperConfigurer.configureObjectMapper(new ObjectMapper()), collection.getCodecRegistry(), UuidRepresentation.JAVA_LEGACY);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // StdDateFormat is ISO8601 since jackson 2.9
+        mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(true));
+
+        JacksonCodecRegistry jacksonCodecRegistry = new JacksonCodecRegistry(mapper, collection.getCodecRegistry(), UuidRepresentation.JAVA_LEGACY);
         jacksonCodecRegistry.addCodecForClass(EssimSimulation.class);
         essimCollection = collection.withDocumentClass(EssimSimulation.class).withCodecRegistry(jacksonCodecRegistry);
         essimMetaCollection = essimDB.getCollection(ESSIM_META_COLL_NAME);

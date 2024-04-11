@@ -1,5 +1,6 @@
 package nl.tno.essim.kpi.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
@@ -16,6 +17,7 @@ public class KPIStatus {
     public static class SimulationProgress {
         private String simulationID;
         private int messageCount;
+        @JsonProperty("status")
         private String statusMessage;
         private double progress;
     }
