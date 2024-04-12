@@ -127,7 +127,15 @@ public class KPIModule {
     private void sendStatus() {
         KPIStatus.KPIStatusBuilder builder = KPIStatus.builder().uuid(uuid).moduleInfo(kpiProcessorFactory.getModuleInfo());
         for (var e : simulationStateMap.entrySet()) {
-            builder.simulationProgress(KPIStatus.SimulationProgress.builder().simulationID(e.getKey()).messageCount(e.getValue().getMessageCounter().get()).build());
+            int messageCount = e.getValue().getMessageCounter().get();
+            double progress = e.getValue().getExpectedMessageCount() == 0 ? 0 : (double) messageCount / e.getValue().getExpectedMessageCount();
+            String statusMessage = "Not yet started";
+            if (messageCount >= e.getValue().getExpectedMessageCount()) {
+                statusMessage = "Finished";
+            } else if (messageCount > 0) {
+                statusMessage = "Running";
+            }
+            builder.simulationProgress(KPIStatus.SimulationProgress.builder().simulationID(e.getKey()).messageCount(messageCount).progress(progress).statusMessage(statusMessage).build());
         }
         sendMessage(builder.build());
     }
