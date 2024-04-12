@@ -38,9 +38,6 @@ import com.mongodb.MongoException;
 import com.mongodb.MongoTimeoutException;
 import com.mongodb.ServerAddress;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.IStatusProvider;
@@ -75,10 +72,6 @@ public class MongoBackend implements IMongoBackend {
 
 	@SuppressWarnings("deprecation")
 	public MongoBackend(String host, String port) {
-		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-		Logger rootLogger = loggerContext.getLogger("org.mongodb.driver");
-		rootLogger.setLevel(Level.OFF);
-
 		MongoClientOptions opts = MongoClientOptions.builder().serverSelectionTimeout(2000)
 				.codecRegistry(MongoClient.getDefaultCodecRegistry()).build();
 		ServerAddress serverAddress = new ServerAddress(host, Integer.parseInt(port));

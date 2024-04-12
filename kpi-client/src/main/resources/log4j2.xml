@@ -9,8 +9,8 @@
 
     <Appenders>
         <RollingFile name="logfile"
-                     fileName="logs/${sys:LOG_FILENAME:-natsclient}.log"
-                     filePattern="logs/${sys:LOG_FILENAME:-natsclient}.%d{yyyy-MM-dd}.log">
+                     fileName="logs/${sys:LOG_FILENAME:-kpiclient}.log"
+                     filePattern="logs/${sys:LOG_FILENAME:-kpiclient}.%d{yyyy-MM-dd}.log">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <Policies>
                 <OnStartupTriggeringPolicy/>
@@ -32,7 +32,7 @@
     </Appenders>
 
     <Loggers>
-<!--        <Logger name="nl.tno" level="debug" additivity="false">-->
+        <!--        <Logger name="nl.tno" level="debug" additivity="false">-->
         <Logger name="nl.tno" level="debug" >
         </Logger>
 

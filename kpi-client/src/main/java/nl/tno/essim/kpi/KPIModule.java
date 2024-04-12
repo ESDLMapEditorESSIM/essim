@@ -27,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 public class KPIModule {
     private final static Duration POLL_DURATION = Duration.ofSeconds(1);
     private final static Properties consumerProperties;
-    //    private final static int BATCH_SIZE = 2000; // whichever is first, before publishing
     private final static int PARTITIONS = 3;
     private KafkaProducer<String, KPIModuleMessage> producer;
     private static final String OBSERVATION_TOPIC = "observation.all";
@@ -50,10 +49,9 @@ public class KPIModule {
 
     private final KPIProcessorFactory kpiProcessorFactory;
     ObjectMapper objectMapper;
-    private String uuid;
-    private KafkaConsumer<String, KPIControlMessage> controlConsumer;
+    private final String uuid;
     private KafkaConsumer<String, KPIData> dataConsumer;
-    private HashMap<String, SimulationState> simulationStateMap = new HashMap<>();
+    private final HashMap<String, SimulationState> simulationStateMap = new HashMap<>();
 
     public KPIModule(KPIProcessorFactory kpiProcessorFactory) {
         this.kpiProcessorFactory = kpiProcessorFactory;
@@ -65,14 +63,13 @@ public class KPIModule {
         Properties producerProperties = new Properties();
         producerProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, url);
         producerProperties.put(ProducerConfig.LINGER_MS_CONFIG, 0);
-//        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, BATCH_SIZE);
         producerProperties.put(ProducerConfig.ACKS_CONFIG, "0");
         producerProperties.put(ProducerConfig.RETRIES_CONFIG, 10);
         producerProperties.put(ProducerConfig.CLIENT_ID_CONFIG, "ESSIM-" + kpiProcessorFactory.getModuleInfo().getTypeId());
 
         producer = new KafkaProducer<>(producerProperties, new StringSerializer(), new JacksonSerializer<>());
 
-        controlConsumer = createControlConsumer();
+        KafkaConsumer<String, KPIControlMessage> controlConsumer = createControlConsumer();
         dataConsumer = createDataConsumer();
         sendStatus();
         new Thread(() -> {
@@ -165,7 +162,7 @@ public class KPIModule {
         List<String> topicNames = Collections.singletonList(CONTROL_TOPIC);
         createTopic(consumerProperties, CONTROL_TOPIC);
         consumer.subscribe(topicNames);
-        log.info("Initialized consumer for " + KPIModule.class.getCanonicalName() + ", group name " + consumer.groupMetadata().groupId() + ", subscribed to " + topicNames);
+        log.info("Initialized consumer for {}, group name {}, subscribed to {}", KPIModule.class.getCanonicalName(), consumer.groupMetadata().groupId(), topicNames);
         return consumer;
     }
 
@@ -178,7 +175,7 @@ public class KPIModule {
         List<String> topicNames = Collections.singletonList(OBSERVATION_TOPIC);
         createTopic(consumerProperties, OBSERVATION_TOPIC);
         consumer.subscribe(topicNames);
-        log.info("Initialized consumer for " + KPIModule.class.getCanonicalName() + ", group name " + consumer.groupMetadata().groupId() + ", subscribed to " + topicNames);
+        log.info("Initialized consumer for {}, group name {}, subscribed to {}", KPIModule.class.getCanonicalName(), consumer.groupMetadata().groupId(), topicNames);
         return consumer;
     }
 

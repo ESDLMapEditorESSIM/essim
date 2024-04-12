@@ -1,6 +1,7 @@
 package nl.tno.essim.kpi;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.kpi.data.KPIResult;
 import nl.tno.essim.kpi.data.ModuleInfo;
@@ -15,8 +16,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class KPIManager {
-    private final static int STATUS_INTERVAL = 20; // seconds
+    private final static int STATUS_INTERVAL = 1; // seconds
     public static String KAFKA_URL;
 
     static {
@@ -32,7 +34,9 @@ public class KPIManager {
     private final HashMap<String, KPIModuleState> moduleStates = new HashMap<>();
 
     public void resultReceived(KPIResult result) {
+        log.debug("KPI Result received : {}", result);
     }
+
     private class StateRemover implements Runnable {
         private final String uuid;
 
@@ -79,7 +83,6 @@ public class KPIManager {
     public KPICommunicator getKPICommunicator(String url) {
         KPICommunicator communicator = communicatorMap.get(url);
         if (communicator == null) {
-//            communicator = new NATSKPICommunicator(this, url);
             communicator = new KafkaKPICommunicator(this, url);
             communicatorMap.put(url, communicator);
             communicator.sendKPIGetStatus();

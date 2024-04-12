@@ -1,8 +1,10 @@
 package nl.tno.essim.kpi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.*;
 
+@Slf4j
 public abstract class KPICommunicator {
     protected final static String KPI_CONTROL_TOPIC = "KPIControl.request";
     protected final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
@@ -19,6 +21,7 @@ public abstract class KPICommunicator {
     }
 
     protected void responseReceived(KPIModuleMessage message) {
+        log.trace("Message received: {}", message);
         if (message.getStatus() != null) {
             kpiManager.processKPIMessage(message.getStatus());
         }
@@ -36,6 +39,7 @@ public abstract class KPICommunicator {
 
     public void sendKPIGetStatus() {
         KPIControlMessage message = KPIControlMessage.builder().status(KPIControlMessage.Status.builder().build()).build();
+        log.trace("sendKPIGetStatus: {}", message);
         sendControlMessage(message);
     }
 
