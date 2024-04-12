@@ -388,6 +388,7 @@ public class RestSimulation implements Simulation {
 
 	@Override
 	public GetSimulationKpiModulesResponse getSimulationKpiModules() {
+		KPIManager.getInstance().queryStatus();
 		List<KPIModuleInfo> allKPIModules = KPIManager.getInstance().getAllKPIModules();
 		return GetSimulationKpiModulesResponse.respond200WithApplicationJson(allKPIModules);
 	}

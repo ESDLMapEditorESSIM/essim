@@ -17,7 +17,14 @@ import java.util.concurrent.TimeUnit;
 
 public class KPIManager {
     private final static int STATUS_INTERVAL = 20; // seconds
+    public static String KAFKA_URL;
 
+    static {
+        KAFKA_URL = System.getProperty("KAFKA_URL");
+        if (KAFKA_URL == null) {
+            KAFKA_URL = "localhost:9092";
+        }
+    }
     @Getter
     private final static KPIManager instance = new KPIManager();
     private final ScheduledExecutorService executor;
@@ -43,9 +50,10 @@ public class KPIManager {
     public KPIManager() {
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleAtFixedRate(this::queryStatus, STATUS_INTERVAL, STATUS_INTERVAL, TimeUnit.SECONDS);
+        getKPICommunicator(KAFKA_URL);
     }
 
-    private void queryStatus() {
+    public void queryStatus() {
         for (KPICommunicator c : communicatorMap.values()) {
             c.sendKPIGetStatus();
         }
@@ -71,7 +79,8 @@ public class KPIManager {
     public KPICommunicator getKPICommunicator(String url) {
         KPICommunicator communicator = communicatorMap.get(url);
         if (communicator == null) {
-            communicator = new NATSKPICommunicator(this, url);
+//            communicator = new NATSKPICommunicator(this, url);
+            communicator = new KafkaKPICommunicator(this, url);
             communicatorMap.put(url, communicator);
             communicator.sendKPIGetStatus();
         }

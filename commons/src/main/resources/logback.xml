@@ -37,6 +37,7 @@
       </encoder>
    </appender>
    <logger name="nl.tno.essim.transportsolver.nodes" level="ERROR"/>
+    <logger name="org.apache.kafka" level="INFO"/>
    <root level="${FILE_LOG_LEVEL}">
       <appender-ref ref="FILE" />
       <appender-ref ref="STDOUT" />      

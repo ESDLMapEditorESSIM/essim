@@ -10,7 +10,7 @@ public abstract class KPICommunicator {
     protected final ObjectMapper objectMapper;
     private final KPIManager kpiManager;
 
-    public abstract void sendKPIData(KPIData data);
+    public abstract void sendData(KPIData data);
     protected abstract void sendControlMessage(KPIControlMessage message);
 
     public KPICommunicator(KPIManager kpiManager) {
@@ -18,12 +18,13 @@ public abstract class KPICommunicator {
         objectMapper = new ObjectMapper();
     }
 
-    protected void responseReceived(KPIStatus message) {
-        kpiManager.processKPIMessage(message);
-    }
-
-    protected void resultReceived(KPIResult result) {
-        kpiManager.resultReceived(result);
+    protected void responseReceived(KPIModuleMessage message) {
+        if (message.getStatus() != null) {
+            kpiManager.processKPIMessage(message.getStatus());
+        }
+        if (message.getResult() != null) {
+            kpiManager.resultReceived(message.getResult());
+        }
     }
 
     public void sendKPIStart(KPIInfo info) {

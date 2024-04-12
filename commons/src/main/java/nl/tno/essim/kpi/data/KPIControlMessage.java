@@ -3,24 +3,27 @@ package nl.tno.essim.kpi.data;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @Data
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class KPIControlMessage {
     @Data
-    @AllArgsConstructor
     @Builder
+    @RequiredArgsConstructor
+    @AllArgsConstructor
     public static class Status {
         String uuid;
     }
 
     @Data
-    @AllArgsConstructor
     @Builder
+    @RequiredArgsConstructor
+    @AllArgsConstructor
     public static class Start {
         String uuid;
         int messageCount;
@@ -31,6 +34,7 @@ public class KPIControlMessage {
     @Data
     @Builder
     @AllArgsConstructor
+    @RequiredArgsConstructor
     public static class Stop {
         private String uuid;
         private String simulationId;

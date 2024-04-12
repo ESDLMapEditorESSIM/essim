@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Configuration>
+
+    <Properties>
+        <Property name="LOG_PATTERN">%d %5p [%t] %m - at %c.%M(%c{1}.java:%L)%n
+        </Property>
+    </Properties>
+
+    <Appenders>
+        <RollingFile name="logfile"
+                     fileName="logs/${sys:LOG_FILENAME:-natsclient}.log"
+                     filePattern="logs/${sys:LOG_FILENAME:-natsclient}.%d{yyyy-MM-dd}.log">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="25 MB"/>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <LevelRangeFilter minlevel="INFO" maxlevel="TRACE"
+                              onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <Console name="STDERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <ThresholdFilter level="warn"/>
+        </Console>
+
+    </Appenders>
+
+    <Loggers>
+<!--        <Logger name="nl.tno" level="debug" additivity="false">-->
+        <Logger name="nl.tno" level="debug" >
+        </Logger>
+
+        <Root level="INFO">
+            <AppenderRef ref="logfile"/>
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="STDERR"/>
+        </Root>
+
+    </Loggers>
+
+</Configuration>

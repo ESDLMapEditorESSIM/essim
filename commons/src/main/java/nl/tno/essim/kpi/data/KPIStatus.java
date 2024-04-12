@@ -1,16 +1,18 @@
 package nl.tno.essim.kpi.data;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Singular;
+import lombok.*;
 
 import java.util.List;
 
 @Data
 @Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
 public class KPIStatus {
     @Data
     @Builder
+    @AllArgsConstructor
+    @RequiredArgsConstructor
     public static class SimulationProgress {
         private String simulationID;
         private int messageCount;

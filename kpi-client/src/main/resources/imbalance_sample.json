@@ -1,0 +1,81 @@
+[
+  {
+    "TotalEnergyImbalanceID": {
+      "Description": "This KPI calculates the total energy imbalance. A negative imbalance indicates underproduction in an EnergySystem.",
+      "kpi": [
+        {
+          "Values": -1.9997716894973828E15,
+          "Unit": "Joules",
+          "Name": "Total energy imbalance [Joules]"
+        },
+        {
+          "Values": 8759,
+          "Unit": "Hours",
+          "Name": "Number of hours with energy imbalance [Hour]"
+        },
+        {
+          "Values": 99.97717155575847,
+          "Unit": "Percentages",
+          "Name": "Percentage of hours with energy imbalance [Percentages]"
+        },
+        {
+          "Values": [
+            {
+              "carrier": "Heat",
+              "value": 0
+            },
+            {
+              "carrier": "Gas",
+              "value": 2.9996575342465055E15
+            },
+            {
+              "carrier": "Electricity",
+              "value": -9.998858447486914E14
+            }
+          ],
+          "Unit": "Joules",
+          "Name": "Total energy imbalance per carrier [Joules]"
+        },
+        {
+          "Values": [
+            {
+              "carrier": "Heat",
+              "value": 0
+            },
+            {
+              "carrier": "Gas",
+              "value": 8759
+            },
+            {
+              "carrier": "Electricity",
+              "value": 8759
+            }
+          ],
+          "Unit": "Hours",
+          "Name": "Number of hours with energy imbalance per carrier [Hours]"
+        },
+        {
+          "Values": [
+            {
+              "carrier": "Heat",
+              "value": 0
+            },
+            {
+              "carrier": "Gas",
+              "value": 99.97717155575847
+            },
+            {
+              "carrier": "Electricity",
+              "value": 99.97717155575847
+            }
+          ],
+          "Unit": "Percentages",
+          "Name": "Percentage of hours with energy imbalance per carrier [Percentages]"
+        }
+      ],
+      "scope": "total",
+      "id": "TotalEnergyImbalanceID",
+      "status": "Success"
+    }
+  }
+]

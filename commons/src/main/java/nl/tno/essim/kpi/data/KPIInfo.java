@@ -7,13 +7,13 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@AllArgsConstructor
-@RequiredArgsConstructor
 @Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class KPIInfo {
     @Data
-    @AllArgsConstructor
     @RequiredArgsConstructor
+    @AllArgsConstructor
     public static class KpiCalculator {
         private String id;
         private Map<String, String> config;

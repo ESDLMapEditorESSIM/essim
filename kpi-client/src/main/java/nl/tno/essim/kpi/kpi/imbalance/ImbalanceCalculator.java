@@ -3,6 +3,7 @@ package nl.tno.essim.kpi.kpi.imbalance;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.kpi.KPIModule;
 import nl.tno.essim.kpi.KPIProcessor;
 import nl.tno.essim.kpi.data.KPIData;
 import nl.tno.essim.kpi.data.ModuleInfo;
@@ -29,7 +30,7 @@ public class ImbalanceCalculator implements KPIProcessor {
                 .upSince(new Date())
                 .sampleOutput(new String(ImbalanceCalculator.class.getResourceAsStream("/imbalance_sample.json").readAllBytes(), StandardCharsets.UTF_8))
                 .build();
-        new KPIProcessorFactory() {
+        KPIProcessorFactory factory = new KPIProcessorFactory() {
             @Override
             public KPIProcessor createKPIProcessor(String simulationID) {
                 return new ImbalanceCalculator(simulationID);
@@ -40,6 +41,8 @@ public class ImbalanceCalculator implements KPIProcessor {
                 return moduleInfo;
             }
         };
+        KPIModule kpiModule = new KPIModule(factory);
+        kpiModule.start();
     }
 
     public ImbalanceCalculator(String simulationID) {

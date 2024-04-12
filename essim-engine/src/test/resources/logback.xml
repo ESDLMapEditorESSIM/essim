@@ -37,7 +37,8 @@
       </encoder>
    </appender>
    <logger name="nl.tno.essim.transportsolver.nodes" level="ERROR"/>
-   <root level="debug">
+    <logger name="nl.tno" level="DEBUG"/>
+   <root level="info">
       <appender-ref ref="FILE" />
       <appender-ref ref="STDOUT" />      
       <appender-ref ref="STDERR" />      

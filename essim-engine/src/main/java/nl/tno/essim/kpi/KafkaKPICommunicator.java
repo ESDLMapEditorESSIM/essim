@@ -5,7 +5,7 @@ import com.github.jcustenborder.kafka.serialization.jackson.JacksonSerializer;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIControlMessage;
 import nl.tno.essim.kpi.data.KPIData;
-import nl.tno.essim.kpi.data.KPIStatus;
+import nl.tno.essim.kpi.data.KPIModuleMessage;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -17,7 +17,10 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
@@ -42,30 +45,30 @@ public class KafkaKPICommunicator extends KPICommunicator {
     private void init() {
         createDataProducer();
         createControlProducer();
-        KafkaConsumer<String, KPIStatus> consumer = createResponseMessageKafkaConsumer();
+        KafkaConsumer<String, KPIModuleMessage> consumer = createResponseMessageKafkaConsumer();
         List<String> topicNames = Collections.singletonList(KPI_RESPONSE_TOPIC);
         consumer.subscribe(topicNames);
         log.info("Initialized consumer for {}, group name {}, subscribed to {}", KafkaKPICommunicator.class.getCanonicalName(), consumer.groupMetadata().groupId(), topicNames);
         new Thread(() -> {
             while (true) {
-                ConsumerRecords<String, KPIStatus> records = consumer.poll(POLL_DURATION);
+                ConsumerRecords<String, KPIModuleMessage> records = consumer.poll(POLL_DURATION);
                 records.forEach(r -> responseReceived(r.value()));
             }
         }, "KafkaResponseConsumer").start();
 
     }
 
-    private KafkaConsumer<String, KPIStatus> createResponseMessageKafkaConsumer() {
+    private KafkaConsumer<String, KPIModuleMessage> createResponseMessageKafkaConsumer() {
         Properties consumerProperties = new Properties();
         consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, url);
         String groupName = KafkaKPICommunicator.class.getSimpleName() + "Group";
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
         consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, KafkaKPICommunicator.class.getSimpleName());
         consumerProperties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000); // Default 500
-        KafkaConsumer<String, KPIStatus> consumer = new KafkaConsumer<>(
+        KafkaConsumer<String, KPIModuleMessage> consumer = new KafkaConsumer<>(
                 consumerProperties,
                 new StringDeserializer(),
-                new JacksonDeserializer<>(KPIStatus.class));
+                new JacksonDeserializer<>(KPIModuleMessage.class));
         return consumer;
     }
 
@@ -74,6 +77,8 @@ public class KafkaKPICommunicator extends KPICommunicator {
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, url);
         properties.put(ProducerConfig.LINGER_MS_CONFIG, 0);
 //        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, BATCH_SIZE);
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JacksonSerializer.class.getName());
         properties.put(ProducerConfig.ACKS_CONFIG, "0");
         properties.put(ProducerConfig.RETRIES_CONFIG, 10);
         properties.put(ProducerConfig.CLIENT_ID_CONFIG, "ESSIM-Engine");
@@ -98,7 +103,7 @@ public class KafkaKPICommunicator extends KPICommunicator {
     }
 
     @Override
-    public void sendKPIData(KPIData data) {
+    public void sendData(KPIData data) {
         String simulationId = data.getSimulationId();
         dataProducer.send(new ProducerRecord<>(CONTROL_TOPIC_NAME, simulationId, data));
     }

@@ -30,7 +30,7 @@ public class NATSKPICommunicator extends KPICommunicator {
     }
 
     @Override
-    public void sendKPIData(KPIData data) {
+    public void sendData(KPIData data) {
         try {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             objectMapper.writeValue(stream, data);

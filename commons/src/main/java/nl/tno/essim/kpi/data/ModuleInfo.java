@@ -1,13 +1,14 @@
 package nl.tno.essim.kpi.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
 import java.util.Date;
 import java.util.Map;
-@Value
+@Data
 @Builder
+@RequiredArgsConstructor
+@AllArgsConstructor
 public class ModuleInfo {
 //    module = {'calculator_id': self.kpi_calculator_id,
 //            'title': self.kpi_calculator.get_title(),

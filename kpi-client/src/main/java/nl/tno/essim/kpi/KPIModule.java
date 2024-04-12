@@ -9,6 +9,7 @@ import nl.tno.essim.kpi.data.KPIData;
 import nl.tno.essim.kpi.data.KPIModuleMessage;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.kpi.kpi.KPIProcessorFactory;
+import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -20,6 +21,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 public class KPIModule {
@@ -28,7 +30,9 @@ public class KPIModule {
     //    private final static int BATCH_SIZE = 2000; // whichever is first, before publishing
     private final static int PARTITIONS = 3;
     private KafkaProducer<String, KPIModuleMessage> producer;
-    private static final String OBSERVATION_TOPIC = "observation";
+    private static final String OBSERVATION_TOPIC = "observation.all";
+    public final static String CONTROL_TOPIC = "KPIControl.request";
+    public final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
     private static String url;
 
     static {
@@ -70,6 +74,7 @@ public class KPIModule {
 
         controlConsumer = createControlConsumer();
         dataConsumer = createDataConsumer();
+        sendStatus();
         new Thread(() -> {
             while (true) {
                 ConsumerRecords<String, KPIData> records = dataConsumer.poll(POLL_DURATION);
@@ -118,19 +123,23 @@ public class KPIModule {
 
     private void handleStatus(KPIControlMessage.Status status) {
         if (status.getUuid() == null || uuid.equals(status.getUuid())) {
-            KPIStatus.KPIStatusBuilder builder = KPIStatus.builder().uuid(uuid).moduleInfo(kpiProcessorFactory.getModuleInfo());
-            for (var e : simulationStateMap.entrySet()) {
-                builder.simulationProgress(KPIStatus.SimulationProgress.builder().simulationID(e.getKey()).messageCount(e.getValue().getMessageCounter().get()).build());
-            }
-            sendMessage(builder.build());
+            sendStatus();
         }
+    }
+
+    private void sendStatus() {
+        KPIStatus.KPIStatusBuilder builder = KPIStatus.builder().uuid(uuid).moduleInfo(kpiProcessorFactory.getModuleInfo());
+        for (var e : simulationStateMap.entrySet()) {
+            builder.simulationProgress(KPIStatus.SimulationProgress.builder().simulationID(e.getKey()).messageCount(e.getValue().getMessageCounter().get()).build());
+        }
+        sendMessage(builder.build());
     }
 
 
     private void sendMessage(KPIStatus status) {
         KPIModuleMessage m = new KPIModuleMessage();
         m.setStatus(status);
-        producer.send(new ProducerRecord<>(uuid, m));
+        producer.send(new ProducerRecord<>(KPI_RESPONSE_TOPIC, uuid, m));
     }
 
     private void handleDataMessage(String simulationId, KPIData message) {
@@ -153,7 +162,8 @@ public class KPIModule {
                 consumerProperties,
                 new StringDeserializer(),
                 new JacksonDeserializer<>(KPIControlMessage.class));
-        List<String> topicNames = Collections.singletonList("KPIControl.request");
+        List<String> topicNames = Collections.singletonList(CONTROL_TOPIC);
+        createTopic(consumerProperties, CONTROL_TOPIC);
         consumer.subscribe(topicNames);
         log.info("Initialized consumer for " + KPIModule.class.getCanonicalName() + ", group name " + consumer.groupMetadata().groupId() + ", subscribed to " + topicNames);
         return consumer;
@@ -165,11 +175,29 @@ public class KPIModule {
                 consumerProperties,
                 new StringDeserializer(),
                 new JacksonDeserializer<>(KPIData.class));
-        List<String> topicNames = Collections.singletonList(".*observation");
+        List<String> topicNames = Collections.singletonList(OBSERVATION_TOPIC);
+        createTopic(consumerProperties, OBSERVATION_TOPIC);
         consumer.subscribe(topicNames);
         log.info("Initialized consumer for " + KPIModule.class.getCanonicalName() + ", group name " + consumer.groupMetadata().groupId() + ", subscribed to " + topicNames);
         return consumer;
     }
 
+    private static void createTopic(Properties props, String topic) {
+        Properties adminProperties = new Properties();
+        adminProperties.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, props.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG));
+        adminProperties.setProperty(AdminClientConfig.CLIENT_ID_CONFIG, props.getProperty(ProducerConfig.CLIENT_ID_CONFIG));
 
+        try {
+            AdminClient kafkaAdminClient = KafkaAdminClient.create(adminProperties);
+            Set<String> existingTopics = kafkaAdminClient.listTopics().names().get();
+            if (!existingTopics.contains(topic)) {
+                log.info("Creating topic: {}", topic);
+                CreateTopicsResult result = kafkaAdminClient.createTopics(Collections.singletonList(new NewTopic(topic, PARTITIONS, (short) 1)));
+                result.all().get();
+            }
+            kafkaAdminClient.close();
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("Error creating kafka topic {}", topic, e);
+        }
+    }
 }

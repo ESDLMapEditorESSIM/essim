@@ -201,40 +201,36 @@ public class ESSimEngine implements IStatusProvider {
 				simulationManager.addObservationConsumer(csvObservationConsumer);
 				log.debug("Registering CSV Observation Consumer");
 			}
-			if (simulation.getKafkaURL() != null) {
-				KafkaObservationConsumer kafkaObservationConsumer = new KafkaObservationConsumer(
-						simulation.getKafkaURL());
-				kafkaObservationConsumer.init(simulationId);
-				observationManager.registerConsumer(kafkaObservationConsumer);
-				simulationManager.addObservationConsumer(kafkaObservationConsumer);
-				log.debug("Registering Kafka Observation Consumer");
-			}
-			if (simulation.getNatsURL() != null) {
-				KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getNatsURL());
-				KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
-				kpiObservationConsumer.init(simulationId);
-				observationManager.registerConsumer(kpiObservationConsumer);
-				simulationManager.addObservationConsumer(kpiObservationConsumer);
-//				NATSObservationConsumer natsObservationConsumer = new NATSObservationConsumer(simulation.getNatsURL());
-//				natsObservationConsumer.init(simulationId);
-//				observationManager.registerConsumer(natsObservationConsumer);
-//				simulationManager.addObservationConsumer(natsObservationConsumer);
-				log.debug("Registering NATS Observation Consumer");
-			}
-			if (simulation.getMqttURL() != null) {
-				MQTTObservationConsumer mqttObservationConsumer = new MQTTObservationConsumer(simulation.getMqttURL());
-				mqttObservationConsumer.init(simulationId);
-				observationManager.registerConsumer(mqttObservationConsumer);
-				simulationManager.addObservationConsumer(mqttObservationConsumer);
-				log.debug("Registering MQTT Observation Consumer");
-			}
-			if (simulation.getAmqpURL() != null) {
-				AMQPObservationConsumer amqpObservationConsumer = new AMQPObservationConsumer(simulation.getAmqpURL());
-				amqpObservationConsumer.init(simulationId);
-				observationManager.registerConsumer(amqpObservationConsumer);
-				simulationManager.addObservationConsumer(amqpObservationConsumer);
-				log.debug("Registering AMQP Observation Consumer");
-			}
+//			if (simulation.getKafkaURL() != null) {
+//				KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getKafkaURL());
+//				KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
+//				kpiObservationConsumer.init(simulationId);
+//				observationManager.registerConsumer(kpiObservationConsumer);
+//				simulationManager.addObservationConsumer(kpiObservationConsumer);
+//				log.debug("Registering Kafka Observation Consumer");
+//			}
+//			if (simulation.getNatsURL() != null) {
+//				KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getNatsURL());
+//				KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
+//				kpiObservationConsumer.init(simulationId);
+//				observationManager.registerConsumer(kpiObservationConsumer);
+//				simulationManager.addObservationConsumer(kpiObservationConsumer);
+//				log.debug("Registering NATS Observation Consumer");
+//			}
+//			if (simulation.getMqttURL() != null) {
+//				MQTTObservationConsumer mqttObservationConsumer = new MQTTObservationConsumer(simulation.getMqttURL());
+//				mqttObservationConsumer.init(simulationId);
+//				observationManager.registerConsumer(mqttObservationConsumer);
+//				simulationManager.addObservationConsumer(mqttObservationConsumer);
+//				log.debug("Registering MQTT Observation Consumer");
+//			}
+//			if (simulation.getAmqpURL() != null) {
+//				AMQPObservationConsumer amqpObservationConsumer = new AMQPObservationConsumer(simulation.getAmqpURL());
+//				amqpObservationConsumer.init(simulationId);
+//				observationManager.registerConsumer(amqpObservationConsumer);
+//				simulationManager.addObservationConsumer(amqpObservationConsumer);
+//				log.debug("Registering AMQP Observation Consumer");
+//			}
 		} catch (Exception e) {
 			simulationManager.shutdown();
 			throw new IllegalArgumentException("Error in Observation Manager init: " + e.getMessage());
@@ -317,7 +313,7 @@ public class ESSimEngine implements IStatusProvider {
 		double messages = totalSteps * (numAssets + numSolvers);
 
 		if (kpiModules != null) {
-			KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getNatsURL());
+			KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(KPIManager.KAFKA_URL);
 			List<KPIModule> modules = simulation.getKpiModule().getModules();
 			KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);
 			for (KPIModule module : modules) {

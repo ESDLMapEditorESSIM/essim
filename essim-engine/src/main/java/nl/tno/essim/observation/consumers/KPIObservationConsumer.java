@@ -6,10 +6,6 @@ import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.time.EssimTime;
-import org.json.JSONObject;
-
-import java.util.Map;
-import java.util.concurrent.TimeoutException;
 
 public class KPIObservationConsumer implements IObservationConsumer {
     private final KPICommunicator kpiCommunicator;
@@ -42,7 +38,7 @@ public class KPIObservationConsumer implements IObservationConsumer {
         kpiData.setFields(observation.getValues());
         kpiData.setTags(observation.getTags());
         kpiData.setSimulationRun(simulationRunName);
-        kpiCommunicator.sendKPIData(kpiData);
+        kpiCommunicator.sendData(kpiData);
     }
 
     @Override
