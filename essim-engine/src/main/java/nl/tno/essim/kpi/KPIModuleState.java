@@ -25,5 +25,9 @@ public class KPIModuleState {
         // TODO store in mongo?
     }
 
+    public KPIStatus.SimulationProgress getSimulationProgress(String simulationId) {
+        return simulationProgresses.get(simulationId);
+    }
+
 
 }

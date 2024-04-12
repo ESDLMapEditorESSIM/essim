@@ -17,6 +17,7 @@ public class KPIStatus {
         private String simulationID;
         private int messageCount;
         private String statusMessage;
+        private double progress;
     }
     private ModuleInfo moduleInfo;
     private String uuid;

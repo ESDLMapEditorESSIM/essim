@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class KPIManager {
     private final static int STATUS_INTERVAL = 1; // seconds
+    private final static int MAX_OFFLINE = 20; // seconds
     public static String KAFKA_URL;
 
     static {
@@ -27,6 +28,7 @@ public class KPIManager {
             KAFKA_URL = "localhost:9092";
         }
     }
+
     @Getter
     private final static KPIManager instance = new KPIManager();
     private final ScheduledExecutorService executor;
@@ -44,6 +46,7 @@ public class KPIManager {
         public StateRemover(String uuid) {
             this.uuid = uuid;
         }
+
         @Override
         public void run() {
             moduleStates.remove(uuid);
@@ -73,7 +76,7 @@ public class KPIManager {
         if (future != null) {
             future.cancel(false);
         }
-        future = executor.schedule(new StateRemover(message.getUuid()), STATUS_INTERVAL * 4, TimeUnit.SECONDS);
+        future = executor.schedule(new StateRemover(message.getUuid()), MAX_OFFLINE, TimeUnit.SECONDS);
         moduleState.setFuture(future);
         for (KPIStatus.SimulationProgress p : message.getSimulationProgresses()) {
             moduleState.setSimulationProgresses(p.getSimulationID(), p);
@@ -90,21 +93,37 @@ public class KPIManager {
         return communicator;
     }
 
+    public KPIStatus.SimulationProgress getKPIModuleInfo(String typeId, String simulationId) {
+        for (var state : moduleStates.values()) {
+            if (state.getModuleInfo().getTypeId().equals(typeId)) {
+                return state.getSimulationProgress(simulationId);
+            }
+        }
+        return null;
+    }
+
+
     public List<KPIModuleInfo> getAllKPIModules() {
         ArrayList<KPIModuleInfo> infos = new ArrayList<>();
         for (var entry : moduleStates.entrySet()) {
-            KPIModuleInfoImpl info = new KPIModuleInfoImpl();
+            KPIModuleState moduleState = entry.getValue();
+            KPIModuleInfoImpl info = createKpiModuleInfo(moduleState);
             infos.add(info);
-            ModuleInfo moduleInfo = entry.getValue().getModuleInfo();
-            info.setStatus("registered");
-            info.setDescription(moduleInfo.getDescription());
-            info.setSampleOutput(moduleInfo.getSampleOutput());
-            info.setCalculatorId(moduleInfo.getTypeId());
-            info.setConfigConfig(moduleInfo.getConfig());
-            info.setTitle(moduleInfo.getTitle());
-            info.setUpSince(moduleInfo.getUpSince());
         }
         return infos;
+    }
+
+    private static KPIModuleInfoImpl createKpiModuleInfo(KPIModuleState moduleState) {
+        KPIModuleInfoImpl info = new KPIModuleInfoImpl();
+        ModuleInfo moduleInfo = moduleState.getModuleInfo();
+        info.setStatus("registered");
+        info.setDescription(moduleInfo.getDescription());
+        info.setSampleOutput(moduleInfo.getSampleOutput());
+        info.setCalculatorId(moduleInfo.getTypeId());
+        info.setConfigConfig(moduleInfo.getConfig());
+        info.setTitle(moduleInfo.getTitle());
+        info.setUpSince(moduleInfo.getUpSince());
+        return info;
     }
 
 }
