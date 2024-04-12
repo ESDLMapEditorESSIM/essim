@@ -138,7 +138,7 @@ public class ProducerNode extends Node {
 				}
 				setCost(aggregateCost);
 			} else {
-				log.warn("Producer {} is missing cost information! Defaulting to {}", producerName,
+				log.trace("Producer {} is missing cost information! Defaulting to {}", producerName,
 						getDefaultMarginalCost());
 				setCost(getDefaultMarginalCost());
 			}

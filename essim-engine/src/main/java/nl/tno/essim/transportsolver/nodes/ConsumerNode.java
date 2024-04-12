@@ -113,7 +113,7 @@ public class ConsumerNode extends Node {
 				}
 				setCost(aggregateCost);
 			} else {
-				log.warn("Consumer {} is missing cost information! Defaulting to {}", consumerName,
+				log.trace("Consumer {} is missing cost information! Defaulting to {}", consumerName,
 						getDefaultMarginalCost());
 				setCost(getDefaultMarginalCost());
 			}
