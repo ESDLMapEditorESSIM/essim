@@ -53,4 +53,9 @@ public class NATSKPICommunicator extends KPICommunicator {
             log.warn("Could not send message", e);
         }
     }
+
+    @Override
+    public Type getType() {
+        return Type.NATS;
+    }
 }

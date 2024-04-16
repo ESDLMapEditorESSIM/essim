@@ -1,13 +1,11 @@
 package nl.tno.essim.kpi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jcustenborder.kafka.serialization.jackson.JacksonDeserializer;
 import com.github.jcustenborder.kafka.serialization.jackson.JacksonSerializer;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.kpi.data.KPIControlMessage;
-import nl.tno.essim.kpi.data.KPIData;
-import nl.tno.essim.kpi.data.KPIModuleMessage;
-import nl.tno.essim.kpi.data.KPIStatus;
+import nl.tno.essim.kpi.data.*;
 import nl.tno.essim.kpi.kpi.KPIProcessorFactory;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -27,9 +25,9 @@ import java.util.concurrent.ExecutionException;
 public class KPIModule {
     private final static Duration POLL_DURATION = Duration.ofSeconds(1);
     private final static Properties consumerProperties;
-    private final static int PARTITIONS = 3;
+    private final static int PARTITIONS = 1;
     private KafkaProducer<String, KPIModuleMessage> producer;
-    private static final String OBSERVATION_TOPIC = "observation.all";
+    private static final String DATA_TOPIC = "observation.all";
     public final static String CONTROL_TOPIC = "KPIControl.request";
     public final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
     private static String url;
@@ -50,7 +48,7 @@ public class KPIModule {
     private final KPIProcessorFactory kpiProcessorFactory;
     ObjectMapper objectMapper;
     private final String uuid;
-    private KafkaConsumer<String, KPIData> dataConsumer;
+    //    private KafkaConsumer<String, KPIData> dataConsumer;
     private final HashMap<String, SimulationState> simulationStateMap = new HashMap<>();
 
     public KPIModule(KPIProcessorFactory kpiProcessorFactory) {
@@ -70,11 +68,12 @@ public class KPIModule {
         producer = new KafkaProducer<>(producerProperties, new StringSerializer(), new JacksonSerializer<>());
 
         KafkaConsumer<String, KPIControlMessage> controlConsumer = createControlConsumer();
-        dataConsumer = createDataConsumer();
+        KafkaConsumer<String, KPIData> dataConsumer = createDataConsumer();
         sendStatus();
         new Thread(() -> {
             while (true) {
                 ConsumerRecords<String, KPIData> records = dataConsumer.poll(POLL_DURATION);
+                log.trace("Received {} data records", records.count());
                 records.forEach(r -> handleDataMessage(r.key(), r.value()));
             }
         }, "ObservationConsumer").start();
@@ -101,7 +100,7 @@ public class KPIModule {
         if (simulationState != null) {
             log.info("Restarting KPI calculations for simulation id {}", start.getSimulationId());
         } else {
-            log.info("Starting KPI calculations for simulation id {}", start.getSimulationId());
+            log.info("Starting KPI calculations for simulation id {}, expecting {} messages", start.getSimulationId(), start.getMessageCount());
         }
         simulationState = new SimulationState(start.getSimulationId(), start.getMessageCount(), kpiProcessorFactory.createKPIProcessor(start.getSimulationId()));
         simulationStateMap.put(start.getSimulationId(), simulationState);
@@ -115,7 +114,10 @@ public class KPIModule {
     }
 
     private void reset(String simulationId) {
-        simulationStateMap.get(simulationId).reset();
+        SimulationState simulationState = simulationStateMap.get(simulationId);
+        if (simulationState != null) {
+            simulationState.reset();
+        }
     }
 
     private void handleStatus(KPIControlMessage.Status status) {
@@ -137,26 +139,41 @@ public class KPIModule {
             }
             builder.simulationProgress(KPIStatus.SimulationProgress.builder().simulationID(e.getKey()).messageCount(messageCount).progress(progress).statusMessage(statusMessage).build());
         }
-        sendMessage(builder.build());
+        KPIStatus status = builder.build();
+        log.trace("Sending message {}", status);
+        KPIModuleMessage m = new KPIModuleMessage();
+        m.setStatus(status);
+        sendMessage(m);
     }
 
 
-    private void sendMessage(KPIStatus status) {
-        KPIModuleMessage m = new KPIModuleMessage();
-        m.setStatus(status);
+    private void sendMessage(KPIModuleMessage m) {
         producer.send(new ProducerRecord<>(KPI_RESPONSE_TOPIC, uuid, m));
     }
 
-    private void handleDataMessage(String simulationId, KPIData message) {
+    private void handleDataMessage(String key, KPIData data) {
+        String simulationId = data.getSimulationId();
         SimulationState simulationState = simulationStateMap.get(simulationId);
         if (simulationState != null) {
             int messageCount = simulationState.getMessageCounter().incrementAndGet();
-            simulationState.getKpiProcessor().messageReceived(message);
+            if (messageCount % 1000 == 0) {
+                log.trace("{} messages for simulation {}", messageCount, simulationId);
+            }
+            simulationState.getKpiProcessor().messageReceived(data);
             if (messageCount == simulationState.getExpectedMessageCount()) {
+                log.debug("{} messages received for simulation {}", messageCount, simulationId);
                 log.info("Data for simulation run {} complete, sending results", simulationId);
                 String result = simulationState.getKpiProcessor().getJSONResult();
-                // TODO send result
+                try {
+                    KPIModuleMessage message = new KPIModuleMessage();
+                    message.setResult(objectMapper.readTree(result));
+                    sendMessage(message);
+                } catch (JsonProcessingException e) {
+                    log.warn("Could not parse result json {}", result, e);
+                }
             }
+        } else {
+            log.warn("No simulation found for id {}", simulationId);
         }
 
     }
@@ -180,8 +197,8 @@ public class KPIModule {
                 consumerProperties,
                 new StringDeserializer(),
                 new JacksonDeserializer<>(KPIData.class));
-        List<String> topicNames = Collections.singletonList(OBSERVATION_TOPIC);
-        createTopic(consumerProperties, OBSERVATION_TOPIC);
+        List<String> topicNames = Collections.singletonList(DATA_TOPIC);
+        createTopic(consumerProperties, DATA_TOPIC);
         consumer.subscribe(topicNames);
         log.info("Initialized consumer for {}, group name {}, subscribed to {}", KPIModule.class.getCanonicalName(), consumer.groupMetadata().groupId(), topicNames);
         return consumer;

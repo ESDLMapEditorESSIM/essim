@@ -6,6 +6,10 @@ import nl.tno.essim.kpi.data.*;
 
 @Slf4j
 public abstract class KPICommunicator {
+    public enum Type {
+        NATS,
+        KAFKA
+    }
     protected final static String KPI_CONTROL_TOPIC = "KPIControl.request";
     protected final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
     protected final static String OBSERVATION_PREFIX = "observation.";
@@ -14,6 +18,8 @@ public abstract class KPICommunicator {
 
     public abstract void sendData(KPIData data);
     protected abstract void sendControlMessage(KPIControlMessage message);
+
+    public abstract Type getType();
 
     public KPICommunicator(KPIManager kpiManager) {
         this.kpiManager = kpiManager;
@@ -31,7 +37,7 @@ public abstract class KPICommunicator {
     }
 
     public void sendKPIStart(KPIInfo info) {
-        info.getKpiCalculators().stream().forEach(kc -> {
+        info.getKpiCalculators().forEach(kc -> {
             KPIControlMessage start = KPIControlMessage.builder().start(KPIControlMessage.Start.builder().simulationId(info.getSimulationId()).messageCount((int) info.getNoOfMessages()).config(kc.getConfig()).build()).build();
             sendControlMessage(start);
         });

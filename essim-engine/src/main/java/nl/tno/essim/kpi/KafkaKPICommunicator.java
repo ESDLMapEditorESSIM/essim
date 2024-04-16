@@ -28,9 +28,9 @@ public class KafkaKPICommunicator extends KPICommunicator {
     private final static Duration POLL_DURATION = Duration.ofSeconds(1);
     private final static int LINGER_MS = (int) Duration.ofSeconds(1).toMillis(); // Wait 1 seconds or until 2000 records are gathered,
     private final static int BATCH_SIZE = 2000; // whichever is first, before publishing
-    private final static int PARTITIONS = 3;
+    private final static int PARTITIONS = 1;
 
-    private final static String CONTROL_TOPIC_NAME = OBSERVATION_PREFIX + "all";
+    private final static String DATA_TOPIC_NAME = OBSERVATION_PREFIX + "all";
 
     private final String url;
     private KafkaProducer<String, KPIData> dataProducer;
@@ -83,7 +83,7 @@ public class KafkaKPICommunicator extends KPICommunicator {
         properties.put(ProducerConfig.RETRIES_CONFIG, 10);
         properties.put(ProducerConfig.CLIENT_ID_CONFIG, "ESSIM-Engine");
         controlProducer = new KafkaProducer<>(properties);
-        createTopic(properties, CONTROL_TOPIC_NAME);
+        createTopic(properties, KPI_CONTROL_TOPIC);
     }
 
     private void createDataProducer() {
@@ -99,18 +99,24 @@ public class KafkaKPICommunicator extends KPICommunicator {
         properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
 
         dataProducer = new KafkaProducer<>(properties);
-        createTopic(properties, CONTROL_TOPIC_NAME);
+        createTopic(properties, DATA_TOPIC_NAME);
     }
 
     @Override
     public void sendData(KPIData data) {
         String simulationId = data.getSimulationId();
-        dataProducer.send(new ProducerRecord<>(CONTROL_TOPIC_NAME, simulationId, data));
+//        log.debug("Sending message on topic {}", DATA_TOPIC_NAME);
+        dataProducer.send(new ProducerRecord<>(DATA_TOPIC_NAME, simulationId, data));
     }
 
     @Override
     protected void sendControlMessage(KPIControlMessage message) {
         controlProducer.send(new ProducerRecord<>(KPI_CONTROL_TOPIC, message));
+    }
+
+    @Override
+    public Type getType() {
+        return Type.KAFKA;
     }
 
     private static void createTopic(Properties props, String topic) {

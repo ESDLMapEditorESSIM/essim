@@ -1,5 +1,6 @@
 package nl.tno.essim.kpi;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIStatus;
@@ -35,8 +36,9 @@ public class KPIManager {
     private final HashMap<String, KPICommunicator> communicatorMap = new HashMap<>();
     private final HashMap<String, KPIModuleState> moduleStates = new HashMap<>();
 
-    public void resultReceived(KPIResult result) {
+    public void resultReceived(JsonNode result) {
         log.debug("KPI Result received : {}", result);
+        // TODO store in DB
     }
 
     private class StateRemover implements Runnable {
@@ -92,6 +94,11 @@ public class KPIManager {
         }
         return communicator;
     }
+
+    public List<KPICommunicator> getKPICommunicators() {
+        ArrayList<KPICommunicator> kpiCommunicators = new ArrayList<>(communicatorMap.values());
+        return kpiCommunicators;
+   }
 
     public KPIStatus.SimulationProgress getKPIModuleInfo(String typeId, String simulationId) {
         for (var state : moduleStates.values()) {

@@ -20,7 +20,8 @@ public class ImbalanceCalculator implements KPIProcessor {
     private final String simulationID;
     private final ObjectMapper objectMapper;
     private Map<String, String> configuration;
-    private int messageCount;
+    private int totalMessageCount;
+    private int messageCounter;
 
     public static void main(String[] args) throws IOException {
         ModuleInfo moduleInfo = ModuleInfo.builder()
@@ -55,12 +56,15 @@ public class ImbalanceCalculator implements KPIProcessor {
     @Override
     public void configure(Map<String, String> configuration, int messageCount) {
         this.configuration = configuration;
-        this.messageCount = messageCount;
+        this.totalMessageCount = messageCount;
     }
 
     @Override
     public void messageReceived(KPIData measurement) {
-        log.info("Measurement: {}", measurement);
+        messageCounter++;
+        if (messageCounter == totalMessageCount) {
+            log.debug("{} messages received for simulation {}", messageCounter, simulationID);
+        }
     }
 
     @Override
@@ -70,6 +74,6 @@ public class ImbalanceCalculator implements KPIProcessor {
 
     @Override
     public void reset() {
-
+        messageCounter = 0;
     }
 }

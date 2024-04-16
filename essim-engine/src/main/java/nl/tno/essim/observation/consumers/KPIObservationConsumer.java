@@ -1,5 +1,6 @@
 package nl.tno.essim.observation.consumers;
 
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.KPICommunicator;
 import nl.tno.essim.kpi.data.KPIData;
 import nl.tno.essim.observation.IObservation;
@@ -7,6 +8,7 @@ import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.time.EssimTime;
 
+@Slf4j
 public class KPIObservationConsumer implements IObservationConsumer {
     private final KPICommunicator kpiCommunicator;
     private long timestamp;
@@ -19,6 +21,7 @@ public class KPIObservationConsumer implements IObservationConsumer {
     @Override
     public void init(String simulationID) {
         this.simulationId = simulationID;
+        log.info("Initializing KPI communicator for simulation {}", simulationID);
     }
 
     @Override
@@ -38,6 +41,7 @@ public class KPIObservationConsumer implements IObservationConsumer {
         kpiData.setFields(observation.getValues());
         kpiData.setTags(observation.getTags());
         kpiData.setSimulationRun(simulationRunName);
+        kpiData.setSimulationId(simulationId);
         kpiCommunicator.sendData(kpiData);
     }
 
@@ -48,6 +52,6 @@ public class KPIObservationConsumer implements IObservationConsumer {
 
     @Override
     public void cleanup() {
-        kpiCommunicator.sendKPIStop(simulationId);
+//        kpiCommunicator.sendKPIStop(simulationId);
     }
 }
