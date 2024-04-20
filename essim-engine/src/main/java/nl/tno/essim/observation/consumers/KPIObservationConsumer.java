@@ -52,6 +52,7 @@ public class KPIObservationConsumer implements IObservationConsumer {
 
     @Override
     public void cleanup() {
+        kpiCommunicator.sendKPIFinished(simulationId);
 //        kpiCommunicator.sendKPIStop(simulationId);
     }
 }

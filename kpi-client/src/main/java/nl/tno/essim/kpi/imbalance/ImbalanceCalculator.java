@@ -1,25 +1,26 @@
-package nl.tno.essim.kpi.kpi.imbalance;
+package nl.tno.essim.kpi.imbalance;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.KPIModule;
 import nl.tno.essim.kpi.KPIProcessor;
+import nl.tno.essim.kpi.KafkaKPIModule;
 import nl.tno.essim.kpi.data.KPIData;
 import nl.tno.essim.kpi.data.ModuleInfo;
-import nl.tno.essim.kpi.kpi.KPIProcessorFactory;
+import nl.tno.essim.kpi.KPIProcessorFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.Map;
 
 @Slf4j
 public class ImbalanceCalculator implements KPIProcessor {
 
     private final String simulationID;
     private final ObjectMapper objectMapper;
-    private Map<String, String> configuration;
+    private JsonNode configuration;
     private int totalMessageCount;
     private int messageCounter;
 
@@ -42,7 +43,7 @@ public class ImbalanceCalculator implements KPIProcessor {
                 return moduleInfo;
             }
         };
-        KPIModule kpiModule = new KPIModule(factory);
+        KPIModule kpiModule = new KafkaKPIModule(factory);
         kpiModule.start();
     }
 
@@ -54,7 +55,7 @@ public class ImbalanceCalculator implements KPIProcessor {
 
 
     @Override
-    public void configure(Map<String, String> configuration, int messageCount) {
+    public void configure(JsonNode configuration, int messageCount) {
         this.configuration = configuration;
         this.totalMessageCount = messageCount;
     }

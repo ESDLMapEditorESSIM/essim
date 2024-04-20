@@ -1,5 +1,6 @@
 package nl.tno.essim.kpi.data;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.*;
 
 import java.util.HashMap;
@@ -16,7 +17,7 @@ public class KPIInfo {
     @AllArgsConstructor
     public static class KpiCalculator {
         private String id;
-        private Map<String, String> config;
+        private JsonNode config;
     }
 
     private String simulationId;

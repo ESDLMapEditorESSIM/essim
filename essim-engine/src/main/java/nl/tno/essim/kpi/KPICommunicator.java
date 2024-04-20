@@ -1,5 +1,7 @@
 package nl.tno.essim.kpi;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.*;
@@ -10,6 +12,7 @@ public abstract class KPICommunicator {
         NATS,
         KAFKA
     }
+
     protected final static String KPI_CONTROL_TOPIC = "KPIControl.request";
     protected final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
     protected final static String OBSERVATION_PREFIX = "observation.";
@@ -17,6 +20,7 @@ public abstract class KPICommunicator {
     private final KPIManager kpiManager;
 
     public abstract void sendData(KPIData data);
+
     protected abstract void sendControlMessage(KPIControlMessage message);
 
     public abstract Type getType();
@@ -24,14 +28,15 @@ public abstract class KPICommunicator {
     public KPICommunicator(KPIManager kpiManager) {
         this.kpiManager = kpiManager;
         objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     protected void responseReceived(KPIModuleMessage message) {
         log.trace("Message received: {}", message);
         if (message.getStatus() != null) {
-            kpiManager.processKPIMessage(message.getStatus());
+            kpiManager.processKPIStatus(message.getStatus());
         }
-        if (message.getResult() != null) {
+        if (message.getResult() != null && !message.getResult().isNull()) {
             kpiManager.resultReceived(message.getResult());
         }
     }
@@ -53,4 +58,10 @@ public abstract class KPICommunicator {
         KPIControlMessage message = KPIControlMessage.builder().stop(KPIControlMessage.Stop.builder().simulationId(simulationID).build()).build();
         sendControlMessage(message);
     }
+
+    public void sendKPIFinished(String simulationId) {
+        KPIControlMessage message = KPIControlMessage.builder().finished(KPIControlMessage.Finished.builder().simulationId(simulationId).build()).build();
+        sendControlMessage(message);
+    }
+
 }

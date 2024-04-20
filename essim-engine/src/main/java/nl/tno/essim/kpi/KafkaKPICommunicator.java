@@ -1,11 +1,11 @@
 package nl.tno.essim.kpi;
 
-import com.github.jcustenborder.kafka.serialization.jackson.JacksonDeserializer;
-import com.github.jcustenborder.kafka.serialization.jackson.JacksonSerializer;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIControlMessage;
 import nl.tno.essim.kpi.data.KPIData;
 import nl.tno.essim.kpi.data.KPIModuleMessage;
+import nl.tno.essim.kpi.kafka.JacksonDeserializer;
+import nl.tno.essim.kpi.kafka.JacksonSerializer;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -68,7 +68,7 @@ public class KafkaKPICommunicator extends KPICommunicator {
         KafkaConsumer<String, KPIModuleMessage> consumer = new KafkaConsumer<>(
                 consumerProperties,
                 new StringDeserializer(),
-                new JacksonDeserializer<>(KPIModuleMessage.class));
+                new JacksonDeserializer<>(objectMapper, KPIModuleMessage.class));
         return consumer;
     }
 

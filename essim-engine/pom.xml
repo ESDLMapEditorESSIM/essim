@@ -40,11 +40,6 @@
 			<groupId>org.eclipse.emf</groupId>
 			<artifactId>org.eclipse.emf.ecore.xmi</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.github.jcustenborder.kafka</groupId>
-			<artifactId>kafka-jackson</artifactId>
-			<version>0.0.1.2</version>
-		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>

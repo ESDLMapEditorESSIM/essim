@@ -1,6 +1,4 @@
-package nl.tno.essim.kpi.kpi;
-
-import nl.tno.essim.kpi.KPIProcessor;
+package nl.tno.essim.kpi;
 
 public interface KPIProcessorFactory {
     KPIProcessor createKPIProcessor(String simulationID);

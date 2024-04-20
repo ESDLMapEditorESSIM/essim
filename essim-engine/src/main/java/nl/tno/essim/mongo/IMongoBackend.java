@@ -4,37 +4,36 @@ import java.util.HashMap;
 import java.util.List;
 
 import nl.tno.essim.commons.IStatusProvider;
-import nl.tno.essim.model.EssimSimulation;
-import nl.tno.essim.model.KPIModuleInfo;
-import nl.tno.essim.model.SimulationStatus;
-import nl.tno.essim.model.Status;
+import nl.tno.essim.model.*;
 
 public interface IMongoBackend {
 
-	HashMap<String, IStatusProvider> getStatusMap();
+    HashMap<String, IStatusProvider> getStatusMap();
 
-	void updateStatus(String status);
+    void updateStatus(String status);
 
-	String getStatus();
+    String getStatus();
 
-	String addSimulation(EssimSimulation simulation);
+    String addSimulation(EssimSimulation simulation);
 
-	void updateSimulationData(String simulationId, EssimSimulation simulationData);
+    void updateSimulationData(String simulationId, EssimSimulation simulationData);
 
-	SimulationStatus getSimulationStatus(String simulationId);
+    SimulationStatus getSimulationStatus(String simulationId);
 
-	void updateSimulationStatus(String simulationId, Status type, String status);
+    void updateSimulationStatus(String simulationId, Status type, String status);
 
-	List<EssimSimulation> getSimulations();
+    List<EssimSimulation> getSimulations();
 
-	EssimSimulation getSimulation(String simulationId);
+    EssimSimulation getSimulation(String simulationId);
 
-	void stop();
+    void stop();
 
-	String getMetaInfo(String key);
+    String getMetaInfo(String key);
 
-	void updateMetaInfo(String key, String value);
+    void updateMetaInfo(String key, String value);
 
-	List<KPIModuleInfo> getAllKpiModules();
+    List<KPIModuleInfo> getAllKpiModules();
+
+    KPIModule getKPIForSimulation(String simulationId, String kpiId);
 
 }

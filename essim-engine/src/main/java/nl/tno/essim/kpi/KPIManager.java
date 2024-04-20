@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIStatus;
-import nl.tno.essim.kpi.data.KPIResult;
 import nl.tno.essim.kpi.data.ModuleInfo;
 import nl.tno.essim.model.KPIModuleInfo;
 import nl.tno.essim.model.KPIModuleInfoImpl;
@@ -22,12 +21,11 @@ public class KPIManager {
     private final static int STATUS_INTERVAL = 1; // seconds
     private final static int MAX_OFFLINE = 20; // seconds
     public static String KAFKA_URL;
+    public static String NATS_URL;
 
     static {
-        KAFKA_URL = System.getProperty("KAFKA_URL");
-        if (KAFKA_URL == null) {
-            KAFKA_URL = "localhost:9092";
-        }
+        KAFKA_URL = System.getenv("KAFKA_URL");
+        NATS_URL = System.getenv("NATS_URL");
     }
 
     @Getter
@@ -38,6 +36,7 @@ public class KPIManager {
 
     public void resultReceived(JsonNode result) {
         log.debug("KPI Result received : {}", result);
+//        result.toString();
         // TODO store in DB
     }
 
@@ -59,7 +58,16 @@ public class KPIManager {
     public KPIManager() {
         executor = Executors.newSingleThreadScheduledExecutor();
         executor.scheduleAtFixedRate(this::queryStatus, STATUS_INTERVAL, STATUS_INTERVAL, TimeUnit.SECONDS);
-        getKPICommunicator(KAFKA_URL);
+        if (KAFKA_URL != null) {
+            KafkaKPICommunicator communicator = new KafkaKPICommunicator(this, KAFKA_URL);
+            communicatorMap.put(KAFKA_URL, communicator);
+            communicator.sendKPIGetStatus();
+        }
+        if (NATS_URL != null) {
+            NATSKPICommunicator communicator = new NATSKPICommunicator(this, NATS_URL);
+            communicatorMap.put(NATS_URL, communicator);
+            communicator.sendKPIGetStatus();
+        }
     }
 
     public void queryStatus() {
@@ -68,7 +76,8 @@ public class KPIManager {
         }
     }
 
-    public void processKPIMessage(KPIStatus message) {
+    public void processKPIStatus(KPIStatus message) {
+        log.trace("KPI status received: {}", message);
         KPIModuleState moduleState = moduleStates.get(message.getUuid());
         if (moduleState == null) {
             moduleState = new KPIModuleState(message.getModuleInfo());
@@ -80,25 +89,18 @@ public class KPIManager {
         }
         future = executor.schedule(new StateRemover(message.getUuid()), MAX_OFFLINE, TimeUnit.SECONDS);
         moduleState.setFuture(future);
-        for (KPIStatus.SimulationProgress p : message.getSimulationProgresses()) {
-            moduleState.setSimulationProgresses(p.getSimulationID(), p);
+        if (message.getSimulationProgresses() != null) {
+            for (KPIStatus.SimulationProgress p : message.getSimulationProgresses()) {
+                moduleState.setSimulationProgresses(p.getSimulationID(), p);
+//            MongoBackend.getInstance().getKPIForSimulation(p.getSimulationID(), p.getSimulationID());
+            }
         }
-    }
-
-    public KPICommunicator getKPICommunicator(String url) {
-        KPICommunicator communicator = communicatorMap.get(url);
-        if (communicator == null) {
-            communicator = new KafkaKPICommunicator(this, url);
-            communicatorMap.put(url, communicator);
-            communicator.sendKPIGetStatus();
-        }
-        return communicator;
     }
 
     public List<KPICommunicator> getKPICommunicators() {
         ArrayList<KPICommunicator> kpiCommunicators = new ArrayList<>(communicatorMap.values());
         return kpiCommunicators;
-   }
+    }
 
     public KPIStatus.SimulationProgress getKPIModuleInfo(String typeId, String simulationId) {
         for (var state : moduleStates.values()) {

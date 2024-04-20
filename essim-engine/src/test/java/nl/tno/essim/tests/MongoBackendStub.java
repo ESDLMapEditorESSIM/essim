@@ -9,11 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 import nl.tno.essim.commons.IStatusProvider;
-import nl.tno.essim.model.EssimSimulation;
-import nl.tno.essim.model.KPIModuleInfo;
-import nl.tno.essim.model.SimulationStatus;
-import nl.tno.essim.model.SimulationStatusImpl;
-import nl.tno.essim.model.Status;
+import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
 
 /**
@@ -99,6 +95,11 @@ public class MongoBackendStub implements IMongoBackend {
 	@Override
 	public List<KPIModuleInfo> getAllKpiModules() {
 		return Collections.emptyList();
+	}
+
+	@Override
+	public KPIModule getKPIForSimulation(String simulationId, String kpiId) {
+		return null;
 	}
 
 }

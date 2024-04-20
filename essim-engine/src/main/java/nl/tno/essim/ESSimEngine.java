@@ -16,6 +16,38 @@
 
 package nl.tno.essim;
 
+import esdl.*;
+import essim.EssimPackage;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.Commons;
+import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.commons.IStatusProvider;
+import nl.tno.essim.grafana.GrafanaClient;
+import nl.tno.essim.kpi.KPIManager;
+import nl.tno.essim.kpi.data.KPIInfo;
+import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.managers.ObservationManager;
+import nl.tno.essim.managers.SimulationManager;
+import nl.tno.essim.model.*;
+import nl.tno.essim.mongo.IMongoBackend;
+import nl.tno.essim.mso.MSOClient;
+import nl.tno.essim.observation.IObservationManager;
+import nl.tno.essim.observation.IObservationProvider;
+import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.consumers.CSVObservationConsumer;
+import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
+import nl.tno.essim.observation.consumers.KPIObservationConsumer;
+import nl.tno.essim.time.EssimDuration;
+import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.transportsolver.ChocoOptimiser;
+import nl.tno.essim.transportsolver.TransportSolver;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.xmi.XMIResource;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,61 +62,6 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import nl.tno.essim.kpi.KPICommunicator;
-import nl.tno.essim.kpi.KPIManager;
-import nl.tno.essim.kpi.data.KPIInfo;
-import nl.tno.essim.model.*;
-import nl.tno.essim.observation.consumers.*;
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.common.util.URI;
-import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.xmi.XMIResource;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
-
-import esdl.AbstractBuilding;
-import esdl.Area;
-import esdl.Asset;
-import esdl.Carrier;
-import esdl.Carriers;
-import esdl.ControlStrategy;
-import esdl.Conversion;
-import esdl.DrivenByDemand;
-import esdl.DrivenBySupply;
-import esdl.EnergyAsset;
-import esdl.EnergyCarrier;
-import esdl.EnergySystem;
-import esdl.EnergySystemInformation;
-import esdl.EsdlFactory;
-import esdl.EssimESDLPackage;
-import esdl.InPort;
-import esdl.Instance;
-import esdl.OutPort;
-import esdl.Port;
-import esdl.Service;
-import esdl.Services;
-import esdl.Transport;
-import essim.EssimPackage;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.commons.Commons;
-import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.commons.IStatusProvider;
-import nl.tno.essim.grafana.GrafanaClient;
-import nl.tno.essim.kpi.KPIModuleClient;
-import nl.tno.essim.managers.EmissionManager;
-import nl.tno.essim.managers.ObservationManager;
-import nl.tno.essim.managers.SimulationManager;
-import nl.tno.essim.mongo.IMongoBackend;
-import nl.tno.essim.mso.MSOClient;
-import nl.tno.essim.observation.IObservationManager;
-import nl.tno.essim.observation.IObservationProvider;
-import nl.tno.essim.observation.Observation;
-import nl.tno.essim.time.EssimDuration;
-import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.transportsolver.ChocoOptimiser;
-import nl.tno.essim.transportsolver.TransportSolver;
-import org.json.JSONObject;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
@@ -322,8 +299,10 @@ public class ESSimEngine implements IStatusProvider {
                 List<KPIModule> modules = simulation.getKpiModule().getModules();
                 KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);
                 for (KPIModule module : modules) {
-                    Map<String, String> config = (Map<String, String>) module.getConfig();
-                    kpiInfoBuilder.kpiCalculator(new KPIInfo.KpiCalculator(module.getId(), config));
+                    Object config = module.getConfig();
+                    // FIXME find out objectType of config
+                    log.info("Config: {}", config);
+                    kpiInfoBuilder.kpiCalculator(new KPIInfo.KpiCalculator(module.getId(), null));
                 }
                 kpiCommunicator.sendKPIStart(kpiInfoBuilder.build());
             }));
