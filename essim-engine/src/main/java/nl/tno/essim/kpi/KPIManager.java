@@ -22,10 +22,12 @@ public class KPIManager {
     private final static int MAX_OFFLINE = 20; // seconds
     public static String KAFKA_URL;
     public static String NATS_URL;
+    public static String RABBITMQ_URL;
 
     static {
         KAFKA_URL = System.getenv("KAFKA_URL");
         NATS_URL = System.getenv("NATS_URL");
+        RABBITMQ_URL = System.getenv("RABBITMQ_URL");
     }
 
     @Getter
@@ -68,6 +70,11 @@ public class KPIManager {
             communicatorMap.put(NATS_URL, communicator);
             communicator.sendKPIGetStatus();
         }
+        if (RABBITMQ_URL != null) {
+            RabbitMQKPICommunicator communicator = new RabbitMQKPICommunicator(this, RABBITMQ_URL);
+            communicatorMap.put(RABBITMQ_URL, communicator);
+            communicator.sendKPIGetStatus();
+        }
     }
 
     public void queryStatus() {
@@ -92,7 +99,6 @@ public class KPIManager {
         if (message.getSimulationProgresses() != null) {
             for (KPIStatus.SimulationProgress p : message.getSimulationProgresses()) {
                 moduleState.setSimulationProgresses(p.getSimulationID(), p);
-//            MongoBackend.getInstance().getKPIForSimulation(p.getSimulationID(), p.getSimulationID());
             }
         }
     }

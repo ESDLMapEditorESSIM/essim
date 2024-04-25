@@ -10,7 +10,8 @@ import nl.tno.essim.kpi.data.*;
 public abstract class KPICommunicator {
     public enum Type {
         NATS,
-        KAFKA
+        KAFKA,
+        RabbitMQ
     }
 
     protected final static String KPI_CONTROL_TOPIC = "KPIControl.request";
