@@ -48,7 +48,7 @@ public class KafkaKPICommunicator extends KPICommunicator {
         KafkaConsumer<String, KPIModuleMessage> consumer = createResponseMessageKafkaConsumer();
         List<String> topicNames = Collections.singletonList(KPI_RESPONSE_TOPIC);
         consumer.subscribe(topicNames);
-        log.info("Initialized consumer for {}, group name {}, subscribed to {}", KafkaKPICommunicator.class.getCanonicalName(), consumer.groupMetadata().groupId(), topicNames);
+        log.info("Initialized kafka consumer for {}, group name {}, subscribed to {}", KafkaKPICommunicator.class.getCanonicalName(), consumer.groupMetadata().groupId(), topicNames);
         new Thread(() -> {
             while (true) {
                 ConsumerRecords<String, KPIModuleMessage> records = consumer.poll(POLL_DURATION);
@@ -65,11 +65,10 @@ public class KafkaKPICommunicator extends KPICommunicator {
         consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
         consumerProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, KafkaKPICommunicator.class.getSimpleName());
         consumerProperties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 1000); // Default 500
-        KafkaConsumer<String, KPIModuleMessage> consumer = new KafkaConsumer<>(
+        return new KafkaConsumer<>(
                 consumerProperties,
                 new StringDeserializer(),
                 new JacksonDeserializer<>(objectMapper, KPIModuleMessage.class));
-        return consumer;
     }
 
     private void createControlProducer() {
@@ -111,6 +110,7 @@ public class KafkaKPICommunicator extends KPICommunicator {
 
     @Override
     protected void sendControlMessage(KPIControlMessage message) {
+        log.trace("Sending control message: {}", message);
         controlProducer.send(new ProducerRecord<>(KPI_CONTROL_TOPIC, message));
     }
 

@@ -1,10 +1,12 @@
 package nl.tno.essim.kpi;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.kpi.data.*;
+import nl.tno.essim.kpi.data.KPIControlMessage;
+import nl.tno.essim.kpi.data.KPIData;
+import nl.tno.essim.kpi.data.KPIInfo;
+import nl.tno.essim.kpi.data.KPIModuleMessage;
 
 @Slf4j
 public abstract class KPICommunicator {
@@ -37,7 +39,7 @@ public abstract class KPICommunicator {
         if (message.getStatus() != null) {
             kpiManager.processKPIStatus(message.getStatus());
         }
-        if (message.getResult() != null && !message.getResult().isNull()) {
+        if (message.getResult() != null) {
             kpiManager.resultReceived(message.getResult());
         }
     }

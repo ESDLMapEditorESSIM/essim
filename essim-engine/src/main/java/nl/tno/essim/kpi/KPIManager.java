@@ -1,12 +1,13 @@
 package nl.tno.essim.kpi;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.kpi.data.KPIResult;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.kpi.data.ModuleInfo;
 import nl.tno.essim.model.KPIModuleInfo;
 import nl.tno.essim.model.KPIModuleInfoImpl;
+import nl.tno.essim.mongo.MongoBackend;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,10 +37,10 @@ public class KPIManager {
     private final HashMap<String, KPICommunicator> communicatorMap = new HashMap<>();
     private final HashMap<String, KPIModuleState> moduleStates = new HashMap<>();
 
-    public void resultReceived(JsonNode result) {
+    public void resultReceived(KPIResult result) {
         log.debug("KPI Result received : {}", result);
-//        result.toString();
-        // TODO store in DB
+        KPIModuleState kpiModuleState = moduleStates.get(result.getUuid());
+        MongoBackend.getInstance().updateKPIForSimulation(result.getSimulationId(), kpiModuleState.getModuleInfo().getTypeId(), result.getResult().toString());
     }
 
     private class StateRemover implements Runnable {
@@ -104,8 +105,7 @@ public class KPIManager {
     }
 
     public List<KPICommunicator> getKPICommunicators() {
-        ArrayList<KPICommunicator> kpiCommunicators = new ArrayList<>(communicatorMap.values());
-        return kpiCommunicators;
+        return new ArrayList<>(communicatorMap.values());
     }
 
     public KPIStatus.SimulationProgress getKPIModuleInfo(String typeId, String simulationId) {

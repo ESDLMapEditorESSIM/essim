@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.kpi.data.KPIControlMessage;
-import nl.tno.essim.kpi.data.KPIData;
-import nl.tno.essim.kpi.data.KPIModuleMessage;
-import nl.tno.essim.kpi.data.KPIStatus;
+import nl.tno.essim.kpi.data.*;
 
 import java.util.HashMap;
 import java.util.UUID;
@@ -116,7 +113,11 @@ public abstract class KPIModule {
                 String result = simulationState.getKpiProcessor().getJSONResult();
                 try {
                     KPIModuleMessage message = new KPIModuleMessage();
-                    message.setResult(objectMapper.readTree(result));
+                    KPIResult kpiResult = new KPIResult();
+                    kpiResult.setResult(objectMapper.readTree(result));
+                    kpiResult.setSimulationId(simulationId);
+                    kpiResult.setUuid(uuid);
+                    message.setResult(kpiResult);
                     sendMessage(message);
                 } catch (JsonProcessingException e) {
                     log.warn("Could not parse result json {}", result, e);
