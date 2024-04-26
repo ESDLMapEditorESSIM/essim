@@ -93,13 +93,8 @@ public class MongoBackendStub implements IMongoBackend {
 	}
 
 	@Override
-	public List<KPIModuleInfo> getAllKpiModules() {
-		return Collections.emptyList();
-	}
+	public void updateKPIForSimulation(String simulationId, String kpiId, String result) {
 
-	@Override
-	public KPIModule getKPIForSimulation(String simulationId, String kpiId) {
-		return null;
 	}
 
 }

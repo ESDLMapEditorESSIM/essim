@@ -49,19 +49,19 @@
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
-			<version>3.7.0</version>
+			<version>${protobuf.version}</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver -->
+		<!-- https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync -->
 		<dependency>
 			<groupId>org.mongodb</groupId>
-			<artifactId>mongo-java-driver</artifactId>
-			<version>3.11.0</version>
+			<artifactId>mongodb-driver-sync</artifactId>
+			<version>5.0.1</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.mongojack/mongojack -->
 		<dependency>
 			<groupId>org.mongojack</groupId>
 			<artifactId>mongojack</artifactId>
-			<version>2.10.0</version>
+			<version>5.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.nats</groupId>
@@ -100,7 +100,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-joda</artifactId>
-			<version>2.9.9</version>
+			<version>${jackson.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
@@ -111,7 +111,7 @@
 		<dependency>
 			<groupId>com.rabbitmq</groupId>
 			<artifactId>amqp-client</artifactId>
-			<version>5.9.0</version>
+			<version>5.21.0</version>
 		</dependency>
 		<dependency>
 			<groupId>nl.tno.essim</groupId>
@@ -182,7 +182,7 @@
 						</goals>
 						<configuration>
 							<addProtoSources>all</addProtoSources>
-							<protocVersion>3.7.0</protocVersion>
+							<protocVersion>${protobuf.version}</protocVersion>
 							<inputDirectories>
 								<include>src/main/resources/protobuf</include>
 							</inputDirectories>
@@ -194,7 +194,7 @@
 			<plugin>
 				<groupId>org.raml.jaxrs</groupId>
 				<artifactId>raml-to-jaxrs-maven-plugin</artifactId>
-				<version>3.0.4</version>
+				<version>3.0.7</version>
 				<configuration>
 					<ramlFile>
 						${project.basedir}/src/main/resources/raml/essim.raml

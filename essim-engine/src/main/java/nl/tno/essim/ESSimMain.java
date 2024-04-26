@@ -15,9 +15,6 @@
  */
 package nl.tno.essim;
 
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoDatabase;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.Version.GitRepositoryState;
@@ -37,10 +34,6 @@ public class ESSimMain {
 	private static final String MONGODB_HOST = "MONGODB_HOST";
 	private static final String MONGODB_PORT = "MONGODB_PORT";
 
-	@Getter
-	private MongoClient mongoClient;
-	@Getter
-	private MongoDatabase database;
 	@Getter
 	private EssimHttpServer ramlServer;
 	private IMongoBackend mongoBackend;

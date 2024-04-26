@@ -16,17 +16,21 @@
 
 package nl.tno.essim.mongo;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.*;
+import com.mongodb.client.*;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.InsertOneResult;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.model.*;
+import org.bson.*;
+import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
-import org.mongojack.DBQuery;
-import org.mongojack.DBQuery.Query;
-import org.mongojack.DBUpdate;
-import org.mongojack.JacksonDBCollection;
-import org.mongojack.WriteResult;
+import org.mongojack.JacksonCodecRegistry;
+import org.mongojack.ObjectMapperConfigurer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,19 +40,15 @@ import java.util.List;
 public class MongoBackend implements IMongoBackend {
 
     private static IMongoBackend instance;
-    private static final String KPI_DATABASE = "KPIModules";
-    private static final String KPI_COLL_NAME = "KPIModulesColl";
     private static final String ESSIM_DATABASE = "essimDB";
     private static final String ESSIM_COLL_NAME = "simCollection";
     private static final String ESSIM_META_COLL_NAME = "essimMetaInfo";
-    private MongoClient mongoClient;
+    private final MongoClient mongoClient;
     @Getter
-    private HashMap<String, IStatusProvider> statusMap;
-    private JacksonDBCollection<EssimSimulation, String> essimCollection;
-    private DBCollection essimMetaCollection;
-    private DB essimDB;
-    private DB kpiDB;
-    private JacksonDBCollection<KPIModuleInfo, String> kpiCollection;
+    private final HashMap<String, IStatusProvider> statusMap;
+    private final MongoDatabase essimDB;
+    private final MongoCollection<EssimSimulation> essimCollection;
+    private final MongoCollection<Document> essimMetaCollection;
     private String status;
 
     public synchronized static IMongoBackend getInstance() {
@@ -57,18 +57,17 @@ public class MongoBackend implements IMongoBackend {
 
     @SuppressWarnings("deprecation")
     public MongoBackend(String host, String port) {
-        MongoClientOptions opts = MongoClientOptions.builder().serverSelectionTimeout(2000)
-                .codecRegistry(MongoClient.getDefaultCodecRegistry()).build();
         ServerAddress serverAddress = new ServerAddress(host, Integer.parseInt(port));
-        mongoClient = new MongoClient(serverAddress, opts);
-        essimDB = mongoClient.getDB(ESSIM_DATABASE);
-        kpiDB = mongoClient.getDB(KPI_DATABASE);
+        mongoClient = MongoClients.create(new ConnectionString("mongodb://" + host + ":" + port));
+
+        essimDB = mongoClient.getDatabase(ESSIM_DATABASE);
         testMongoConnection(serverAddress);
-        DBCollection dbCollection = essimDB.createCollection(ESSIM_COLL_NAME, null);
-        essimCollection = JacksonDBCollection.wrap(dbCollection, EssimSimulation.class, String.class);
-        essimMetaCollection = essimDB.createCollection(ESSIM_META_COLL_NAME, null);
-        DBCollection kpiDBCollection = kpiDB.createCollection(KPI_COLL_NAME, null);
-        kpiCollection = JacksonDBCollection.wrap(kpiDBCollection, KPIModuleInfo.class, String.class);
+
+        com.mongodb.client.MongoCollection<?> collection = essimDB.getCollection(ESSIM_COLL_NAME, Document.class);
+        JacksonCodecRegistry jacksonCodecRegistry = new JacksonCodecRegistry(ObjectMapperConfigurer.configureObjectMapper(new ObjectMapper()), collection.getCodecRegistry(), UuidRepresentation.JAVA_LEGACY);
+        jacksonCodecRegistry.addCodecForClass(EssimSimulation.class);
+        essimCollection = collection.withDocumentClass(EssimSimulation.class).withCodecRegistry(jacksonCodecRegistry);
+        essimMetaCollection = essimDB.getCollection(ESSIM_META_COLL_NAME);
 
         updateStatus("Ready");
 
@@ -89,7 +88,8 @@ public class MongoBackend implements IMongoBackend {
 
     private void testMongoConnection(ServerAddress serverAddress) {
         try {
-            essimDB.command("ping");
+            BsonDocument ping = new BsonDocument("ping", new BsonInt64(1));
+            essimDB.runCommand(ping);
         } catch (MongoTimeoutException e) {
             log.error("Connection to MongoDB @ {} failed! Exiting!", serverAddress.toString());
             System.exit(1);
@@ -99,47 +99,30 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public String addSimulation(EssimSimulation simulation) {
-        WriteResult<EssimSimulation, String> result = essimCollection.save(simulation);
-        String id = result.getDbObject().get("_id").toString();
-        return id;
+        InsertOneResult insertOneResult = essimCollection.insertOne(simulation);
+        return insertOneResult.getInsertedId().asObjectId().getValue().toHexString();
     }
 
     @Override
     public void updateSimulationData(String simulationId, EssimSimulation simulationData) {
-        try {
-            Query query = DBQuery.is("_id", new ObjectId(simulationId));
-            simulationData.getAdditionalProperties().clear();
-            essimCollection.update(query, simulationData);
-        } catch (MongoException e) {
-            log.error("Could not update simulation data", e);
-        }
+        simulationData.getAdditionalProperties().clear();
+        essimCollection.replaceOne(Filters.eq("_id", new ObjectId(simulationId)), simulationData);
     }
 
     @Override
     public SimulationStatus getSimulationStatus(String simulationId) {
-        SimulationStatus simStatus = null;
-        try {
-            Query query = DBQuery.is("_id", new ObjectId(simulationId));
-            EssimSimulation simulation = essimCollection.findOne(query);
-            simStatus = simulation.getStatus();
-        } catch (MongoException e) {
-            log.error("Could not get simulation status", e);
-        }
-        return simStatus;
+        EssimSimulation simulation = getSimulation(simulationId);
+        return simulation == null ? null : simulation.getStatus();
     }
 
     @Override
     public void updateSimulationStatus(String simulationId, Status type, String status) {
-        try {
-            SimulationStatus statusObj = new SimulationStatusImpl();
-            statusObj.setState(type);
-            statusObj.setDescription(status);
-
-            Query query = DBQuery.is("_id", new ObjectId(simulationId));
-            essimCollection.update(query, DBUpdate.set("status", statusObj));
-        } catch (MongoException e) {
-            log.error("Could not update simulation status", e);
-        }
+        Document statusObj = new Document();
+        statusObj.put("state", type);
+        statusObj.put("description", status);
+        Bson update = Updates.set("status", statusObj);
+        new ObjectId(simulationId);
+        essimCollection.updateOne(Filters.eq("_id", new ObjectId(simulationId)), update);
     }
 
     @Override
@@ -161,18 +144,9 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public EssimSimulation getSimulation(String simulationId) {
-        EssimSimulation simInstance = null;
-        try {
-            Query query = DBQuery.is("_id", new ObjectId(simulationId));
-            simInstance = essimCollection.findOne(query);
-            if (simInstance != null) {
-                simInstance.getAdditionalProperties().clear();
-            }
-        } catch (MongoException e) {
-            log.error("Could not get mongo simulation", e);
+        try (MongoCursor<EssimSimulation> simIt = essimCollection.find(Filters.eq("_id", new ObjectId(simulationId))).iterator()) {
+            return simIt.hasNext() ? simIt.next() : null;
         }
-
-        return simInstance;
     }
 
     @Override
@@ -182,52 +156,22 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public String getMetaInfo(String key) {
-        DBObject valueObj = essimMetaCollection.findOne(key);
+        Document valueObj = essimMetaCollection.find(Filters.eq("_id", key)).first();
         if (valueObj == null) {
             return null;
         }
-        return (String) valueObj.get("value");
+        return valueObj.getString("value");
     }
 
     @Override
     public void updateMetaInfo(String key, String value) {
-        BasicDBObject entry = new BasicDBObject();
-        entry.put("_id", key);
-        entry.put("value", value);
-        essimMetaCollection.save(entry);
+        essimMetaCollection.findOneAndUpdate(Filters.eq("_id", key), Updates.set("value", value));
     }
 
     @Override
-    public List<KPIModuleInfo> getAllKpiModules() {
-        List<KPIModuleInfo> kpis = new ArrayList<KPIModuleInfo>();
-        try {
-            for (KPIModuleInfo kpi : kpiCollection.find()) {
-                kpi.getAdditionalProperties().clear();
-                kpis.add(kpi);
-            }
-        } catch (MongoException e) {
-            log.error("Could not get KPI modules", e);
-        }
-        return kpis;
-    }
-
-    @Override
-    public KPIModule getKPIForSimulation(String simulationId, String kpiId) {
-        KPIModule kpiModule = null;
-        EssimSimulation simulation = getSimulation(simulationId);
-        if (simulation != null) {
-            RemoteKPIModule remoteKPIModule = simulation.getKpiModule();
-            if (remoteKPIModule != null) {
-                if (remoteKPIModule.getModules() != null && !remoteKPIModule.getModules().isEmpty()) {
-                    for (KPIModule module : remoteKPIModule.getModules()) {
-                        if (kpiId.equals(module.getId())) {
-                            kpiModule = module;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        return kpiModule;
+    public void updateKPIForSimulation(String simulationId, String kpiId, String result) {
+        Bson set = Updates.set("kpiModule.modules.$.result", result);
+        Bson filter = Filters.and(Filters.eq("_id", new ObjectId(simulationId)), Filters.eq("kpiModule.modules.id", kpiId));
+        essimCollection.updateOne(filter, set);
     }
 }
