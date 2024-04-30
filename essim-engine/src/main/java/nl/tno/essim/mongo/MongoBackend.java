@@ -86,7 +86,7 @@ public class MongoBackend implements IMongoBackend {
 
         updateStatus("Ready");
 
-        statusMap = new HashMap<String, IStatusProvider>();
+        statusMap = new HashMap<>();
 
         instance = this;
     }
@@ -142,7 +142,7 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public List<EssimSimulation> getSimulations() {
-        List<EssimSimulation> simInstance = new ArrayList<EssimSimulation>();
+        List<EssimSimulation> simInstance = new ArrayList<>();
         try {
             for (EssimSimulation record : essimCollection.find()) {
                 simInstance.add(record);
