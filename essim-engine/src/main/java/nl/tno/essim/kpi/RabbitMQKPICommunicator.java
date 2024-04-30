@@ -7,6 +7,7 @@ import nl.tno.essim.kpi.data.KPIData;
 import nl.tno.essim.kpi.data.KPIModuleMessage;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 
 @Slf4j
@@ -38,8 +39,8 @@ public class RabbitMQKPICommunicator extends KPICommunicator {
                 try {
                     KPIModuleMessage message = objectMapper.readValue(delivery.getBody(), KPIModuleMessage.class);
                     responseReceived(message);
-                } catch (IOException e) {
-                    log.warn("Could not decode message", e);
+                } catch (Exception e) {
+                    log.warn("Exception occurred handling message:\n {}", new String(delivery.getBody(), StandardCharsets.UTF_8), e);
                 }
             };
             channel.basicConsume(responseQueue, true, deliverCallback, consumerTag -> log.debug("Message canceled: {}", consumerTag));
