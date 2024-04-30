@@ -32,6 +32,6 @@ public interface IMongoBackend {
 
     void updateMetaInfo(String key, String value);
 
-    void updateKPIForSimulation(String simulationId, String kpiId, String result);
+    void updateKPIForSimulation(String simulationId, String kpiId, String result, String status);
 
 }

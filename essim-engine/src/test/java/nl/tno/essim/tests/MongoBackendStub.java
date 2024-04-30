@@ -93,7 +93,7 @@ public class MongoBackendStub implements IMongoBackend {
 	}
 
 	@Override
-	public void updateKPIForSimulation(String simulationId, String kpiId, String result) {
+	public void updateKPIForSimulation(String simulationId, String kpiId, String result, String status) {
 
 	}
 

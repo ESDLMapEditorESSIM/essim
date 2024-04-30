@@ -1,5 +1,10 @@
 package nl.tno.essim.kpi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.kpi.data.KPIResult;
@@ -36,11 +41,23 @@ public class KPIManager {
     private final ScheduledExecutorService executor;
     private final HashMap<String, KPICommunicator> communicatorMap = new HashMap<>();
     private final HashMap<String, KPIModuleState> moduleStates = new HashMap<>();
+    private final static ObjectMapper objectMapper = new ObjectMapper();
+    static {
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+    }
 
     public void resultReceived(KPIResult result) {
-        log.debug("KPI Result received : {}", result);
-        KPIModuleState kpiModuleState = moduleStates.get(result.getUuid());
-        MongoBackend.getInstance().updateKPIForSimulation(result.getSimulationId(), kpiModuleState.getModuleInfo().getTypeId(), result.getResult().asText());
+        try {
+            if (log.isTraceEnabled()) {
+                log.trace("KPI Result received : {}", objectMapper.writeValueAsString(result));
+            }
+            JsonNode jsonNode = objectMapper.readTree(result.getResult().asText());
+            KPIModuleState kpiModuleState = moduleStates.get(result.getUuid());
+            ((ObjectNode) jsonNode).put("status", "Success");
+            MongoBackend.getInstance().updateKPIForSimulation(result.getSimulationId(), kpiModuleState.getModuleInfo().getTypeId(), jsonNode.toString(), "success");
+        } catch (JsonProcessingException e) {
+            log.warn("Invalid json", e);
+        }
     }
 
     private class StateRemover implements Runnable {

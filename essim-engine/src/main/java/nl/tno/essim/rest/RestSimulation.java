@@ -295,6 +295,7 @@ public class RestSimulation implements Simulation {
                             arrayNode.add(getKPIResult(simulationId, module));
                         }
                     }
+                    log.trace("Sending {} ", arrayNode.toString());
                     return GetSimulationKpiBySimulationIdResponse.respond200WithApplicationJson(arrayNode.toString());
                 }
             }

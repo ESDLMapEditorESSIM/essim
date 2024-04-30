@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.mongodb.*;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.IStatusProvider;
@@ -35,6 +37,7 @@ import org.mongojack.JacksonCodecRegistry;
 import org.mongojack.ObjectMapperConfigurer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -176,9 +179,12 @@ public class MongoBackend implements IMongoBackend {
     }
 
     @Override
-    public void updateKPIForSimulation(String simulationId, String kpiId, String result) {
-        Bson set = Updates.set("kpiModule.modules.$.result", result);
-        Bson filter = Filters.and(Filters.eq("_id", new ObjectId(simulationId)), Filters.eq("kpiModule.modules.id", kpiId));
-        essimCollection.updateOne(filter, set);
+    public void updateKPIForSimulation(String simulationId, String kpiId, String result, String status) {
+        UpdateOptions options = new UpdateOptions()
+                .arrayFilters(List.of(Filters.eq("ele.id", kpiId)));
+        Bson filter = Filters.eq("_id", new ObjectId(simulationId));
+        Bson set = Updates.combine(Updates.set("kpiModule.modules.$[ele].result", result), Updates.set("kpiModule.modules.$[ele].status", status));
+        UpdateResult updateResult = essimCollection.updateOne(filter, set, options);
+        log.debug("Result: {}", updateResult);
     }
 }
