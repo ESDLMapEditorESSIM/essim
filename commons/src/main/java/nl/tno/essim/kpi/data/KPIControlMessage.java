@@ -1,12 +1,9 @@
 package nl.tno.essim.kpi.data;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 @Builder
@@ -26,8 +23,9 @@ public class KPIControlMessage {
     @RequiredArgsConstructor
     @AllArgsConstructor
     public static class Start {
-        String uuid;
-        int messageCount;
+        private String uuid;
+        private String kpiId;
+        private int messageCount;
         private String simulationId;
         private JsonNode config;
     }

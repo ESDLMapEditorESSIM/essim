@@ -46,7 +46,7 @@ public abstract class KPICommunicator {
 
     public void sendKPIStart(KPIInfo info) {
         info.getKpiCalculators().forEach(kc -> {
-            KPIControlMessage start = KPIControlMessage.builder().start(KPIControlMessage.Start.builder().simulationId(info.getSimulationId()).messageCount((int) info.getNoOfMessages()).config(kc.getConfig()).build()).build();
+            KPIControlMessage start = KPIControlMessage.builder().start(KPIControlMessage.Start.builder().kpiId(kc.getId()).simulationId(info.getSimulationId()).messageCount((int) info.getNoOfMessages()).config(kc.getConfig()).build()).build();
             sendControlMessage(start);
         });
     }
