@@ -19,7 +19,10 @@ package nl.tno.essim.mongo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
-import com.mongodb.*;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoException;
+import com.mongodb.MongoTimeoutException;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.*;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.UpdateOptions;
@@ -29,15 +32,18 @@ import com.mongodb.client.result.UpdateResult;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.IStatusProvider;
-import nl.tno.essim.model.*;
-import org.bson.*;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.SimulationStatus;
+import nl.tno.essim.model.Status;
+import org.bson.BsonDocument;
+import org.bson.BsonInt64;
+import org.bson.Document;
+import org.bson.UuidRepresentation;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.mongojack.JacksonCodecRegistry;
-import org.mongojack.ObjectMapperConfigurer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -60,7 +66,6 @@ public class MongoBackend implements IMongoBackend {
         return MongoBackend.instance;
     }
 
-    @SuppressWarnings("deprecation")
     public MongoBackend(String host, String port) {
         ServerAddress serverAddress = new ServerAddress(host, Integer.parseInt(port));
         mongoClient = MongoClients.create(new ConnectionString("mongodb://" + host + ":" + port));
