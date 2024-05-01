@@ -16,6 +16,8 @@
 
 package nl.tno.essim;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import esdl.*;
 import essim.EssimPackage;
 import lombok.Getter;
@@ -67,6 +69,7 @@ import java.util.stream.Collectors;
 public class ESSimEngine implements IStatusProvider {
 
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
+    private final static ObjectMapper objectMapper = new ObjectMapper();
     private List<EnergyAsset> energyAssets;
     @Getter
     private String simulationId;
@@ -300,9 +303,9 @@ public class ESSimEngine implements IStatusProvider {
                 KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);
                 for (KPIModule module : modules) {
                     Object config = module.getConfig();
-                    // FIXME find out objectType of config
-                    log.info("Config: {}", config);
-                    kpiInfoBuilder.kpiCalculator(new KPIInfo.KpiCalculator(module.getId(), null));
+                    log.debug("Config for module {}: {}", module.getId(), config);
+                    JsonNode jsonNodeConfig = objectMapper.valueToTree(config);
+                    kpiInfoBuilder.kpiCalculator(new KPIInfo.KpiCalculator(module.getId(), jsonNodeConfig));
                 }
                 kpiCommunicator.sendKPIStart(kpiInfoBuilder.build());
             }));
