@@ -24,12 +24,12 @@
     </organization>
 
     <properties>
-        <revision>23.4</revision> <!-- use this to set the version of all the modules -->
+        <revision>24.5</revision> <!-- use this to set the version of all the modules -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
         <emf.version>2.29.0</emf.version>
         <emfecore.version>2.35.0</emfecore.version>
-        <esdl.version>2.23.3</esdl.version>
+        <esdl.version>2.24.1</esdl.version>
         <junit.jupiter.version>5.10.1</junit.jupiter.version>
         <base.package.name>nl.tno.essim</base.package.name>
         <jackson.version>2.17.0</jackson.version>
@@ -83,11 +83,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>2.0.12</version>
-            </dependency>
-            <dependency>
-                <groupId>org.json</groupId>
-                <artifactId>json</artifactId>
-                <version>20240303</version>
             </dependency>
             <dependency>
                 <groupId>nl.tno.esdl</groupId>
