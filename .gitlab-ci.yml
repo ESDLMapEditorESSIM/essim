@@ -1,7 +1,7 @@
 stages:
   - build
 
-image: maven:3.9.6-eclipse-temurin-11
+image: maven:3.9.6-eclipse-temurin-21
 
 variables:
   REGISTRY: ci.tno.nl
