@@ -428,7 +428,7 @@ public class GrafanaClient {
 		if (respJSON.has("status")) {
                 if (respJSON.get("status").asText().equals("success")) {
 				log.debug("Dashboard successfully created!!");
-				dashboardUrl = grafanaExternalUrl + respJSON.get("url");
+				dashboardUrl = grafanaExternalUrl + respJSON.get("url").asText();
 				log.debug("Go to {}", dashboardUrl);
 			}
 		}
