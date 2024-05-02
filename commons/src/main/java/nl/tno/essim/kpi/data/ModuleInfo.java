@@ -14,16 +14,6 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ModuleInfo {
-    //    module = {'calculator_id': self.kpi_calculator_id,
-//            'title': self.kpi_calculator.get_title(),
-//            'description': self.kpi_calculator.get_description(),
-//            'config_config': self.kpi_calculator.get_sample_config(),
-//            'sample_output': self.kpi_calculator.get_sample_output(),
-//            'kafka_consumer_group': "",
-//            'kafka_client': "",
-//            'status': 'registered',
-//            'up_since': datetime.now()
-//    }
     @JsonProperty("calculator_id")
     private String typeId;
     private String title;

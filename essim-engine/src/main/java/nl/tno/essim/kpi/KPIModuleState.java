@@ -22,7 +22,6 @@ public class KPIModuleState {
 
     public void setSimulationProgresses(String simulationId, KPIStatus.SimulationProgress progress) {
         simulationProgresses.put(simulationId, progress);
-        // TODO store in mongo?
     }
 
     public KPIStatus.SimulationProgress getSimulationProgress(String simulationId) {

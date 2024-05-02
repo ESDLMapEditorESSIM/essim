@@ -37,7 +37,7 @@ import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
-import nl.tno.essim.observation.consumers.CSVObservationConsumer;
+import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KPIObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
@@ -137,8 +137,6 @@ public class ESSimEngine implements IStatusProvider {
 
         simulationStartTime = EssimTime.dateToLocalDateTime(simulation.getStartDate());
         simulationEndTime = EssimTime.dateToLocalDateTime(simulation.getEndDate());
-//		simulationStartTime = EssimTime.dateFromGUI(simulation.getStartDate());
-//		simulationEndTime = EssimTime.dateFromGUI(simulation.getEndDate());
         simulationStepLength = SIMULATION_STEP;
         String timeStep = simulation.getTimeStep();
         if (timeStep != null) {
@@ -182,36 +180,6 @@ public class ESSimEngine implements IStatusProvider {
                 simulationManager.addObservationConsumer(csvObservationConsumer);
                 log.debug("Registering CSV Observation Consumer");
             }
-//			if (simulation.getKafkaURL() != null) {
-//				KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getKafkaURL());
-//				KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
-//				kpiObservationConsumer.init(simulationId);
-//				observationManager.registerConsumer(kpiObservationConsumer);
-//				simulationManager.addObservationConsumer(kpiObservationConsumer);
-//				log.debug("Registering Kafka Observation Consumer");
-//			}
-//			if (simulation.getNatsURL() != null) {
-//				KPICommunicator kpiCommunicator = KPIManager.getInstance().getKPICommunicator(simulation.getNatsURL());
-//				KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
-//				kpiObservationConsumer.init(simulationId);
-//				observationManager.registerConsumer(kpiObservationConsumer);
-//				simulationManager.addObservationConsumer(kpiObservationConsumer);
-//				log.debug("Registering NATS Observation Consumer");
-//			}
-//			if (simulation.getMqttURL() != null) {
-//				MQTTObservationConsumer mqttObservationConsumer = new MQTTObservationConsumer(simulation.getMqttURL());
-//				mqttObservationConsumer.init(simulationId);
-//				observationManager.registerConsumer(mqttObservationConsumer);
-//				simulationManager.addObservationConsumer(mqttObservationConsumer);
-//				log.debug("Registering MQTT Observation Consumer");
-//			}
-//			if (simulation.getAmqpURL() != null) {
-//				AMQPObservationConsumer amqpObservationConsumer = new AMQPObservationConsumer(simulation.getAmqpURL());
-//				amqpObservationConsumer.init(simulationId);
-//				observationManager.registerConsumer(amqpObservationConsumer);
-//				simulationManager.addObservationConsumer(amqpObservationConsumer);
-//				log.debug("Registering AMQP Observation Consumer");
-//			}
         } catch (Exception e) {
             simulationManager.shutdown();
             throw new IllegalArgumentException("Error in Observation Manager init: " + e.getMessage());
