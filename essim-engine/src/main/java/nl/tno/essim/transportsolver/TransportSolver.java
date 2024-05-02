@@ -16,45 +16,16 @@
 
 package nl.tno.essim.transportsolver;
 
-import java.io.PrintWriter;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.json.JSONArray;
-
-import esdl.AbstractBasicConversion;
-import esdl.Asset;
-import esdl.Carrier;
-import esdl.Consumer;
-import esdl.Conversion;
-import esdl.DrivenByDemand;
-import esdl.DrivenByProfile;
-import esdl.EnergyAsset;
-import esdl.EsdlFactory;
-import esdl.GenericProfile;
-import esdl.InPort;
-import esdl.OutPort;
-import esdl.Port;
-import esdl.Producer;
-import esdl.ProfileReference;
-import esdl.Transport;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import esdl.*;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
 import essim.ESSIMTimeSeriesProfile;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.commons.BidFunction;
-import nl.tno.essim.commons.Commons;
+import nl.tno.essim.ESSimEngine;
+import nl.tno.essim.commons.*;
 import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.commons.ISimulationManager;
-import nl.tno.essim.commons.ITransportSolver;
-import nl.tno.essim.commons.Simulatable;
-import nl.tno.essim.commons.SimulationStatus;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
@@ -68,6 +39,11 @@ import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
 import nl.tno.essim.util.Converter;
+
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class TransportSolver implements ITransportSolver, Simulatable, IObservationProvider {
@@ -371,10 +347,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				log.error("Could not read TREE template located at {}!", D3_TREE_PAGE_TEMPLATE);
 				return;
 			}
-
-			JSONArray jsonTree = new JSONArray().put(tree.getJSONString());
+			ArrayNode jsonTree = ESSimEngine.getObjectMapper().createArrayNode();
+			jsonTree.add(tree.getJsonNode());
 			String outString = template.replace(D3_TREEDATA_VAR_PLACEHOLDER,
-					"var treeData=" + jsonTree.toString() + ";");
+					"var treeData=" + jsonTree.asText() + ";");
 			networkDiag = outString.replace(D3_HEADER_PLACEHOLDER, diff);
 			String fileName = D3_TREE_PAGE_OUTPUT_FILE + "_" + diff.replace(' ', '_') + ".html";
 			PrintWriter out = new PrintWriter(fileName);

@@ -16,25 +16,15 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import esdl.AbstractBuilding;
-import esdl.Area;
-import esdl.Carrier;
-import esdl.Conversion;
-import esdl.EnergyAsset;
-import esdl.Port;
-import esdl.Sector;
-import esdl.Transport;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import esdl.*;
 import esdl.impl.ItemImpl;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.model.Market;
@@ -43,6 +33,10 @@ import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Slf4j
@@ -186,10 +180,11 @@ public abstract class Node implements INode {
                     max = res[1];
             }
         }
-        if (cost < min)
+        if (cost < min) {
+            if (cost > max)
+                max = cost;
             min = cost;
-        if (cost > max)
-            max = cost;
+        }
 
         return new double[]{min, max};
     }
@@ -217,7 +212,7 @@ public abstract class Node implements INode {
         return vals;
     }
 
-    public JSONObject getJSONString() {
+    public JsonNode getJsonNode() {
         String ctrlStrategy = "";
         if (getAsset() instanceof Conversion) {
             if (getAsset().getControlStrategy() != null) {
@@ -225,26 +220,27 @@ public abstract class Node implements INode {
                         + "]";
             }
         }
-        JSONObject nodeObj = new JSONObject().put("name", getNodeId() + "(" + getRole() + ")" + ctrlStrategy);
+        ObjectNode objectNode = ESSimEngine.getObjectMapper().createObjectNode();
+        objectNode.put("name", getNodeId() + "(" + getRole() + ")" + ctrlStrategy);
         if (parent != null) {
-            nodeObj.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")" + ctrlStrategy);
+            objectNode.put("parent", parent.getNodeId() + "(" + parent.getRole() + ")" + ctrlStrategy);
         } else {
-            nodeObj.put("parent", "null");
+            objectNode.put("parent", "null");
         }
+        ArrayNode childrenJSON = null;
 
-        JSONArray childrenJSON = null;
         if (children != null && !children.isEmpty()) {
-            childrenJSON = new JSONArray();
+            childrenJSON = ESSimEngine.getObjectMapper().createArrayNode();
             for (Node node : children) {
-                JSONObject childJSON = node.getJSONString();
-                childrenJSON.put(childJSON);
+                JsonNode childJSON = node.getJsonNode();
+                childrenJSON.add(childJSON);
             }
         }
         if (childrenJSON != null) {
-            nodeObj.put("children", childrenJSON);
+            objectNode.put("children", childrenJSON);
         }
 
-        return nodeObj;
+        return objectNode;
     }
 
     public void makeInflexibleProductionFunction(double emax) {
