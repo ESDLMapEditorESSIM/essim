@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11-jre-alpine 
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /opt
 
