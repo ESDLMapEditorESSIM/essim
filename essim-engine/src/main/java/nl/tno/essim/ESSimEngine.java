@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 public class ESSimEngine implements IStatusProvider {
 
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
+    @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
     private List<EnergyAsset> energyAssets;
     @Getter

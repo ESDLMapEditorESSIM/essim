@@ -19,7 +19,10 @@ public abstract class KPICommunicator {
     protected final static String KPI_CONTROL_TOPIC = "KPIControl.request";
     protected final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
     protected final static String OBSERVATION_PREFIX = "observation.";
-    protected final ObjectMapper objectMapper;
+    protected final static ObjectMapper objectMapper = new ObjectMapper();
+    static {
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
     private final KPIManager kpiManager;
 
     public abstract void sendData(KPIData data);
@@ -30,8 +33,6 @@ public abstract class KPICommunicator {
 
     public KPICommunicator(KPIManager kpiManager) {
         this.kpiManager = kpiManager;
-        objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     protected void responseReceived(KPIModuleMessage message) {

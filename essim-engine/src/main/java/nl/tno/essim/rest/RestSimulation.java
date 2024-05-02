@@ -18,7 +18,6 @@ package nl.tno.essim.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +42,6 @@ public class RestSimulation implements Simulation {
 
     private IMongoBackend mongo;
     private final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);
-    private final static ObjectMapper mapper = new ObjectMapper();
 
     private static class EssimExceptionHandler implements UncaughtExceptionHandler {
         private IMongoBackend mongo;
@@ -216,7 +214,7 @@ public class RestSimulation implements Simulation {
     public GetSimulationStatusBySimulationIdResponse getSimulationStatusBySimulationId(String simulationId) {
         SimulationStatus simStatus = mongo.getSimulationStatus(simulationId);
         if (simStatus != null) {
-            ObjectNode statusJson = mapper.createObjectNode();
+            ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();
             statusJson.put("State", simStatus.getState().toString());
             statusJson.put("Description", simStatus.getDescription());
             return GetSimulationStatusBySimulationIdResponse.respond200WithApplicationJson(statusJson.toString());
@@ -289,7 +287,7 @@ public class RestSimulation implements Simulation {
                 if (kpiModule.getModules() == null || kpiModule.getModules().isEmpty()) {
                     error = "SimulationID " + simulationId + " had no KPIs defined!";
                 } else {
-                    ArrayNode arrayNode = mapper.createArrayNode();
+                    ArrayNode arrayNode = ESSimEngine.getObjectMapper().createArrayNode();
                     for (KPIModule module : kpiModule.getModules()) {
                         if (module.getId() != null) {
                             arrayNode.add(getKPIResult(simulationId, module));
@@ -308,7 +306,7 @@ public class RestSimulation implements Simulation {
         JsonNode result = null;
         if (moduleResultString != null) {
             try {
-                result = mapper.readTree(moduleResultString);
+                result = ESSimEngine.getObjectMapper().readTree(moduleResultString);
                 if (!result.has("status")) {
                     ((ObjectNode) result).put("status", "Success");
                 }
@@ -321,14 +319,14 @@ public class RestSimulation implements Simulation {
         if (result == null) {
             KPIStatus.SimulationProgress simulationProgress = KPIManager.getInstance().getKPIModuleInfo(module.getId(), simulationId);
             if (simulationProgress == null || simulationProgress.getStatusMessage() == null) {
-                result = mapper.createObjectNode();
+                result = ESSimEngine.getObjectMapper().createObjectNode();
                 ((ObjectNode) result).put("status", "Not yet started");
             } else {
-                result = mapper.valueToTree(simulationProgress);
+                result = ESSimEngine.getObjectMapper().valueToTree(simulationProgress);
             }
 
         }
-        ObjectNode objectNode = mapper.createObjectNode();
+        ObjectNode objectNode = ESSimEngine.getObjectMapper().createObjectNode();
         objectNode.put(module.getId(), result);
         return objectNode;
     }

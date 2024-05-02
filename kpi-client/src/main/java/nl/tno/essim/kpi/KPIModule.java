@@ -17,17 +17,21 @@ public abstract class KPIModule {
     public final static String KPI_RESPONSE_TOPIC = "KPIControl.response";
 
     protected final KPIProcessorFactory kpiProcessorFactory;
-    protected ObjectMapper objectMapper;
+    protected final static ObjectMapper objectMapper;
+
+    static {
+        objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+    }
+
     protected final String uuid;
     private final HashMap<String, SimulationState> simulationStateMap = new HashMap<>();
 
     public KPIModule(KPIProcessorFactory kpiProcessorFactory) {
         this.kpiProcessorFactory = kpiProcessorFactory;
         uuid = UUID.randomUUID().toString();
-        objectMapper = new ObjectMapper();
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
     }
 
 
