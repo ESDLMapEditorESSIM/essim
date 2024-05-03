@@ -20,7 +20,7 @@ build-essim:
   extends: .build-script
   script:
     - cd $CI_PROJECT_DIR
-    - mvn clean package -DskipTests
+    - mvn clean package
   except:
     - main
 
@@ -32,7 +32,7 @@ build-and-push-essim:
   extends: .build-script
   script:
     - cd $CI_PROJECT_DIR
-    - mvn clean package -DskipTests
+    - mvn clean package
     - cd $CI_PROJECT_DIR/essim-engine
     - COMMIT_SHA=`git rev-parse --short HEAD`
     - echo $COMMIT_SHA > version.txt
