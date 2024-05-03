@@ -15,8 +15,8 @@ import java.util.List;
 @EqualsAndHashCode
 @Slf4j
 public class BidFunction {
-    public final static double MIN_DELTA_POWER = 10;
-    private final static BigDecimal TWO = new BigDecimal(2, MathContext.DECIMAL128);
+    public final static double DELTA_POWER_THRESHOLD = 10;
+    private final static BigDecimal DELTA_POWER = new BigDecimal("1e-6", MathContext.DECIMAL128);
 
     @EqualsAndHashCode
     public static class Point implements Comparable<Point> {
@@ -96,7 +96,7 @@ public class BidFunction {
             if (previous != null) {
 
                 if (previous.price.subtract(bidCurvePoint.price).abs().doubleValue() <= minDeltaPrice) {
-                    if (previous.power.subtract(bidCurvePoint.power).abs().doubleValue() <= MIN_DELTA_POWER) {
+                    if (previous.power.subtract(bidCurvePoint.power).abs().doubleValue() <= DELTA_POWER_THRESHOLD) {
                         // We don't need double points
                         i.remove();
                         continue;
@@ -106,9 +106,9 @@ public class BidFunction {
                 }
                 BigDecimal powerDelta = previous.power.subtract(bidCurvePoint.power);
                 // Correct minor errors
-                BigDecimal minDeltaPower = new BigDecimal(MIN_DELTA_POWER, MathContext.DECIMAL128);
+                BigDecimal minDeltaPower = new BigDecimal(DELTA_POWER_THRESHOLD, MathContext.DECIMAL128);
                 if (powerDelta.compareTo(BigDecimal.ZERO) >= 0 && powerDelta.compareTo(minDeltaPower) <= 0) {
-                    bidCurvePoint.power = previous.power.add(minDeltaPower.divide(TWO));
+                    bidCurvePoint.power = previous.power.add(DELTA_POWER);
                 } else if (powerDelta.compareTo(minDeltaPower) > 0) {
                     // Don't allow big errors
                     throw new InvalidBidCurveException("BidCurve is not mathematically decreasing: " + this);
@@ -119,7 +119,7 @@ public class BidFunction {
     }
 
     private static double getPowerAtMaxPrice(double price, Point lastPoint) {
-        return lastPoint.power.doubleValue() - ((price - lastPoint.price.doubleValue()) / price) * MIN_DELTA_POWER;
+        return lastPoint.power.doubleValue() - ((price - lastPoint.price.doubleValue()) / price) * DELTA_POWER_THRESHOLD;
     }
 
     private static double getPriceAtPower(double target, Point begin, Point end) {
@@ -238,7 +238,7 @@ public class BidFunction {
         for (; ; ) {
 
             if (p1.price.subtract(p2.price).abs().doubleValue() < c1.minDeltaPrice) {
-                BigDecimal price = p1.price.add(p2.price).divide(BigDecimal.valueOf(2));
+                BigDecimal price = p1.price.add(p2.price).divide(BigDecimal.TWO, MathContext.DECIMAL128);
                 combined.add(new Point(price, p1.power.add(p2.power)));
                 if (i1.hasNext() && i2.hasNext()) {
                     previous1 = p1;

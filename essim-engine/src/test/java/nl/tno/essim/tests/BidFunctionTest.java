@@ -2,8 +2,6 @@ package nl.tno.essim.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.math.BigDecimal;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -58,13 +56,13 @@ class BidFunctionTest {
 		compareBidFunctions(
 				new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
 						new double[][] { { -10.0, 120E6 }, { 10.0, 50.0E6 } }),
-				sumCurves1, BidFunction.MIN_DELTA_POWER);
+				sumCurves1, BidFunction.DELTA_POWER_THRESHOLD);
 		BidFunction sumCurves2 = BidFunction.sumCurves(sumCurves1, df3);
 		System.out.println("SC2: " + sumCurves2);
 		compareBidFunctions(
 				new BidFunction(-10, 10, Commons.MIN_DELTA_PRICE,
 						new double[][] { { -10, 170E6 }, { 0, 135E6 }, { 5, 67.5E6 } }),
-				sumCurves2, BidFunction.MIN_DELTA_POWER * 2);
+				sumCurves2, BidFunction.DELTA_POWER_THRESHOLD * 2);
 
 	}
 
