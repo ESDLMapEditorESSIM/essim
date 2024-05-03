@@ -23,6 +23,8 @@ import esdl.*;
 import esdl.impl.ItemImpl;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.BidFunction;
@@ -41,6 +43,8 @@ import java.util.List;
 @Data
 @Slf4j
 public abstract class Node implements INode {
+    @Getter
+    @Setter
     private static boolean storeBidCurves = System.getenv().containsKey("STORE_BIDCURVES");
 
     protected String simulationId;
