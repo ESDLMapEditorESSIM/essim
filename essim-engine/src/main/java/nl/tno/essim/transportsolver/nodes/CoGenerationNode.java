@@ -57,12 +57,10 @@ public class CoGenerationNode extends AbstractBasicConversionNode {
 		double heatEfficiency = coGenerationPlant.getHeatEfficiency();
 		if (heatEfficiency < Commons.eps) {
 			heatEfficiency = Commons.DEFAULT_COGEN_H_EFF;
-			log.warn("Conversion asset {} is missing heat efficiency! Defaulting to 0.35 (35%)", coGenName);
 		}
 		double electricalEfficiency = coGenerationPlant.getElectricalEfficiency();
 		if (electricalEfficiency < Commons.eps) {
 			electricalEfficiency = Commons.DEFAULT_COGEN_E_EFF;
-			log.warn("Conversion asset {} is missing electrical efficiency! Defaulting to 0.55 (55%)", coGenName);
 		}
 
 		for (Port port : coGenerationPlant.getPort()) {

@@ -163,8 +163,6 @@ public class HybridHeatPumpNode extends Node {
 					}
 					setCost(aggregateCost);
 				} else {
-					log.warn("Hybrid heat pump {} is missing cost information! Defaulting to {}", hhpName,
-							getDefaultMarginalCost());
 					setCost(getDefaultMarginalCost());
 				}
 
@@ -261,8 +259,6 @@ public class HybridHeatPumpNode extends Node {
 				} else if (carrierCost != null) {
 					setCost(carrierCost);
 				} else {
-					log.warn("Hybrid heat pump {} is missing cost information! Defaulting to {}", hhpName,
-							getDefaultMarginalCost());
 					setCost(getDefaultMarginalCost());
 				}
 				makeAdjustableConsumptionFunction(energyInput);

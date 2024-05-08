@@ -114,8 +114,6 @@ public class CoolingDemandNode extends Node {
 				}
 				setCost(aggregateCost);
 			} else {
-				log.warn("CoolingDemand {} is missing cost information! Defaulting to {}", consumerName,
-						getDefaultMarginalCost());
 				setCost(getDefaultMarginalCost());
 			}
 			makeAdjustableProductionFunction(energyOutput);

@@ -389,9 +389,6 @@ public class AbstractBasicConversionNode extends Node {
 			if (costSum != 0.0) {
 				aggregateCost = costSum;
 			}
-		} else {
-			log.warn("Conversion {} is missing cost information! Defaulting to {}", conversionName,
-					getDefaultMarginalCost());
 		}
 		setCost(Double.isNaN(aggregateCost) ? getDefaultMarginalCost() : aggregateCost);
 	}
