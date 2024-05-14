@@ -51,7 +51,9 @@ import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
@@ -67,6 +69,11 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
+    static {
+        // Initialize the models
+        EssimESDLPackage.eINSTANCE.eClass();
+        EssimPackage.eINSTANCE.eClass();
+    }
 
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
@@ -193,11 +200,12 @@ public class ESSimEngine implements IStatusProvider {
                             .value("SimDescription", simulationDescription)
                             .build());
         }
-
-        energySystem = loadEcoreResource(esdlFile.getAbsoluteFile().toString());
-        if (energySystem == null) {
-            log.error("Failed to load Energy System from file {}", esdlFile);
-            throw new IllegalStateException("Failed to load ESDL File!");
+        try (FileInputStream fileInputStream = new FileInputStream(esdlFile)) {
+            energySystem = loadEcoreResource(fileInputStream);
+            if (energySystem == null) {
+                log.error("Failed to load Energy System from file {}", esdlFile);
+                throw new IllegalStateException("Failed to load ESDL File!");
+            }
         }
 
         energySystemId = "UnnamedEnergySystem";
@@ -454,24 +462,17 @@ public class ESSimEngine implements IStatusProvider {
         }
     }
 
-    public static <T extends EObject> T loadEcoreResource(File projectFile) throws IOException {
-        return loadEcoreResource(projectFile.getPath());
-    }
-
     public static <T extends EObject> T loadEcoreResource(String projectFileName) throws IOException {
-        return loadEcoreResource(URI.createFileURI(projectFileName));
+        return loadEcoreResource(new FileInputStream(projectFileName));
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends EObject> T loadEcoreResource(URI projectFileURI) throws IOException {
-        // Initialize the models
-        EssimESDLPackage.eINSTANCE.eClass();
-        EssimPackage.eINSTANCE.eClass();
+    public static <T extends EObject> T loadEcoreResource(InputStream stream) throws IOException {
 
-        XMIResourceImpl resource = new XMIResourceImpl(projectFileURI);
+        XMIResourceImpl resource = new XMIResourceImpl();
         resource.getDefaultLoadOptions().put(XMIResource.OPTION_DEFER_IDREF_RESOLUTION, Boolean.TRUE);
         resource.setIntrinsicIDToEObjectMap(new HashMap<String, EObject>());
-        resource.load(null);
+        resource.load(stream, null);
 
         return (T) resource.getContents().get(0);
     }
