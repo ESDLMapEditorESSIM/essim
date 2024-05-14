@@ -44,6 +44,7 @@ public class RabbitMQKPICommunicator extends KPICommunicator {
                 }
             };
             channel.basicConsume(responseQueue, true, deliverCallback, consumerTag -> log.debug("Message canceled: {}", consumerTag));
+            log.debug("Connection established");
         } catch (IOException | TimeoutException e) {
             log.warn("Count not connect to rabbitMQ server at {}", url, e);
         }
