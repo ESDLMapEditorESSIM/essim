@@ -23,18 +23,19 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
+import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
 
     private Object lock = new Object();
-    private ArrayList<Double> dataPoints;
     private long profileStart = 0;
     private long stepSize = 0;
 
@@ -53,18 +54,18 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
             if (stepSize == getTimestep() && (from.getTime() - profileStart) % stepSize == 0) {
                 profileStart = seriesStart;
                 if (getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
-                    dataPoints = new ArrayList<>(getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileQuantityAndUnit())).collect(Collectors.toList()));
+                    values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileQuantityAndUnit())).collect(Collectors.toCollection(BasicEList::new));
                 } else {
-                    dataPoints = new ArrayList<>(getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileType())).collect(Collectors.toList()));
+                    values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileType())).collect(Collectors.toCollection(BasicEList::new));
                 }
             } else {
                 profileStart = from.getTime();
                 int stepCount = (int) (1 + (to.getTime() / 1000l - profileStart) / stepSize);
-                dataPoints = new ArrayList<>(stepCount);
+                values = new BasicEList<>(stepCount);
                 long startTime = profileStart;
                 ArrayList<Double> data = new ArrayList<>(getValues());
                 for (int i = 0; i < stepCount; i++) {
-                    dataPoints.add(getValueAt(startTime, stepSize, seriesStart, getTimestep(), data));
+                    values.add(getValueAt(startTime, stepSize, seriesStart, getTimestep(), data));
                 }
             }
         }
@@ -107,12 +108,12 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
             int toIndex;
             if (stepSize == 0) {
                 fromIndex = 0;
-                toIndex = dataPoints.size();
+                toIndex = values.size();
             } else {
                 fromIndex = (int) ((from.getTime() / 1000L - profileStart) / stepSize);
                 toIndex = (int) ((to.getTime() / 1000L - profileStart) / stepSize);
-                if (toIndex > dataPoints.size()) {
-                    toIndex = dataPoints.size();
+                if (toIndex > values.size()) {
+                    toIndex = values.size();
                 }
                 if (fromIndex < 0) {
                     fromIndex = 0;
@@ -123,7 +124,7 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
                 profileElement.setFrom(new Date((profileStart + i * stepSize) * 1000L));
 //                profileElement.setTo(new Date((profileStart + (i + 1) * stepSize) * 1000L));
                 profileElement.setTo(null);
-                profileElement.setValue(dataPoints.get(i));
+                profileElement.setValue(values.get(i));
                 profilePointList.add(profileElement);
             }
         }
@@ -147,23 +148,23 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
                         throw new IllegalArgumentException("Cannot add an element to a TimeSeriesProfile with a different step size");
                     }
                 }
-                if (dataPoints == null || dataPoints.isEmpty()) {
-                    dataPoints = new ArrayList<>();
+                if (values == null || values.isEmpty()) {
+                    values = new BasicEList<>();
                     profileStart = profileElement.getFrom().getTime() / 1000L;
                     stepSize = elementSize;
                 }
-                if (stepSize == 0 && dataPoints.size() == 1) {
+                if (stepSize == 0 && values.size() == 1) {
                     // We will determine the step size based on the distance between the first two data points
                     stepSize = profileElement.getFrom().getTime() / 1000L - profileStart;
                 }
-                int index = stepSize == 0 ? dataPoints.size() : (int) ((profileElement.getFrom().getTime() / 1000L - profileStart) / stepSize);
-                if (index < dataPoints.size()) {
-                    dataPoints.set(index, profileElement.getValue());
+                int index = stepSize == 0 ? values.size() : (int) ((profileElement.getFrom().getTime() / 1000L - profileStart) / stepSize);
+                if (index < values.size()) {
+                    values.set(index, profileElement.getValue());
                 } else {
-                    while (index > dataPoints.size()) {
-                        dataPoints.add(0.0);
+                    while (index > values.size()) {
+                        values.add(0.0);
                     }
-                    dataPoints.add(profileElement.getValue());
+                    values.add(profileElement.getValue());
                 }
             }
         }
