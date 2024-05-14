@@ -3,6 +3,7 @@ package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -63,9 +64,9 @@ public class CHPTest {
 
 	@Test
 	void testConversion() throws Exception {
-		File esdlFile = new File("src/test/resources/CHP-test2.esdl");
+		String esdl = new String(CHPTest.class.getResourceAsStream("/CHP-test2.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = ConversionTest.runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = ConversionTest.runTest(esdl, null, inMemoryObservationConsumer);
 		ImmutableMap<String, Double> expected = ImmutableMap.<String, Double>builder().put("CHP_620e", 50.0 * 3600000)
 				.put("Import_05f5", -4.0 * 3600000).put("Import_7e31", -500.0 * 3600000)
 				.put("ElectricityDemand_0601", 46.0 * 3600000).put("Export_e6de", 208.0 * 3600000).build();
@@ -74,9 +75,9 @@ public class CHPTest {
 
 	@Test
 	void testConversion2() throws Exception {
-		File esdlFile = new File("src/test/resources/CHP-test3.esdl");
+		String esdl = new String(CHPTest.class.getResourceAsStream("/CHP-test3.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = ConversionTest.runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = ConversionTest.runTest(esdl, null, inMemoryObservationConsumer);
 		ImmutableMap<String, Double> expected = ImmutableMap.<String, Double>builder()
 				.put("CHP_620e", 9.2 * 3600000)
 				.put("Import_05f5", 0.0)

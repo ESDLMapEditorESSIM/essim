@@ -33,6 +33,7 @@ import nl.tno.essim.mongo.MongoBackend;
 import java.io.*;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
@@ -72,36 +73,23 @@ public class RestSimulation implements Simulation {
 
     @Override
     public PostSimulationResponse postSimulation(EssimSimulation simulation) {
-//		if (mongo.getStatus().equals("Busy")) {
-//			return PostSimulationResponse.respond503WithApplicationJson("Busy");
-//		}
-//		mongo.updateStatus("Busy");
         ErrorStatusImpl error = new ErrorStatusImpl();
         error.setStatus(Status.ERROR);
 
         String esdlContents = simulation.getEsdlContents();
         FileWriter fw = null;
-        File esdlFile = null;
+        String decodedContents = null;
         if (esdlContents == null || esdlContents.isEmpty()) {
             error.setDescription("Invalid ESDL file!");
             return PostSimulationResponse.respond400WithApplicationJson(error);
         } else {
             try {
-                String decodedContents;
-                try {
-                    decodedContents = new String(Base64.getDecoder().decode(esdlContents), "UTF-8");
-                } catch (IllegalArgumentException e) {
-                    log.debug("ESDL content is not Base64 encoded. Trying URL decoder...");
-                    decodedContents = URLDecoder.decode(esdlContents, "UTF-8");
-                }
-                esdlFile = File.createTempFile("ess", ".esdl", null);
-                fw = new FileWriter(esdlFile);
-                fw.write(decodedContents);
-                fw.close();
-                log.debug("Created temp file: {}", esdlFile.getPath());
-            } catch (IOException e) {
-                error.setDescription("Temp file write error!");
-                return PostSimulationResponse.respond400WithApplicationJson(error);
+                decodedContents = new String(Base64.getDecoder().decode(esdlContents), StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException e) {
+                log.debug("ESDL content is not Base64 encoded. Trying URL decoder...");
+            }
+            if (decodedContents == null) {
+                decodedContents = URLDecoder.decode(esdlContents, StandardCharsets.UTF_8);
             }
         }
 
@@ -118,7 +106,7 @@ public class RestSimulation implements Simulation {
 
                 Date now = new Date();
                 simulation.setSimRunDate(now);
-                ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, esdlFile, mongo);
+                ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, decodedContents, mongo);
                 String grafanaDashboard = engine.createGrafanaDashboard();
                 if (grafanaDashboard != null) {
                     simulation.setDashboardURL(grafanaDashboard);

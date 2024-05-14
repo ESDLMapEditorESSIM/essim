@@ -21,6 +21,7 @@ import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ class ConversionTest {
 	static void tearDownAfterClass() throws Exception {
 	}
 
-	static EnergySystem runTest(File esdlFile, MarketImpl market,
+	static EnergySystem runTest(String esdl, MarketImpl market,
 			InMemoryObservationConsumer inMemoryObservationConsumer) throws Exception {
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulationImpl sim = new EssimSimulationImpl();
@@ -63,7 +64,7 @@ class ConversionTest {
 		}
 
 		String simId = mongo.addSimulation(sim);
-		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdlFile, mongo);
+		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
@@ -188,40 +189,43 @@ class ConversionTest {
 
 	@Test
 	void testConversion() throws Exception {
-		File esdlFile = new File("src/test/resources/TestConversion.esdl");
+		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversion.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
+
+		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
 
 	@Test
 	void testConversionMarketPrices() throws Exception {
-		File esdlFile = new File("src/test/resources/TestConversion.esdl");
+		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversion.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		MarketImpl market = new MarketImpl();
 		market.setMinPrice(0.0);
 		market.setMaxPrice(1E-6);
 		market.setDeltaPrice(1E-12);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdlFile, market, inMemoryObservationConsumer);
+		EnergySystem energySystem = runTest(esdl, market, inMemoryObservationConsumer);
 		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
 	@Test
 	void testConversion2() throws Exception {
-		File esdlFile = new File("src/test/resources/TestConversion2.esdl");
+		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversion2.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 	}
 
 	@Test
 	void testConversion3() throws Exception {
-		File esdlFile = new File("src/test/resources/TestConversion3.esdl");
+		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversion3.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 0);
 
@@ -229,9 +233,9 @@ class ConversionTest {
 
 	@Test
 	void testConversionDBS() throws Exception {
-		File esdlFile = new File("src/test/resources/TestConversionDBS.esdl");
+		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversionDBS.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 		checkResultsDBS(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 0);
 
@@ -239,9 +243,9 @@ class ConversionTest {
 
 	@Test
 	void testConversionDBSImbalance() throws Exception {
-		File esdlFile = new File("src/test/resources/TestConversionDBS2.esdl");
+		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversionDBS2.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdlFile, null, inMemoryObservationConsumer);
+		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 		checkResultsDBS(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, -6*3600000);
 	}

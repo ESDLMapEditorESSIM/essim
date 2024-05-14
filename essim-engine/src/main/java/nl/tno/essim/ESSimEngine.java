@@ -37,9 +37,9 @@ import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
-import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KPIObservationConsumer;
+import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
@@ -50,12 +50,8 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -127,7 +123,7 @@ public class ESSimEngine implements IStatusProvider {
         }
     };
 
-    public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, File esdlFile, IMongoBackend mongo)
+    public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, String esdl, IMongoBackend mongo)
             throws Exception {
         log.debug("ESSIM Revision: {}", essimId);
         this.mongo = mongo;
@@ -162,7 +158,7 @@ public class ESSimEngine implements IStatusProvider {
         this.market = market;
         log.info("Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice() + "]");
 
-        esdlString = new String(Files.readAllBytes(esdlFile.getAbsoluteFile().toPath()), StandardCharsets.UTF_8);
+        esdlString = esdl;
 
         // Initialise SimulationManager
         simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
@@ -200,12 +196,11 @@ public class ESSimEngine implements IStatusProvider {
                             .value("SimDescription", simulationDescription)
                             .build());
         }
-        try (FileInputStream fileInputStream = new FileInputStream(esdlFile)) {
-            energySystem = loadEcoreResource(fileInputStream);
-            if (energySystem == null) {
-                log.error("Failed to load Energy System from file {}", esdlFile);
-                throw new IllegalStateException("Failed to load ESDL File!");
-            }
+        ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
+        energySystem = loadEcoreResource(esdlStream);
+        if (energySystem == null) {
+            log.error("Failed to load Energy System");
+            throw new IllegalStateException("Failed to load ESDL!");
         }
 
         energySystemId = "UnnamedEnergySystem";
@@ -477,12 +472,14 @@ public class ESSimEngine implements IStatusProvider {
         return (T) resource.getContents().get(0);
     }
 
-    public static <T extends EObject> void saveEcoreResource(T ecoreResource, String fileName) throws IOException {
-        XMIResource xmiResource = new XMIResourceImpl(URI.createURI(fileName));
+    public static <T extends EObject> String ecoreResourceToString(T ecoreResource) throws IOException {
+        XMIResource xmiResource = new XMIResourceImpl();
         xmiResource.getContents().add(ecoreResource);
         HashMap<String, Object> opts = new HashMap<String, Object>();
         opts.put(XMIResource.OPTION_SCHEMA_LOCATION, true);
-        xmiResource.save(opts);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        xmiResource.save(stream, opts);
+        return stream.toString(StandardCharsets.UTF_8);
     }
 
     private List<List<String>> printableSolversList(Solvers x) {

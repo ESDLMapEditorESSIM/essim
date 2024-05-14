@@ -3,6 +3,7 @@ package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -167,8 +168,8 @@ class LocalGlobalGridWithPricesInfluxAndGrafana {
             market.setDeltaPrice(1E-18);
 
             String simId = mongo.addSimulation(sim);
-            File esdlFile = new File("src/test/resources/Local_and_Grid_with_Prices.esdl");
-            ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdlFile, mongo);
+            String esdl = new String(LocalGlobalGridWithPricesInfluxAndGrafana.class.getResourceAsStream("/Local_and_Grid_with_Prices.esdl").readAllBytes(), StandardCharsets.UTF_8);
+            ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
             InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
             essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
             essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);

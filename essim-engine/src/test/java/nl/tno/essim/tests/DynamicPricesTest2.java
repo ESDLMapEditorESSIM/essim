@@ -3,6 +3,7 @@ package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -63,8 +64,8 @@ class DynamicPricesTest2 {
 		sim.setScenarioID("testcase3-realpriceprofile");
 		sim.setSimulationDescription("testcase3: Real Priceprofile Dp=1E-10");
 		String simId = mongo.addSimulation(sim);
-		File esdlFile = new File("src/test/resources/testcase1/GH-HP-HD-CarrierCosts-TimeSeriesProfile.esdl");
-		ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase1", simId, sim, esdlFile, mongo);
+		String esdl = new String(DynamicPricesTest2.class.getResourceAsStream("/testcase1/GH-HP-HD-CarrierCosts-TimeSeriesProfile.esdl").readAllBytes(), StandardCharsets.UTF_8);
+		ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase1", simId, sim, esdl, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);

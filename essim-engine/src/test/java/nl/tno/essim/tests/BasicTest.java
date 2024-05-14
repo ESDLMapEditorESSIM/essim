@@ -3,6 +3,7 @@ package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -52,8 +53,8 @@ class BasicTest {
         sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2020, 1 ,1, 0,0,0)));
         sim.setScenarioID("testcase1-basictest");
         String simId = mongo.addSimulation(sim);
-        File esdlFile = new File("src/test/resources/ED-Imp-Exp.esdl");
-        ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdlFile, mongo);
+        String esdl = new String(BasicTest.class.getResourceAsStream("/ED-Imp-Exp.esdl").readAllBytes(), StandardCharsets.UTF_8);
+        ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
         InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
         essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
         essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
@@ -115,8 +116,6 @@ class BasicTest {
             System.out.println("Network " + network.getKey() + " balance = " + sum);
             assertEquals(sum, 0.0, 1.0);
         }
-
-
     }
 
 }

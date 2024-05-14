@@ -3,6 +3,7 @@ package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -112,10 +113,10 @@ class DynamicPricesTest {
 		sim.setScenarioID("testcase1-realpriceprofile");
 		String simId = mongo.addSimulation(sim);
 		// TODO: what is the goal of this ESDL. Prices seem to be attached to the demand...?
-		File esdlFile = new File("src/test/resources/ED-Imp-Exp-highprices.esdl");
+		String esdl = new String(DynamicPricesTest.class.getResourceAsStream("/ED-Imp-Exp-highprices.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		sim.setInfluxURL("http://localhost:8086");
 		
-		ESSimEngine essimEngine = new ESSimEngine("local-realprices-test", simId, sim, esdlFile, mongo);
+		ESSimEngine essimEngine = new ESSimEngine("local-realprices-test", simId, sim, esdl, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
