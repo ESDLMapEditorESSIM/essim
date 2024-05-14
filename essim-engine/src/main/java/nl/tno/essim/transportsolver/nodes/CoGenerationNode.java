@@ -41,44 +41,42 @@ import nl.tno.essim.time.Horizon;
 @Slf4j
 public class CoGenerationNode extends AbstractBasicConversionNode {
 
-	@Builder(builderMethodName = "coGenerationNodeBuilder")
-	public CoGenerationNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
-			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
-		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
-				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
-		CoGeneration coGenerationPlant = (CoGeneration) asset;
-		controlStrategy = coGenerationPlant.getControlStrategy();
-		String coGenName = (coGenerationPlant.getName() == null ? coGenerationPlant.getId()
-				: coGenerationPlant.getName());
-		power = coGenerationPlant.getPower();
-		costInformation = coGenerationPlant.getCostInformation();
+    @Builder(builderMethodName = "coGenerationNodeBuilder")
+    public CoGenerationNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+                            String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+                            Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
+        super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+                energy, cost, parent, carrier, children, timeStep, now, connectedPort);
+        CoGeneration coGenerationPlant = (CoGeneration) asset;
+        controlStrategy = coGenerationPlant.getControlStrategy();
+        String coGenName = (coGenerationPlant.getName() == null ? coGenerationPlant.getId()
+                : coGenerationPlant.getName());
+        power = coGenerationPlant.getPower();
+        costInformation = coGenerationPlant.getCostInformation();
 
-		double heatEfficiency = coGenerationPlant.getHeatEfficiency();
-		if (heatEfficiency < Commons.eps) {
-			heatEfficiency = Commons.DEFAULT_COGEN_H_EFF;
-		}
-		double electricalEfficiency = coGenerationPlant.getElectricalEfficiency();
-		if (electricalEfficiency < Commons.eps) {
-			electricalEfficiency = Commons.DEFAULT_COGEN_E_EFF;
-		}
+        double heatEfficiency = coGenerationPlant.getHeatEfficiency();
+        if (heatEfficiency < Commons.eps) {
+            heatEfficiency = Commons.DEFAULT_COGEN_H_EFF;
+        }
+        double electricalEfficiency = coGenerationPlant.getElectricalEfficiency();
+        if (electricalEfficiency < Commons.eps) {
+            electricalEfficiency = Commons.DEFAULT_COGEN_E_EFF;
+        }
 
-		for (Port port : coGenerationPlant.getPort()) {
-			if (port instanceof OutPort) {
-				if (port.getCarrier() instanceof HeatCommodity) {
-					getRatioMap().put(port, heatEfficiency);
-				} else if (port.getCarrier() instanceof ElectricityCommodity) {
-					getRatioMap().put(port, electricalEfficiency);
-					// TODO maybe this should depend on coGenerationPlant.getLeadCommodity()
-					setMainPort(port);
-				} else {
-					log.warn("Carrier {} is of type {}, not Heat- or ElectricityCommodity", port.getCarrier().getName(),
-							port.getCarrier().getClass());
-				}
-			} else {
-				getRatioMap().put(port, 1.0);
-			}
-		}
+        for (Port port : coGenerationPlant.getPort()) {
+            if (port instanceof OutPort) {
+                if (port.getCarrier() instanceof HeatCommodity) {
+                    getRatioMap().put(port, heatEfficiency);
+                } else {
+                    // If not heat, we assume it is electricity
+                    getRatioMap().put(port, electricalEfficiency);
+                    // TODO maybe this should depend on coGenerationPlant.getLeadCommodity()
+                    setMainPort(port);
+                }
+            } else {
+                getRatioMap().put(port, 1.0);
+            }
+        }
 
-	}
+    }
 }
