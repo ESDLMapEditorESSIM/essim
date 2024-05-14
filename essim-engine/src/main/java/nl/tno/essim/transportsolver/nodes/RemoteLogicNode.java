@@ -46,6 +46,7 @@ public class RemoteLogicNode extends Node {
     private final NodeConfiguration remoteLogicConfig;
     private final Map<Long, Object> locks;
     private final MqttClient client;
+    private final String esdlString;
     private JsonNode remoteConfig;
     private String carrierId;
     private static final String MQTT_USERNAME = "essim-mso";
@@ -55,8 +56,9 @@ public class RemoteLogicNode extends Node {
                     String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
                     Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, NodeConfiguration config,
                     Port connectedPort) {
-        super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+        super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction,
                 energy, cost, parent, carrier, children, timeStep, now, connectedPort);
+        this.esdlString = esdlString;
         this.locks = new HashMap<>();
         this.remoteLogicConfig = config;
         carrierId = carrier.getId();

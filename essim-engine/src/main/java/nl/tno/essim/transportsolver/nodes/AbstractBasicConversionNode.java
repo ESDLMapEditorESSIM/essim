@@ -44,7 +44,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
@@ -61,12 +60,6 @@ import nl.tno.essim.time.Horizon;
 @Slf4j
 public class AbstractBasicConversionNode extends Node {
 
-	@Value
-	public static class PowerPricePair {
-		private GenericProfile priceProfile;
-		private double maxPower;
-	}
-
 	protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
 	protected AbstractBasicConversion conversion;
 	protected double power;
@@ -80,10 +73,10 @@ public class AbstractBasicConversionNode extends Node {
 
 	@Builder(builderMethodName = "abstractBasicConversionNodeBuilder")
 	public AbstractBasicConversionNode(String simulationId, String nodeId, String address, String networkId,
-			EnergyAsset asset, String esdlString, int directionFactor, Role role, BidFunction demandFunction,
+			EnergyAsset asset, int directionFactor, Role role, BidFunction demandFunction,
 			double energy, double cost, Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now,
 			Port connectedPort) {
-		super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction,
 				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
 		this.conversion = (AbstractBasicConversion) asset;
 		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();

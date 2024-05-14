@@ -25,6 +25,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.BidFunction;
@@ -52,7 +53,6 @@ public abstract class Node implements INode {
     protected String address;
     protected String networkId;
     protected EnergyAsset asset;
-    protected String esdlString;
     protected int directionFactor;
     protected Role role;
     protected BidFunction demandFunction;
@@ -72,7 +72,7 @@ public abstract class Node implements INode {
 
     @Builder
     public Node(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-                String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+                int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
                 Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
         super();
         this.simulationId = simulationId;
@@ -80,7 +80,7 @@ public abstract class Node implements INode {
         this.address = address;
         this.networkId = networkId;
         this.asset = asset;
-        this.esdlString = esdlString;
+//        this.esdlString = esdlString;
         this.directionFactor = directionFactor;
         this.role = role;
         this.demandFunction = demandFunction;
@@ -451,6 +451,10 @@ public abstract class Node implements INode {
         private static final String NODE_PACKAGE_NAME = Node.class.getPackage().getName();
 
         private NodeConfiguration config;
+        @Setter
+        @Getter
+        @Accessors(fluent = true)
+        private String esdlString;
 
         public NodeBuilder asset(EnergyAsset asset) {
             this.asset = asset;
@@ -491,10 +495,10 @@ public abstract class Node implements INode {
                 if (assetNodeClass != null) {
                     try {
                         node = (Node) assetNodeClass.getConstructor(String.class, String.class, String.class,
-                                String.class, EnergyAsset.class, String.class, int.class, Role.class, BidFunction.class,
+                                String.class, EnergyAsset.class, int.class, Role.class, BidFunction.class,
                                 double.class, double.class, Node.class, Carrier.class, List.class, long.class,
                                 Horizon.class, Port.class).newInstance(simulationId, nodeId, address, networkId, asset,
-                                esdlString, directionFactor, role, demandFunction, energy, cost, parent,
+                                directionFactor, role, demandFunction, energy, cost, parent,
                                 carrier, children, timeStep, now, connectedPort);
                     } catch (Exception e) {
                         e.printStackTrace();

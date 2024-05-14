@@ -40,9 +40,9 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
 
     @Builder(builderMethodName = "heatPumpNodeBuilder")
     public HeatPumpNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-                        String esdlString, int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+                        int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
                         Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
-        super(simulationId, nodeId, address, networkId, asset, esdlString, directionFactor, role, demandFunction,
+        super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction,
                 energy, cost, parent, carrier, children, timeStep, now, connectedPort);
         this.heatPump = (HeatPump) asset;
         this.hpName = heatPump.getName() == null ? heatPump.getId() : heatPump.getName();
