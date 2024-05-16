@@ -1,4 +1,4 @@
-package nl.tno.essim.rest;
+package nl.tno.essim.rest.application;
 
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.servers.Server;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.rest.SimulationService;
 import nl.tno.essim.rest.util.MongoInject;
 import nl.tno.essim.rest.util.MongoInjectResolver;
 import org.glassfish.hk2.api.InjectionResolver;
@@ -15,7 +16,6 @@ import org.glassfish.jersey.CommonProperties;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.ServerProperties;
 
 import javax.annotation.security.DenyAll;
 import javax.inject.Singleton;
@@ -26,7 +26,7 @@ import java.util.logging.Logger;
 
 @Slf4j
 @DenyAll
-@ApplicationPath("/")
+@ApplicationPath("/essim")
 @OpenAPIDefinition(
         servers = @Server(
                 url = "/",
