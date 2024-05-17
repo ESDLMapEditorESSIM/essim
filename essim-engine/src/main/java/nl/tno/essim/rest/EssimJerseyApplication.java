@@ -1,4 +1,19 @@
-package nl.tno.essim.rest.application;
+/**
+ * This work is based on original code developed and copyrighted by TNO 2020.
+ * Subsequent contributions are licensed to you by the developers of such code and are
+ * made available to the Project under one or several contributor license agreements.
+ * <p>
+ * This work is licensed to you under the Apache License, Version 2.0.
+ * You may obtain a copy of the license at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Contributors:
+ * TNO         - Initial implementation
+ * Manager:
+ * TNO
+ */
+package nl.tno.essim.rest;
 
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
@@ -6,7 +21,6 @@ import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.servers.Server;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.rest.SimulationService;
 import nl.tno.essim.rest.util.MongoInject;
 import nl.tno.essim.rest.util.MongoInjectResolver;
 import org.glassfish.hk2.api.InjectionResolver;
@@ -16,11 +30,11 @@ import org.glassfish.jersey.CommonProperties;
 import org.glassfish.jersey.logging.LoggingFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.ServerProperties;
 
 import javax.annotation.security.DenyAll;
 import javax.inject.Singleton;
 import javax.ws.rs.ApplicationPath;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,7 +54,6 @@ import java.util.logging.Logger;
 public class EssimJerseyApplication extends ResourceConfig {
 
     public EssimJerseyApplication() {
-        super(Set.of(EssimJerseyApplication.class));
         // Configure
         packages(
                 SimulationService.class.getPackageName(),
@@ -57,6 +70,7 @@ public class EssimJerseyApplication extends ResourceConfig {
         });
         register(MultiPartFeature.class);
         property(CommonProperties.OUTBOUND_CONTENT_LENGTH_BUFFER, 2000000);
+        property(ServerProperties.WADL_FEATURE_DISABLE, true);
 
         // For payload logging
         Logger.getLogger("org.glassfish.jersey.logging").setLevel(Level.FINE);
