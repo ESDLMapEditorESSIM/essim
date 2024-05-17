@@ -2,14 +2,12 @@ package nl.tno.essim.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import nl.tno.essim.model.MarketImpl;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
@@ -25,7 +23,7 @@ import esdl.Export;
 import esdl.Import;
 import esdl.Port;
 import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.model.EssimSimulationImpl;
+import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
@@ -48,7 +46,7 @@ class BasicTest {
     void testESSIMBasic() throws Exception {
         //IMongoBackend mongo = new MongoBackend("localhost", "27017");
         IMongoBackend mongo = new MongoBackendStub();
-        EssimSimulationImpl sim = new EssimSimulationImpl();
+        EssimSimulation sim = new EssimSimulation();
         sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1 ,1, 0,0,0)));
         sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2020, 1 ,1, 0,0,0)));
         sim.setScenarioID("testcase1-basictest");

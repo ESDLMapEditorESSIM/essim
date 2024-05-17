@@ -1,31 +1,51 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = MSOConfigurationImpl.class
-)
-public interface MSOConfiguration {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "mqttHost",
+    "mqttPort"
+})
+public class MSOConfiguration {
   @JsonProperty("mqttHost")
-  String getMqttHost();
-
-  @JsonProperty("mqttHost")
-  void setMqttHost(String mqttHost);
+  private String mqttHost;
 
   @JsonProperty("mqttPort")
-  int getMqttPort();
+  private int mqttPort;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("mqttHost")
+  public String getMqttHost() {
+    return this.mqttHost;
+  }
+
+  @JsonProperty("mqttHost")
+  public void setMqttHost(String mqttHost) {
+    this.mqttHost = mqttHost;
+  }
 
   @JsonProperty("mqttPort")
-  void setMqttPort(int mqttPort);
+  public int getMqttPort() {
+    return this.mqttPort;
+  }
+
+  @JsonProperty("mqttPort")
+  public void setMqttPort(int mqttPort) {
+    this.mqttPort = mqttPort;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

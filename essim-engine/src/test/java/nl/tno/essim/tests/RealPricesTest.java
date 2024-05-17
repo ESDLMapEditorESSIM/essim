@@ -1,7 +1,6 @@
 package nl.tno.essim.tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -12,8 +11,6 @@ import java.util.Map.Entry;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -26,8 +23,8 @@ import esdl.Export;
 import esdl.Import;
 import esdl.Port;
 import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.model.EssimSimulationImpl;
-import nl.tno.essim.model.MarketImpl;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
@@ -54,10 +51,10 @@ class RealPricesTest {
 		// read price profiles
 			
 		IMongoBackend mongo = new MongoBackendStub();
-		EssimSimulationImpl sim = new EssimSimulationImpl();
+		EssimSimulation sim = new EssimSimulation();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1 ,1, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2020, 1 ,1, 0,0,0)));
-		MarketImpl market = new MarketImpl();
+		Market market = new Market();
 		sim.setMarket(market);
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);

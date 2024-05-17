@@ -1,31 +1,51 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = TransportNetworkImpl.class
-)
-public interface TransportNetwork {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "name",
+    "networkHTMLDiag"
+})
+public class TransportNetwork {
   @JsonProperty("name")
-  String getName();
-
-  @JsonProperty("name")
-  void setName(String name);
+  private String name;
 
   @JsonProperty("networkHTMLDiag")
-  String getNetworkHTMLDiag();
+  private String networkHTMLDiag;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("name")
+  public String getName() {
+    return this.name;
+  }
+
+  @JsonProperty("name")
+  public void setName(String name) {
+    this.name = name;
+  }
 
   @JsonProperty("networkHTMLDiag")
-  void setNetworkHTMLDiag(String networkHTMLDiag);
+  public String getNetworkHTMLDiag() {
+    return this.networkHTMLDiag;
+  }
+
+  @JsonProperty("networkHTMLDiag")
+  public void setNetworkHTMLDiag(String networkHTMLDiag) {
+    this.networkHTMLDiag = networkHTMLDiag;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

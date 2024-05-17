@@ -1,37 +1,65 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = ExternalSolverImpl.class
-)
-public interface ExternalSolver {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "name",
+    "url",
+    "orderPreference"
+})
+public class ExternalSolver {
   @JsonProperty("name")
-  String getName();
-
-  @JsonProperty("name")
-  void setName(String name);
+  private String name;
 
   @JsonProperty("url")
-  String getUrl();
+  private String url;
+
+  @JsonProperty("orderPreference")
+  private OrderPreference orderPreference;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("name")
+  public String getName() {
+    return this.name;
+  }
+
+  @JsonProperty("name")
+  public void setName(String name) {
+    this.name = name;
+  }
 
   @JsonProperty("url")
-  void setUrl(String url);
+  public String getUrl() {
+    return this.url;
+  }
+
+  @JsonProperty("url")
+  public void setUrl(String url) {
+    this.url = url;
+  }
 
   @JsonProperty("orderPreference")
-  OrderPreference getOrderPreference();
+  public OrderPreference getOrderPreference() {
+    return this.orderPreference;
+  }
 
   @JsonProperty("orderPreference")
-  void setOrderPreference(OrderPreference orderPreference);
+  public void setOrderPreference(OrderPreference orderPreference) {
+    this.orderPreference = orderPreference;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

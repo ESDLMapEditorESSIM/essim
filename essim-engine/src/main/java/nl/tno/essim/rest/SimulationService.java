@@ -12,7 +12,6 @@ import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
-import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.rest.util.MongoInject;
 
 import javax.ws.rs.*;
@@ -38,7 +37,7 @@ public class SimulationService {
     @Produces("application/json")
     @Consumes("application/json")
     public Response postSimulation(EssimSimulation simulation) {
-        ErrorStatusImpl error = new ErrorStatusImpl();
+        ErrorStatus error = new ErrorStatus();
         error.setStatus(Status.ERROR);
 
         String esdlContents = simulation.getEsdlContents();
@@ -61,7 +60,7 @@ public class SimulationService {
         String simId = null;
         try {
             if (mongo != null) {
-                SimulationStatusImpl status = new SimulationStatusImpl();
+                SimulationStatus status = new SimulationStatus();
                 status.setState(Status.CREATED);
                 status.setDescription("");
                 simulation.setStatus(status);
@@ -86,7 +85,7 @@ public class SimulationService {
 
                 mongo.getStatusMap().put(simId, engine);
 
-                CreatedStatusImpl created = new CreatedStatusImpl();
+                CreatedStatus created = new CreatedStatus();
                 created.setStatus(Status.CREATED);
                 created.setId(simId);
 
@@ -141,7 +140,7 @@ public class SimulationService {
             @PathParam("simulationId") String simulationId) {
         EssimSimulation simulation = mongo.getSimulation(simulationId);
         if (simulation == null) {
-            ErrorStatusImpl error = new ErrorStatusImpl();
+            ErrorStatus error = new ErrorStatus();
             error.setStatus(Status.ERROR);
             error.setDescription("SimulationID " + simulationId + " not found!");
             return Response.status(Response.Status.NOT_FOUND).entity(error).build();
@@ -157,7 +156,7 @@ public class SimulationService {
     public Response putSimulationBySimulationId(
             @PathParam("simulationId") String simulationId, EssimSimulation entity) {
         if (mongo.getSimulation(simulationId) == null) {
-            ErrorStatusImpl error = new ErrorStatusImpl();
+            ErrorStatus error = new ErrorStatus();
             error.setStatus(Status.ERROR);
             error.setDescription("SimulationID " + simulationId + " not found!");
             return Response.status(Response.Status.NOT_FOUND).entity(error).build();
@@ -203,7 +202,7 @@ public class SimulationService {
     @Produces("application/json")
     public Response getSimulationKpiBySimulationIdAndKpiId(
             @PathParam("simulationId") String simulationId, @PathParam("kpiId") String kpiId) {
-        ErrorStatusImpl error = new ErrorStatusImpl();
+        ErrorStatus error = new ErrorStatus();
         error.setStatus(Status.ERROR);
         EssimSimulation simulation = mongo.getSimulation(simulationId);
         if (simulation == null) {
@@ -241,7 +240,7 @@ public class SimulationService {
             statusJson.put("Description", simStatus.getDescription());
             return Response.ok(statusJson).build();
         } else {
-            ErrorStatusImpl error = new ErrorStatusImpl();
+            ErrorStatus error = new ErrorStatus();
             error.setStatus(Status.ERROR);
             error.setDescription("SimulationID " + simulationId + " not found!");
             return Response.status(Response.Status.NOT_FOUND).entity(error).build();
@@ -264,7 +263,7 @@ public class SimulationService {
         if (simulation != null) {
             return Response.ok(simulation.getTransport()).build();
         } else {
-            ErrorStatusImpl error = new ErrorStatusImpl();
+            ErrorStatus error = new ErrorStatus();
             error.setStatus(Status.ERROR);
             error.setDescription("SimulationID " + simulationId + " not found!");
             return Response.status(Response.Status.NOT_FOUND).entity(error).build();
@@ -283,13 +282,13 @@ public class SimulationService {
                 TransportNetwork transportNetwork = transportNetworks.get(i);
                 return Response.ok(transportNetwork).build();
             } catch (IndexOutOfBoundsException | NumberFormatException e) {
-                ErrorStatusImpl error = new ErrorStatusImpl();
+                ErrorStatus error = new ErrorStatus();
                 error.setStatus(Status.ERROR);
                 error.setDescription("Index " + index + " is not valid!");
                 return Response.status(Response.Status.NOT_FOUND).entity(error).build();
             }
         } else {
-            ErrorStatusImpl error = new ErrorStatusImpl();
+            ErrorStatus error = new ErrorStatus();
             error.setStatus(Status.ERROR);
             error.setDescription("SimulationID " + simulationId + " not found!");
             return Response.status(Response.Status.NOT_FOUND).entity(error).build();

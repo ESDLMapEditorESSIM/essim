@@ -9,7 +9,6 @@ import nl.tno.essim.kpi.data.KPIResult;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.kpi.data.ModuleInfo;
 import nl.tno.essim.model.KPIModuleInfo;
-import nl.tno.essim.model.KPIModuleInfoImpl;
 import nl.tno.essim.mongo.MongoBackend;
 
 import java.util.ArrayList;
@@ -135,14 +134,14 @@ public class KPIManager {
         ArrayList<KPIModuleInfo> infos = new ArrayList<>();
         for (var entry : moduleStates.entrySet()) {
             KPIModuleState moduleState = entry.getValue();
-            KPIModuleInfoImpl info = createKpiModuleInfo(moduleState);
+            KPIModuleInfo info = createKpiModuleInfo(moduleState);
             infos.add(info);
         }
         return infos;
     }
 
-    private static KPIModuleInfoImpl createKpiModuleInfo(KPIModuleState moduleState) {
-        KPIModuleInfoImpl info = new KPIModuleInfoImpl();
+    private static KPIModuleInfo createKpiModuleInfo(KPIModuleState moduleState) {
+        KPIModuleInfo info = new KPIModuleInfo();
         ModuleInfo moduleInfo = moduleState.getModuleInfo();
         info.setStatus("registered");
         info.setDescription(moduleInfo.getDescription());

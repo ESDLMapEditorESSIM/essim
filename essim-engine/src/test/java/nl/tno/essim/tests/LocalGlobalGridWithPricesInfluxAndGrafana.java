@@ -2,7 +2,6 @@ package nl.tno.essim.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,12 +21,11 @@ import org.junit.jupiter.api.Test;
 import esdl.impl.AbstractBasicConversionImpl;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.Commons;
-import nl.tno.essim.model.EssimSimulationImpl;
-import nl.tno.essim.model.MarketImpl;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.transportsolver.nodes.AbstractBasicConversionNode;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 
@@ -155,13 +153,13 @@ class LocalGlobalGridWithPricesInfluxAndGrafana {
             System.out.println(Arrays.asList(resourceListing));
             // IMongoBackend mongo = new MongoBackend("localhost", "27017");
             IMongoBackend mongo = new MongoBackendStub();
-            EssimSimulationImpl sim = new EssimSimulationImpl();
+            EssimSimulation sim = new EssimSimulation();
             sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
             sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
             sim.setScenarioID("LocalGlobalGrid-testcase1");
             sim.setInfluxURL("http://localhost:8086");
 
-            MarketImpl market = new MarketImpl();
+            Market market = new Market();
             sim.setMarket(market);
             market.setMinPrice(0.0);
             market.setMaxPrice(1E-6);

@@ -2,7 +2,6 @@ package nl.tno.essim.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,8 +25,8 @@ import esdl.HeatingDemand;
 import esdl.Import;
 import esdl.Port;
 import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.model.EssimSimulationImpl;
-import nl.tno.essim.model.MarketImpl;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
@@ -57,10 +56,10 @@ class DynamicPricesTest4NotInJoule {
 	void testActualUseCaseNotInJouleWithInfluxAndGrafana() throws Exception {
 						
 		IMongoBackend mongo = new MongoBackendStub();
-		EssimSimulationImpl sim = new EssimSimulationImpl();
+		EssimSimulation sim = new EssimSimulation();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 2 ,19, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(  LocalDateTime.of(2019, 2, 20, 0,0,0)));
-		MarketImpl market = new MarketImpl();
+		Market market = new Market();
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);
 		market.setDeltaPrice(1E-10);

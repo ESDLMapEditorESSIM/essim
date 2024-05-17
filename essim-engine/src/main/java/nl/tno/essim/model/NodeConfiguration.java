@@ -1,49 +1,93 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = NodeConfigurationImpl.class
-)
-public interface NodeConfiguration {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "esdlNodeId",
+    "config",
+    "mqttHost",
+    "mqttPort",
+    "mqttTopic"
+})
+public class NodeConfiguration {
   @JsonProperty("esdlNodeId")
-  String getEsdlNodeId();
-
-  @JsonProperty("esdlNodeId")
-  void setEsdlNodeId(String esdlNodeId);
+  private String esdlNodeId;
 
   @JsonProperty("config")
-  Object getConfig();
+  private Object config;
+
+  @JsonProperty("mqttHost")
+  private String mqttHost;
+
+  @JsonProperty("mqttPort")
+  private int mqttPort;
+
+  @JsonProperty("mqttTopic")
+  private String mqttTopic;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("esdlNodeId")
+  public String getEsdlNodeId() {
+    return this.esdlNodeId;
+  }
+
+  @JsonProperty("esdlNodeId")
+  public void setEsdlNodeId(String esdlNodeId) {
+    this.esdlNodeId = esdlNodeId;
+  }
 
   @JsonProperty("config")
-  void setConfig(Object config);
+  public Object getConfig() {
+    return this.config;
+  }
+
+  @JsonProperty("config")
+  public void setConfig(Object config) {
+    this.config = config;
+  }
 
   @JsonProperty("mqttHost")
-  String getMqttHost();
+  public String getMqttHost() {
+    return this.mqttHost;
+  }
 
   @JsonProperty("mqttHost")
-  void setMqttHost(String mqttHost);
+  public void setMqttHost(String mqttHost) {
+    this.mqttHost = mqttHost;
+  }
 
   @JsonProperty("mqttPort")
-  int getMqttPort();
+  public int getMqttPort() {
+    return this.mqttPort;
+  }
 
   @JsonProperty("mqttPort")
-  void setMqttPort(int mqttPort);
+  public void setMqttPort(int mqttPort) {
+    this.mqttPort = mqttPort;
+  }
 
   @JsonProperty("mqttTopic")
-  String getMqttTopic();
+  public String getMqttTopic() {
+    return this.mqttTopic;
+  }
 
   @JsonProperty("mqttTopic")
-  void setMqttTopic(String mqttTopic);
+  public void setMqttTopic(String mqttTopic) {
+    this.mqttTopic = mqttTopic;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

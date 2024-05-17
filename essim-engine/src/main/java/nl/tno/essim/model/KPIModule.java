@@ -1,37 +1,65 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = KPIModuleImpl.class
-)
-public interface KPIModule {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "id",
+    "result",
+    "config"
+})
+public class KPIModule {
   @JsonProperty("id")
-  String getId();
-
-  @JsonProperty("id")
-  void setId(String id);
+  private String id;
 
   @JsonProperty("result")
-  String getResult();
+  private String result;
+
+  @JsonProperty("config")
+  private Object config;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("id")
+  public String getId() {
+    return this.id;
+  }
+
+  @JsonProperty("id")
+  public void setId(String id) {
+    this.id = id;
+  }
 
   @JsonProperty("result")
-  void setResult(String result);
+  public String getResult() {
+    return this.result;
+  }
+
+  @JsonProperty("result")
+  public void setResult(String result) {
+    this.result = result;
+  }
 
   @JsonProperty("config")
-  Object getConfig();
+  public Object getConfig() {
+    return this.config;
+  }
 
   @JsonProperty("config")
-  void setConfig(Object config);
+  public void setConfig(Object config) {
+    this.config = config;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

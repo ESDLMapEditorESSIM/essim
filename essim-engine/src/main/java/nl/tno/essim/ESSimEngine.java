@@ -45,7 +45,6 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
@@ -150,7 +149,7 @@ public class ESSimEngine implements IStatusProvider {
         Market market = simulation.getMarket();
         // Set default min/max market prices if not defined by the input
         if (market == null) {
-            market = new MarketImpl();
+            market = new Market();
             market.setMinPrice(Commons.P_MIN);
             market.setMaxPrice(Commons.P_MAX);
             market.setDeltaPrice(Commons.MIN_DELTA_PRICE);
@@ -620,7 +619,7 @@ public class ESSimEngine implements IStatusProvider {
     public List<TransportNetwork> getNetworkDiags() {
         List<TransportNetwork> list = new ArrayList<TransportNetwork>();
         for (Entry<String, String> network : networkDiags.entrySet()) {
-            TransportNetworkImpl tn = new TransportNetworkImpl();
+            TransportNetwork tn = new TransportNetwork();
             tn.setName(network.getKey());
             // tn.setNetworkHTMLDiag(Commons.compressString(network.getValue()));
             tn.setNetworkHTMLDiag(network.getValue());

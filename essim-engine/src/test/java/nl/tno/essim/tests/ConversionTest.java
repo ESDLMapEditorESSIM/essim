@@ -6,8 +6,8 @@ import esdl.EnergySystem;
 import esdl.Port;
 import esdl.impl.AbstractBasicConversionImpl;
 import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.model.EssimSimulationImpl;
-import nl.tno.essim.model.MarketImpl;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -49,10 +48,10 @@ class ConversionTest {
 	static void tearDownAfterClass() throws Exception {
 	}
 
-	static EnergySystem runTest(String esdl, MarketImpl market,
+	static EnergySystem runTest(String esdl, Market market,
 			InMemoryObservationConsumer inMemoryObservationConsumer) throws Exception {
 		IMongoBackend mongo = new MongoBackendStub();
-		EssimSimulationImpl sim = new EssimSimulationImpl();
+		EssimSimulation sim = new EssimSimulation();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
 		sim.setScenarioID("TestConversion-" + counter.getAndIncrement());
@@ -202,7 +201,7 @@ class ConversionTest {
 	@Test
 	void testConversionMarketPrices() throws Exception {
 		String esdl = new String(ConversionTest.class.getResourceAsStream("/TestConversion.esdl").readAllBytes(), StandardCharsets.UTF_8);
-		MarketImpl market = new MarketImpl();
+		Market market = new Market();
 		market.setMinPrice(0.0);
 		market.setMaxPrice(1E-6);
 		market.setDeltaPrice(1E-12);

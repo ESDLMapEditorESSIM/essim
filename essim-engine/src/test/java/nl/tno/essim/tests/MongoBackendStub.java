@@ -3,7 +3,6 @@
  */
 package nl.tno.essim.tests;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +53,7 @@ public class MongoBackendStub implements IMongoBackend {
 
 	@Override
 	public SimulationStatus getSimulationStatus(String simulationId) {
-		SimulationStatusImpl status = new SimulationStatusImpl();
+		SimulationStatus status = new SimulationStatus();
 		status.setState(simulationState);
 		status.setDescription("description");
 		return status;

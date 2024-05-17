@@ -1,55 +1,92 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = MarketImpl.class
-)
-public interface Market {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "minPrice",
+    "maxPrice",
+    "deltaPrice"
+})
+public class Market {
   @JsonProperty(
       value = "minPrice",
       defaultValue = "0.0"
   )
-  Number getMinPrice();
-
-  @JsonProperty(
-      value = "minPrice",
-      defaultValue = "0.0"
-  )
-  void setMinPrice(Number minPrice);
+  private Number minPrice;
 
   @JsonProperty(
       value = "maxPrice",
       defaultValue = "1.0"
   )
-  Number getMaxPrice();
+  private Number maxPrice;
+
+  @JsonProperty(
+      value = "deltaPrice",
+      defaultValue = "0.000001"
+  )
+  private Number deltaPrice;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty(
+      value = "minPrice",
+      defaultValue = "0.0"
+  )
+  public Number getMinPrice() {
+    return this.minPrice;
+  }
+
+  @JsonProperty(
+      value = "minPrice",
+      defaultValue = "0.0"
+  )
+  public void setMinPrice(Number minPrice) {
+    this.minPrice = minPrice;
+  }
 
   @JsonProperty(
       value = "maxPrice",
       defaultValue = "1.0"
   )
-  void setMaxPrice(Number maxPrice);
+  public Number getMaxPrice() {
+    return this.maxPrice;
+  }
+
+  @JsonProperty(
+      value = "maxPrice",
+      defaultValue = "1.0"
+  )
+  public void setMaxPrice(Number maxPrice) {
+    this.maxPrice = maxPrice;
+  }
 
   @JsonProperty(
       value = "deltaPrice",
       defaultValue = "0.000001"
   )
-  Number getDeltaPrice();
+  public Number getDeltaPrice() {
+    return this.deltaPrice;
+  }
 
   @JsonProperty(
       value = "deltaPrice",
       defaultValue = "0.000001"
   )
-  void setDeltaPrice(Number deltaPrice);
+  public void setDeltaPrice(Number deltaPrice) {
+    this.deltaPrice = deltaPrice;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

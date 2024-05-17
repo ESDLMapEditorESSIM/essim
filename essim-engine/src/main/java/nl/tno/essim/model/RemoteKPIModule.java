@@ -1,32 +1,52 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
-@JsonDeserialize(
-    as = RemoteKPIModuleImpl.class
-)
-public interface RemoteKPIModule {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "kafkaURL",
+    "modules"
+})
+public class RemoteKPIModule {
   @JsonProperty("kafkaURL")
-  String getKafkaURL();
-
-  @JsonProperty("kafkaURL")
-  void setKafkaURL(String kafkaURL);
+  private String kafkaURL;
 
   @JsonProperty("modules")
-  List<KPIModule> getModules();
+  private List<KPIModule> modules;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("kafkaURL")
+  public String getKafkaURL() {
+    return this.kafkaURL;
+  }
+
+  @JsonProperty("kafkaURL")
+  public void setKafkaURL(String kafkaURL) {
+    this.kafkaURL = kafkaURL;
+  }
 
   @JsonProperty("modules")
-  void setModules(List<KPIModule> modules);
+  public List<KPIModule> getModules() {
+    return this.modules;
+  }
+
+  @JsonProperty("modules")
+  public void setModules(List<KPIModule> modules) {
+    this.modules = modules;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

@@ -1,74 +1,158 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Date;
 import java.util.Map;
 
-@JsonDeserialize(
-    as = KPIModuleInfoImpl.class
-)
-public interface KPIModuleInfo {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "calculator_id",
+    "title",
+    "description",
+    "config_config",
+    "sample_output",
+    "kafka_consumer_group",
+    "kafka_client",
+    "status",
+    "up_since"
+})
+public class KPIModuleInfo {
   @JsonProperty("calculator_id")
-  String getCalculatorId();
-
-  @JsonProperty("calculator_id")
-  void setCalculatorId(String calculatorId);
+  private String calculatorId;
 
   @JsonProperty("title")
-  String getTitle();
+  private String title;
+
+  @JsonProperty("description")
+  private String description;
+
+  @JsonProperty("config_config")
+  private Object configConfig;
+
+  @JsonProperty("sample_output")
+  private String sampleOutput;
+
+  @JsonProperty("kafka_consumer_group")
+  private String kafkaConsumerGroup;
+
+  @JsonProperty("kafka_client")
+  private String kafkaClient;
+
+  @JsonProperty("status")
+  private String status;
+
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+  )
+  @JsonDeserialize(
+      using = TimestampDeserializer.class
+  )
+  @JsonProperty("up_since")
+  private Date upSince;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("calculator_id")
+  public String getCalculatorId() {
+    return this.calculatorId;
+  }
+
+  @JsonProperty("calculator_id")
+  public void setCalculatorId(String calculatorId) {
+    this.calculatorId = calculatorId;
+  }
 
   @JsonProperty("title")
-  void setTitle(String title);
+  public String getTitle() {
+    return this.title;
+  }
+
+  @JsonProperty("title")
+  public void setTitle(String title) {
+    this.title = title;
+  }
 
   @JsonProperty("description")
-  String getDescription();
+  public String getDescription() {
+    return this.description;
+  }
 
   @JsonProperty("description")
-  void setDescription(String description);
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
   @JsonProperty("config_config")
-  Object getConfigConfig();
+  public Object getConfigConfig() {
+    return this.configConfig;
+  }
 
   @JsonProperty("config_config")
-  void setConfigConfig(Object configConfig);
+  public void setConfigConfig(Object configConfig) {
+    this.configConfig = configConfig;
+  }
 
   @JsonProperty("sample_output")
-  String getSampleOutput();
+  public String getSampleOutput() {
+    return this.sampleOutput;
+  }
 
   @JsonProperty("sample_output")
-  void setSampleOutput(String sampleOutput);
+  public void setSampleOutput(String sampleOutput) {
+    this.sampleOutput = sampleOutput;
+  }
 
   @JsonProperty("kafka_consumer_group")
-  String getKafkaConsumerGroup();
+  public String getKafkaConsumerGroup() {
+    return this.kafkaConsumerGroup;
+  }
 
   @JsonProperty("kafka_consumer_group")
-  void setKafkaConsumerGroup(String kafkaConsumerGroup);
+  public void setKafkaConsumerGroup(String kafkaConsumerGroup) {
+    this.kafkaConsumerGroup = kafkaConsumerGroup;
+  }
 
   @JsonProperty("kafka_client")
-  String getKafkaClient();
+  public String getKafkaClient() {
+    return this.kafkaClient;
+  }
 
   @JsonProperty("kafka_client")
-  void setKafkaClient(String kafkaClient);
+  public void setKafkaClient(String kafkaClient) {
+    this.kafkaClient = kafkaClient;
+  }
 
   @JsonProperty("status")
-  String getStatus();
+  public String getStatus() {
+    return this.status;
+  }
 
   @JsonProperty("status")
-  void setStatus(String status);
+  public void setStatus(String status) {
+    this.status = status;
+  }
 
   @JsonProperty("up_since")
-  Date getUpSince();
+  public Date getUpSince() {
+    return this.upSince;
+  }
 
   @JsonProperty("up_since")
-  void setUpSince(Date upSince);
+  public void setUpSince(Date upSince) {
+    this.upSince = upSince;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

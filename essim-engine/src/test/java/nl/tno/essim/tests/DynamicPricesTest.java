@@ -2,7 +2,6 @@ package nl.tno.essim.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,8 +26,8 @@ import esdl.Import;
 import esdl.Port;
 import esdl.TimeSeriesProfile;
 import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.model.EssimSimulationImpl;
-import nl.tno.essim.model.MarketImpl;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
@@ -100,11 +99,11 @@ class DynamicPricesTest {
 //		System.out.println(consumer_e_price);
 		
 		IMongoBackend mongo = new MongoBackendStub();
-		EssimSimulationImpl sim = new EssimSimulationImpl();
+		EssimSimulation sim = new EssimSimulation();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1 ,1, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2020, 1 ,1, 0,0,0)));
 		
-		MarketImpl market = new MarketImpl();
+		Market market = new Market();
 		sim.setMarket(market);
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);

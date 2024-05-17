@@ -1,31 +1,51 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.Map;
 
-@JsonDeserialize(
-    as = SimulationStatusImpl.class
-)
-public interface SimulationStatus {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "state",
+    "description"
+})
+public class SimulationStatus {
   @JsonProperty("state")
-  Status getState();
-
-  @JsonProperty("state")
-  void setState(Status state);
+  private Status state;
 
   @JsonProperty("description")
-  String getDescription();
+  private String description;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("state")
+  public Status getState() {
+    return this.state;
+  }
+
+  @JsonProperty("state")
+  public void setState(Status state) {
+    this.state = state;
+  }
 
   @JsonProperty("description")
-  void setDescription(String description);
+  public String getDescription() {
+    return this.description;
+  }
+
+  @JsonProperty("description")
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }

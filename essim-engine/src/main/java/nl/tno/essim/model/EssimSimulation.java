@@ -1,159 +1,369 @@
 package nl.tno.essim.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-@JsonDeserialize(
-    as = EssimSimulationImpl.class
-)
-public interface EssimSimulation {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({
+    "esdlContents",
+    "user",
+    "scenarioID",
+    "simulationDescription",
+    "startDate",
+    "endDate",
+    "timeStep",
+    "status",
+    "influxURL",
+    "csvFilesLocation",
+    "natsURL",
+    "mqttURL",
+    "amqpURL",
+    "mso",
+    "kafkaURL",
+    "externalSolvers",
+    "kpiModule",
+    "simRunDate",
+    "transport",
+    "dashboardURL",
+    "loadAnimationJSON",
+    "nodeConfig",
+    "market"
+})
+public class EssimSimulation {
   @JsonProperty("esdlContents")
-  String getEsdlContents();
-
-  @JsonProperty("esdlContents")
-  void setEsdlContents(String esdlContents);
+  private String esdlContents;
 
   @JsonProperty("user")
-  String getUser();
+  private String user;
+
+  @JsonProperty("scenarioID")
+  private String scenarioID;
+
+  @JsonProperty("simulationDescription")
+  private String simulationDescription;
+
+  @JsonProperty("startDate")
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+  )
+  @JsonDeserialize(
+      using = TimestampDeserializer.class
+  )
+  private Date startDate;
+
+  @JsonProperty("endDate")
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+  )
+  @JsonDeserialize(
+      using = TimestampDeserializer.class
+  )
+  private Date endDate;
+
+  @JsonProperty("timeStep")
+  private String timeStep;
+
+  @JsonProperty("status")
+  private SimulationStatus status;
+
+  @JsonProperty("influxURL")
+  private String influxURL;
+
+  @JsonProperty("csvFilesLocation")
+  private String csvFilesLocation;
+
+  @JsonProperty("natsURL")
+  private String natsURL;
+
+  @JsonProperty("mqttURL")
+  private String mqttURL;
+
+  @JsonProperty("amqpURL")
+  private String amqpURL;
+
+  @JsonProperty("mso")
+  private MSOConfiguration mso;
+
+  @JsonProperty("kafkaURL")
+  private String kafkaURL;
+
+  @JsonProperty("externalSolvers")
+  private List<ExternalSolver> externalSolvers;
+
+  @JsonProperty("kpiModule")
+  private RemoteKPIModule kpiModule;
+
+  @JsonFormat(
+      shape = JsonFormat.Shape.STRING,
+      pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+  )
+  @JsonDeserialize(
+      using = TimestampDeserializer.class
+  )
+  @JsonProperty("simRunDate")
+  private Date simRunDate;
+
+  @JsonProperty("transport")
+  private List<TransportNetwork> transport;
+
+  @JsonProperty("dashboardURL")
+  private String dashboardURL;
+
+  @JsonProperty("loadAnimationJSON")
+  private String loadAnimationJSON;
+
+  @JsonProperty("nodeConfig")
+  private List<NodeConfiguration> nodeConfig;
+
+  @JsonProperty("market")
+  private Market market;
+
+  @JsonIgnore
+  private Map<String, Object> additionalProperties = new ExcludingMap();
+
+  @JsonProperty("esdlContents")
+  public String getEsdlContents() {
+    return this.esdlContents;
+  }
+
+  @JsonProperty("esdlContents")
+  public void setEsdlContents(String esdlContents) {
+    this.esdlContents = esdlContents;
+  }
 
   @JsonProperty("user")
-  void setUser(String user);
+  public String getUser() {
+    return this.user;
+  }
+
+  @JsonProperty("user")
+  public void setUser(String user) {
+    this.user = user;
+  }
 
   @JsonProperty("scenarioID")
-  String getScenarioID();
+  public String getScenarioID() {
+    return this.scenarioID;
+  }
 
   @JsonProperty("scenarioID")
-  void setScenarioID(String scenarioID);
+  public void setScenarioID(String scenarioID) {
+    this.scenarioID = scenarioID;
+  }
 
   @JsonProperty("simulationDescription")
-  String getSimulationDescription();
+  public String getSimulationDescription() {
+    return this.simulationDescription;
+  }
 
   @JsonProperty("simulationDescription")
-  void setSimulationDescription(String simulationDescription);
+  public void setSimulationDescription(String simulationDescription) {
+    this.simulationDescription = simulationDescription;
+  }
 
   @JsonProperty("startDate")
-  Date getStartDate();
+  public Date getStartDate() {
+    return this.startDate;
+  }
 
   @JsonProperty("startDate")
-  void setStartDate(Date startDate);
+  public void setStartDate(Date startDate) {
+    this.startDate = startDate;
+  }
 
   @JsonProperty("endDate")
-  Date getEndDate();
+  public Date getEndDate() {
+    return this.endDate;
+  }
 
   @JsonProperty("endDate")
-  void setEndDate(Date endDate);
+  public void setEndDate(Date endDate) {
+    this.endDate = endDate;
+  }
 
   @JsonProperty("timeStep")
-  String getTimeStep();
+  public String getTimeStep() {
+    return this.timeStep;
+  }
 
   @JsonProperty("timeStep")
-  void setTimeStep(String timeStep);
+  public void setTimeStep(String timeStep) {
+    this.timeStep = timeStep;
+  }
 
   @JsonProperty("status")
-  SimulationStatus getStatus();
+  public SimulationStatus getStatus() {
+    return this.status;
+  }
 
   @JsonProperty("status")
-  void setStatus(SimulationStatus status);
+  public void setStatus(SimulationStatus status) {
+    this.status = status;
+  }
 
   @JsonProperty("influxURL")
-  String getInfluxURL();
+  public String getInfluxURL() {
+    return this.influxURL;
+  }
 
   @JsonProperty("influxURL")
-  void setInfluxURL(String influxURL);
+  public void setInfluxURL(String influxURL) {
+    this.influxURL = influxURL;
+  }
 
   @JsonProperty("csvFilesLocation")
-  String getCsvFilesLocation();
+  public String getCsvFilesLocation() {
+    return this.csvFilesLocation;
+  }
 
   @JsonProperty("csvFilesLocation")
-  void setCsvFilesLocation(String csvFilesLocation);
+  public void setCsvFilesLocation(String csvFilesLocation) {
+    this.csvFilesLocation = csvFilesLocation;
+  }
 
   @JsonProperty("natsURL")
-  String getNatsURL();
+  public String getNatsURL() {
+    return this.natsURL;
+  }
 
   @JsonProperty("natsURL")
-  void setNatsURL(String natsURL);
+  public void setNatsURL(String natsURL) {
+    this.natsURL = natsURL;
+  }
 
   @JsonProperty("mqttURL")
-  String getMqttURL();
+  public String getMqttURL() {
+    return this.mqttURL;
+  }
 
   @JsonProperty("mqttURL")
-  void setMqttURL(String mqttURL);
+  public void setMqttURL(String mqttURL) {
+    this.mqttURL = mqttURL;
+  }
 
   @JsonProperty("amqpURL")
-  String getAmqpURL();
+  public String getAmqpURL() {
+    return this.amqpURL;
+  }
 
   @JsonProperty("amqpURL")
-  void setAmqpURL(String amqpURL);
+  public void setAmqpURL(String amqpURL) {
+    this.amqpURL = amqpURL;
+  }
 
   @JsonProperty("mso")
-  MSOConfiguration getMso();
+  public MSOConfiguration getMso() {
+    return this.mso;
+  }
 
   @JsonProperty("mso")
-  void setMso(MSOConfiguration mso);
+  public void setMso(MSOConfiguration mso) {
+    this.mso = mso;
+  }
 
   @JsonProperty("kafkaURL")
-  String getKafkaURL();
+  public String getKafkaURL() {
+    return this.kafkaURL;
+  }
 
   @JsonProperty("kafkaURL")
-  void setKafkaURL(String kafkaURL);
+  public void setKafkaURL(String kafkaURL) {
+    this.kafkaURL = kafkaURL;
+  }
 
   @JsonProperty("externalSolvers")
-  List<ExternalSolver> getExternalSolvers();
+  public List<ExternalSolver> getExternalSolvers() {
+    return this.externalSolvers;
+  }
 
   @JsonProperty("externalSolvers")
-  void setExternalSolvers(List<ExternalSolver> externalSolvers);
+  public void setExternalSolvers(List<ExternalSolver> externalSolvers) {
+    this.externalSolvers = externalSolvers;
+  }
 
   @JsonProperty("kpiModule")
-  RemoteKPIModule getKpiModule();
+  public RemoteKPIModule getKpiModule() {
+    return this.kpiModule;
+  }
 
   @JsonProperty("kpiModule")
-  void setKpiModule(RemoteKPIModule kpiModule);
+  public void setKpiModule(RemoteKPIModule kpiModule) {
+    this.kpiModule = kpiModule;
+  }
 
   @JsonProperty("simRunDate")
-  Date getSimRunDate();
+  public Date getSimRunDate() {
+    return this.simRunDate;
+  }
 
   @JsonProperty("simRunDate")
-  void setSimRunDate(Date simRunDate);
+  public void setSimRunDate(Date simRunDate) {
+    this.simRunDate = simRunDate;
+  }
 
   @JsonProperty("transport")
-  List<TransportNetwork> getTransport();
+  public List<TransportNetwork> getTransport() {
+    return this.transport;
+  }
 
   @JsonProperty("transport")
-  void setTransport(List<TransportNetwork> transport);
+  public void setTransport(List<TransportNetwork> transport) {
+    this.transport = transport;
+  }
 
   @JsonProperty("dashboardURL")
-  String getDashboardURL();
+  public String getDashboardURL() {
+    return this.dashboardURL;
+  }
 
   @JsonProperty("dashboardURL")
-  void setDashboardURL(String dashboardURL);
+  public void setDashboardURL(String dashboardURL) {
+    this.dashboardURL = dashboardURL;
+  }
 
   @JsonProperty("loadAnimationJSON")
-  String getLoadAnimationJSON();
+  public String getLoadAnimationJSON() {
+    return this.loadAnimationJSON;
+  }
 
   @JsonProperty("loadAnimationJSON")
-  void setLoadAnimationJSON(String loadAnimationJSON);
+  public void setLoadAnimationJSON(String loadAnimationJSON) {
+    this.loadAnimationJSON = loadAnimationJSON;
+  }
 
   @JsonProperty("nodeConfig")
-  List<NodeConfiguration> getNodeConfig();
+  public List<NodeConfiguration> getNodeConfig() {
+    return this.nodeConfig;
+  }
 
   @JsonProperty("nodeConfig")
-  void setNodeConfig(List<NodeConfiguration> nodeConfig);
+  public void setNodeConfig(List<NodeConfiguration> nodeConfig) {
+    this.nodeConfig = nodeConfig;
+  }
 
   @JsonProperty("market")
-  Market getMarket();
+  public Market getMarket() {
+    return this.market;
+  }
 
   @JsonProperty("market")
-  void setMarket(Market market);
+  public void setMarket(Market market) {
+    this.market = market;
+  }
 
   @JsonAnyGetter
-  Map<String, Object> getAdditionalProperties();
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
 
   @JsonAnySetter
-  void setAdditionalProperties(String key, Object value);
+  public void setAdditionalProperties(String key, Object value) {
+    this.additionalProperties.put(key, value);
+  }
 }
