@@ -45,10 +45,8 @@ public class EssimHttpServer {
 
 		publishURI = URI.create(String.format("%s://%s:%d/%s", scheme, host, port, path));
 
-//		createContextHandler("/swagger-ui", createStaticFileHandler("/web/swagger-ui/")),
 		EssimJerseyApplication application = new EssimJerseyApplication();
 		this.server = GrizzlyHttpServerFactory.createHttpServer(publishURI, application);
-		// server openapi.json from the openapi folder in /src/main/resources (part of the jar)
 		this.server.getServerConfiguration().addHttpHandler(new CLStaticHttpHandler(EssimHttpServer.class.getClassLoader(), "/web/swagger-ui/"), "/openapi");
 		log.info(String.format("ESSIM OpenAPI endpoint available at %s://%s:%d/openapi/", scheme, host, port));
 	}

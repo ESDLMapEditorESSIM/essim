@@ -4,6 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
@@ -36,6 +43,13 @@ public class SimulationService {
     @POST
     @Produces("application/json")
     @Consumes("application/json")
+    @Operation(summary = "Start a new simulation",
+            description = "Start a new Simulation with the provided ESDL",
+            requestBody = @RequestBody(description = "Simulation description", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
+            responses = {
+                    @ApiResponse(description = "The simulation status", content = @Content(schema = @Schema(implementation = KPIStatus.class))),
+                    @ApiResponse(responseCode = "400", description = "Error", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response postSimulation(EssimSimulation simulation) {
         ErrorStatus error = new ErrorStatus();
         error.setStatus(Status.ERROR);
@@ -108,14 +122,26 @@ public class SimulationService {
 
     @GET
     @Produces("application/json")
-    public Response getSimulation() {
+    @Operation(summary = "Get all simulations",
+            description = "Get all simulations. BE CAREFUL! this can be a lot of data!",
+            responses = {
+                    @ApiResponse(description = "The list of simulations", content = @Content(array = @ArraySchema(schema = @Schema(implementation = EssimSimulation.class)))),
+            })
+    public Response getSimulations() {
         List<EssimSimulation> simulations = mongo.getSimulations();
         return Response.ok(simulations).build();
     }
 
     @GET
     @Path("/status")
-    @Produces("application/json")
+    @Produces("text/plain")
+    @Operation(summary = "Get the status of ESSIM",
+            description = "Get the status of ESSIM",
+            responses = {
+                    @ApiResponse(description = "The simulation status", content = @Content(schema = @Schema(implementation = String.class))),
+                    @ApiResponse(responseCode = "503", description = "Service unavailable", content = @Content(schema = @Schema(implementation = String.class)))
+
+            })
     public Response getSimulationStatus() {
         String status = mongo.getStatus();
         if (status.equals("Busy")) {
@@ -127,6 +153,11 @@ public class SimulationService {
     @GET
     @Path("/kpiModules")
     @Produces("application/json")
+    @Operation(summary = "Get a list of available KPI modules",
+            description = "Get a list of available KPI modules",
+            responses = {
+                    @ApiResponse(description = "List of KPI modules", content = @Content(array = @ArraySchema(schema = @Schema(implementation = KPIModuleInfo.class)))),
+            })
     public Response getSimulationKpiModules() {
         KPIManager.getInstance().queryStatus();
         List<KPIModuleInfo> allKPIModules = KPIManager.getInstance().getAllKPIModules();
@@ -136,7 +167,14 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}")
     @Produces("application/json")
+    @Operation(summary = "Get a simulation",
+            description = "Get the information of a single simulation",
+            responses = {
+                    @ApiResponse(description = "The simulation information", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
+                    @ApiResponse(responseCode = "404", description = "Not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response getSimulationBySimulationId(
+            @Parameter(description = "The id of the requested simulation", required = true)
             @PathParam("simulationId") String simulationId) {
         EssimSimulation simulation = mongo.getSimulation(simulationId);
         if (simulation == null) {
@@ -153,7 +191,15 @@ public class SimulationService {
     @Path("/{simulationId}")
     @Produces("application/json")
     @Consumes("application/json")
+    @Operation(summary = "Add or update simulation",
+            description = "Add or update a simulation in mongo",
+            requestBody = @RequestBody(description = "Simulation description", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
+            responses = {
+                    @ApiResponse(description = "The simulation id", content = @Content(schema = @Schema(implementation = String.class))),
+                    @ApiResponse(responseCode = "404", description = "Not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response putSimulationBySimulationId(
+            @Parameter(description = "The id of the simulation", required = true)
             @PathParam("simulationId") String simulationId, EssimSimulation entity) {
         if (mongo.getSimulation(simulationId) == null) {
             ErrorStatus error = new ErrorStatus();
@@ -169,7 +215,14 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/kpi")
     @Produces("application/json")
+    @Operation(summary = "Get KPIs for simulation",
+            description = "Get all the KPI information for a simulation",
+            responses = {
+                    @ApiResponse(description = "The list of KPIs", content = @Content(array = @ArraySchema(schema = @Schema(implementation = KPIModule.class)))),
+                    @ApiResponse(responseCode = "404", description = "Simulation id not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response getSimulationKpiBySimulationId(
+            @Parameter(description = "The id of the simulation", required = true)
             @PathParam("simulationId") String simulationId) {
         String error = "";
         EssimSimulation simulation = mongo.getSimulation(simulationId);
@@ -183,14 +236,7 @@ public class SimulationService {
                 if (kpiModule.getModules() == null || kpiModule.getModules().isEmpty()) {
                     error = "SimulationID " + simulationId + " had no KPIs defined!";
                 } else {
-                    ArrayNode arrayNode = ESSimEngine.getObjectMapper().createArrayNode();
-                    for (KPIModule module : kpiModule.getModules()) {
-                        if (module.getId() != null) {
-                            arrayNode.add(getKPIResult(simulationId, module));
-                        }
-                    }
-                    log.trace("Sending {} ", arrayNode.toString());
-                    return Response.ok(arrayNode).build();
+                    return Response.ok(kpiModule.getModules()).build();
                 }
             }
         }
@@ -200,8 +246,17 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/kpi/{kpiId}")
     @Produces("application/json")
+    @Operation(summary = "Get KPI result",
+            description = "Get KPI result for a specific KPI of a simulation",
+            responses = {
+                    @ApiResponse(description = "The list of KPIs"),
+                    @ApiResponse(responseCode = "404", description = "Simulation id not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response getSimulationKpiBySimulationIdAndKpiId(
-            @PathParam("simulationId") String simulationId, @PathParam("kpiId") String kpiId) {
+            @Parameter(description = "The id of the simulation", required = true)
+            @PathParam("simulationId") String simulationId,
+            @Parameter(description = "The id of the KPI module", required = true)
+            @PathParam("kpiId") String kpiId) {
         ErrorStatus error = new ErrorStatus();
         error.setStatus(Status.ERROR);
         EssimSimulation simulation = mongo.getSimulation(simulationId);
@@ -232,7 +287,15 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/status")
     @Produces("application/json")
-    public Response getSimulationStatusBySimulationId(@PathParam("simulationId") String simulationId) {
+    @Operation(summary = "Get simulation status",
+            description = "Get the status of a simulation",
+            responses = {
+                    @ApiResponse(description = "The simulation status", content = @Content(schema = @Schema(implementation = SimulationStatus.class))),
+                    @ApiResponse(responseCode = "404", description = "Simulation not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
+    public Response getSimulationStatusBySimulationId(
+            @Parameter(description = "The id of the simulation", required = true)
+            @PathParam("simulationId") String simulationId) {
         SimulationStatus simStatus = mongo.getSimulationStatus(simulationId);
         if (simStatus != null) {
             ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();
@@ -257,7 +320,14 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/transport")
     @Produces("application/json")
+    @Operation(summary = "Get simulation transport networks",
+            description = "Get the transport networks of a simulation",
+            responses = {
+                    @ApiResponse(description = "The list of transport networks for the simulation", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TransportNetwork.class)))),
+                    @ApiResponse(responseCode = "404", description = "Simulation not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response getSimulationTransportBySimulationId(
+            @Parameter(description = "The id of the simulation", required = true)
             @PathParam("simulationId") String simulationId) {
         EssimSimulation simulation = mongo.getSimulation(simulationId);
         if (simulation != null) {
@@ -273,7 +343,16 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/transport/{index}")
     @Produces("application/json")
-    public Response getSimulationTransportBySimulationIdAndIndex(@PathParam("simulationId") String simulationId, @PathParam("index") String index) {
+    @Operation(summary = "Get simulation transport network",
+            description = "Get a specific transport network for a simulation",
+            responses = {
+                    @ApiResponse(description = "The transport network", content = @Content(schema = @Schema(implementation = TransportNetwork.class))),
+                    @ApiResponse(responseCode = "404", description = "Simulation or transport not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
+    public Response getSimulationTransportBySimulationIdAndIndex(
+            @Parameter(description = "The id of the simulation", required = true)
+            @PathParam("simulationId") String simulationId,
+            @PathParam("index") String index) {
         EssimSimulation simulation = mongo.getSimulation(simulationId);
         if (simulation != null) {
             List<TransportNetwork> transportNetworks = simulation.getTransport();
