@@ -249,7 +249,7 @@ public class SimulationService {
     @Operation(summary = "Get KPI result",
             description = "Get KPI result for a specific KPI of a simulation",
             responses = {
-                    @ApiResponse(description = "The list of KPIs"),
+                    @ApiResponse(description = "The KPI result"),
                     @ApiResponse(responseCode = "404", description = "Simulation id not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
             })
     public Response getSimulationKpiBySimulationIdAndKpiId(
