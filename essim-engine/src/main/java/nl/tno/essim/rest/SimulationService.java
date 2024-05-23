@@ -171,7 +171,7 @@ public class SimulationService {
             description = "Get the information of a single simulation",
             responses = {
                     @ApiResponse(description = "The simulation information", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
-                    @ApiResponse(responseCode = "404", description = "Not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+                    @ApiResponse(responseCode = "404", description = "Simulation id not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
             })
     public Response getSimulationBySimulationId(
             @Parameter(description = "The id of the requested simulation", required = true)
@@ -196,7 +196,7 @@ public class SimulationService {
             requestBody = @RequestBody(description = "Simulation description", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
             responses = {
                     @ApiResponse(description = "The simulation id", content = @Content(schema = @Schema(implementation = String.class))),
-                    @ApiResponse(responseCode = "404", description = "Not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+                    @ApiResponse(responseCode = "404", description = "Simulation id not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
             })
     public Response putSimulationBySimulationId(
             @Parameter(description = "The id of the simulation", required = true)
