@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import esdl.*;
+import nl.tno.essim.transportsolver.nodes.Node;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
@@ -41,6 +42,7 @@ class InputOutputRelationDrivenByDemand {
     static void setUpBeforeClass() throws Exception {
     	expectedCurves =  new HashMap<String, List<String>>();
     	expectedCurves.put("Levering", Arrays.asList(new String[] {"",}));
+        Node.setStoreBidCurves(true);
     }
 
     @AfterAll
