@@ -327,7 +327,7 @@ public abstract class Node implements INode {
                     });
         }
         demandFunction.setMarginalCost(cost);
-   }
+    }
 
     public void makeStorageFunction(double ecmax, double edmax, double soc, Double mcCharge, Double mcDischarge) {
         BigDecimal bdEcmax = BigDecimal.valueOf(ecmax);
