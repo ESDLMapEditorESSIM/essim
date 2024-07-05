@@ -1,17 +1,17 @@
 /**
- *  This work is based on original code developed and copyrighted by TNO 2020. 
- *  Subsequent contributions are licensed to you by the developers of such code and are
- *  made available to the Project under one or several contributor license agreements.
- *
- *  This work is licensed to you under the Apache License, Version 2.0.
- *  You may obtain a copy of the license at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Contributors:
- *      TNO         - Initial implementation
- *  Manager:
- *      TNO
+ * This work is based on original code developed and copyrighted by TNO 2020.
+ * Subsequent contributions are licensed to you by the developers of such code and are
+ * made available to the Project under one or several contributor license agreements.
+ * <p>
+ * This work is licensed to you under the Apache License, Version 2.0.
+ * You may obtain a copy of the license at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Contributors:
+ * TNO         - Initial implementation
+ * Manager:
+ * TNO
  */
 
 package nl.tno.essim.commons;
@@ -24,516 +24,492 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import esdl.*;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
-import esdl.AbstractBasicConversion;
-import esdl.AbstractQuantityAndUnit;
-import esdl.Carrier;
-import esdl.Consumer;
-import esdl.Conversion;
-import esdl.EnergyAsset;
-import esdl.EssimESDLFactory;
-import esdl.GenericProfile;
-import esdl.InPort;
-import esdl.MultiplierEnum;
-import esdl.OutPort;
-import esdl.PhysicalQuantityEnum;
-import esdl.Port;
-import esdl.Producer;
-import esdl.ProfileElement;
-import esdl.ProfileReference;
-import esdl.ProfileTypeEnum;
-import esdl.QuantityAndUnitReference;
-import esdl.QuantityAndUnitType;
-import esdl.TimeUnitEnum;
-import esdl.UnitEnum;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.util.Converter;
 
 public class Commons {
-	public static final double eps = 1e-5;
-	public static final double DEFAULT_EFFICIENCY = 0.6;
-	public static final double DEFAULT_COGEN_H_EFF = 0.35;
-	public static final double DEFAULT_COGEN_E_EFF = 0.55;
-	public static final double DEFAULT_HP_COP = 3.5;
-	public static final double P_MIN = 0.0;
-	public static final double MIN_DELTA_PRICE = 1E-6;
-	public static final double P_MAX = 1.0;
-	public static final String RESOURCE = ".";
-	public static final String ESSIM_REVISION = "ESSIM_REVISION";
+    public static final double eps = 1e-5;
+    public static final double DEFAULT_EFFICIENCY = 0.6;
+    public static final double DEFAULT_COGEN_H_EFF = 0.35;
+    public static final double DEFAULT_COGEN_E_EFF = 0.55;
+    public static final double DEFAULT_HP_COP = 3.5;
+    public static final double P_MIN = 0.0;
+    public static final double MIN_DELTA_PRICE = 1E-6;
+    public static final double P_MAX = 1.0;
+    public static final String RESOURCE = ".";
+    public static final String ESSIM_REVISION = "ESSIM_REVISION";
 
-	public static enum Role {
-		TRANSPORT, PRODUCER, CONSUMER, BOTH
-	};
+    public static enum Role {
+        TRANSPORT, PRODUCER, CONSUMER, BOTH
+    }
 
-	public static String readFileIntoString(String filename) throws IOException {
-		try (InputStream is = Commons.class.getClassLoader().getResourceAsStream(filename)) {
-			return new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
-		}
-	}
+    ;
 
-	public static boolean isConversionToSameCarrier(EnergyAsset asset) {
-		List<Carrier> carrierList = new ArrayList<Carrier>();
-		if (asset instanceof Conversion) {
-			for (Port port : asset.getPort()) {
-				Carrier carrier = port.getCarrier();
-				if (!carrierList.contains(carrier)) {
-					carrierList.add(carrier);
-				} else {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+    public static String readFileIntoString(String filename) throws IOException {
+        try (InputStream is = Commons.class.getClassLoader().getResourceAsStream(filename)) {
+            return new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
+        }
+    }
 
-	public static List<Double> readProfile(Port port, Horizon horizon) {
-		return readProfile(getEnergyProfile(port), port, horizon);
-	}
+    public static boolean isConversionToSameCarrier(EnergyAsset asset) {
+        List<Carrier> carrierList = new ArrayList<Carrier>();
+        if (asset instanceof Conversion) {
+            for (Port port : asset.getPort()) {
+                Carrier carrier = port.getCarrier();
+                if (!carrierList.contains(carrier)) {
+                    carrierList.add(carrier);
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-	public static GenericProfile getEnergyProfile(Port port) {
-		GenericProfile energyProfile = null;
-		for (GenericProfile profile : port.getProfile()) {
-			if (profile instanceof ProfileReference) {
-				profile = ((ProfileReference) profile).getReference();
-			}
-			if (isEnergyProfile(profile) || isPowerProfile(profile) || isPercentageProfile(profile)) {
-				energyProfile = profile;
-			}
-		}
-		return energyProfile;
-	}
+    public static List<Double> readProfile(Port port, Horizon horizon) {
+        return readProfile(getEnergyProfile(port), port, horizon);
+    }
 
-	public static List<Double> readProfile(GenericProfile profile, Port port, Horizon horizon) {
-		if (profile instanceof ProfileReference) {
-			profile = ((ProfileReference) profile).getReference();
-		}
-		if (profile != null) {
-			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
-			Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
+    public static GenericProfile getEnergyProfile(Port port) {
+        GenericProfile energyProfile = null;
+        for (GenericProfile profile : port.getProfile()) {
+            if (profile instanceof ProfileReference) {
+                profile = ((ProfileReference) profile).getReference();
+            }
+            if (isEnergyProfile(profile) || isPowerProfile(profile) || isPercentageProfile(profile)) {
+                energyProfile = profile;
+            }
+        }
+        return energyProfile;
+    }
 
-			EnergyAsset energyAsset = port.getEnergyasset();
-			double ratedPower = 1.0;
-			if (energyAsset instanceof Producer) {
-				Producer producer = (Producer) energyAsset;
-				ratedPower = producer.getPower();
-			} else if (energyAsset instanceof Consumer) {
-				Consumer consumer = (Consumer) energyAsset;
-				ratedPower = consumer.getPower();
-			} else if (energyAsset instanceof AbstractBasicConversion) {
-				AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
-				ratedPower = conversion.getPower();
-			}
-			if (!isPercentageProfile(profile)) {
-				ratedPower = 1.0;
-			}
-			final double power = ratedPower;
+    public static List<Double> readProfile(GenericProfile profile, Port port, Horizon horizon) {
+        if (profile instanceof ProfileReference) {
+            profile = ((ProfileReference) profile).getReference();
+        }
+        if (profile != null) {
+            Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
+            Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
-			EList<ProfileElement> profileElements = profile.getProfile(from, to,
-					Converter.toESDLDuration(horizon.getPeriod()));
-			return profileElements.stream().mapToDouble(s -> s.getValue() * power).boxed().collect(Collectors.toList());
-		}
-		return null;
-	}
+            EnergyAsset energyAsset = port.getEnergyasset();
+            double ratedPower = 1.0;
+            if (energyAsset instanceof Producer) {
+                Producer producer = (Producer) energyAsset;
+                ratedPower = producer.getPower();
+            } else if (energyAsset instanceof Consumer) {
+                Consumer consumer = (Consumer) energyAsset;
+                ratedPower = consumer.getPower();
+            } else if (energyAsset instanceof AbstractBasicConversion) {
+                AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
+                ratedPower = conversion.getPower();
+            }
+            if (!isPercentageProfile(profile)) {
+                ratedPower = 1.0;
+            }
+            final double power = ratedPower;
 
-	public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
-		if (profile instanceof ProfileReference) {
-			profile = ((ProfileReference) profile).getReference();
-		}
-		if (profile != null) {
-			Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
-			Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
+            EList<ProfileElement> profileElements = profile.getProfile(from, to,
+                    Converter.toESDLDuration(horizon.getPeriod()));
+            return profileElements.stream().mapToDouble(s -> s.getValue() * power).boxed().collect(Collectors.toList());
+        }
+        return null;
+    }
 
-			EList<ProfileElement> profileElements = profile.getProfile(from, to,
-					Converter.toESDLDuration(horizon.getPeriod()));
-			return profileElements.stream().mapToDouble(s -> s.getValue()).boxed().collect(Collectors.toList());
-		}
-		return null;
-	}
+    public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
+        if (profile instanceof ProfileReference) {
+            profile = ((ProfileReference) profile).getReference();
+        }
+        if (profile != null) {
+            Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
+            Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
-	public static void writeProfile(Port port, EssimTime timestamp, double value) {
-		EList<GenericProfile> profiles = port.getProfile();
-		GenericProfile updatedProfile;
+            EList<ProfileElement> profileElements = profile.getProfile(from, to,
+                    Converter.toESDLDuration(horizon.getPeriod()));
+            return profileElements.stream().mapToDouble(s -> s.getValue()).boxed().collect(Collectors.toList());
+        }
+        return null;
+    }
 
-		if (profiles.isEmpty()) {
-			GenericProfile profile = null;
-			updatedProfile = writeProfile(profile, timestamp, value);
-		} else {
-			GenericProfile profile = profiles.get(0);
-			if (profile instanceof ProfileReference) {
-				profile = ((ProfileReference) profile).getReference();
-			}
-			updatedProfile = writeProfile(profile, timestamp, value);
-		}
-		profiles.add(updatedProfile);
-	}
+    public static void writeProfile(Port port, EssimTime timestamp, double value) {
+        EList<GenericProfile> profiles = port.getProfile();
+        GenericProfile updatedProfile;
 
-	public static GenericProfile writeProfile(GenericProfile profile, EssimTime timestamp, double value) {
-		if (profile == null) {
-			profile = EssimESDLFactory.eINSTANCE.createTimeSeriesProfile();
-		}
+        if (profiles.isEmpty()) {
+            GenericProfile profile = null;
+            updatedProfile = writeProfile(profile, timestamp, value);
+        } else {
+            GenericProfile profile = profiles.get(0);
+            if (profile instanceof ProfileReference) {
+                profile = ((ProfileReference) profile).getReference();
+            }
+            updatedProfile = writeProfile(profile, timestamp, value);
+        }
+        profiles.add(updatedProfile);
+    }
 
-		EList<ProfileElement> profileElementList = ECollections.newBasicEList();
-		ProfileElement element = EssimESDLFactory.eINSTANCE.createProfileElement();
-		element.setValue(value);
-		element.setFrom(EssimTime.localDateTimeToDate(timestamp.getTime()));
+    public static GenericProfile writeProfile(GenericProfile profile, EssimTime timestamp, double value) {
+        if (profile == null) {
+            profile = EssimESDLFactory.eINSTANCE.createTimeSeriesProfile();
+        }
 
-		profileElementList.add(element);
-		profile.setProfile(profileElementList);
-		profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
+        EList<ProfileElement> profileElementList = ECollections.newBasicEList();
+        ProfileElement element = EssimESDLFactory.eINSTANCE.createProfileElement();
+        element.setValue(value);
+        element.setFrom(EssimTime.localDateTimeToDate(timestamp.getTime()));
 
-		return profile;
-	}
+        profileElementList.add(element);
+        profile.setProfile(profileElementList);
+        profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
 
-	public static Double aggregateCost(List<Double> costProfile) {
-		return averageOrNothing(costProfile);
-	}
+        return profile;
+    }
 
-	public static Double sum(List<Double> energyProfile) {
-		return sumOrNothing(energyProfile);
-	}
+    public static Double aggregateCost(List<Double> costProfile) {
+        return averageOrNothing(costProfile);
+    }
 
-	public static Double aggregateEnergy(List<Double> energyProfile) {
-		return sumOrNothing(energyProfile);
-	}
+    public static Double sum(List<Double> energyProfile) {
+        return sumOrNothing(energyProfile);
+    }
 
-	public static Double aggregateGas(List<Double> gasProfile) {
-		return sumOrNothing(gasProfile);
-	}
+    public static Double aggregateEnergy(List<Double> energyProfile) {
+        return sumOrNothing(energyProfile);
+    }
 
-	public static Double aggregatePower(List<Double> energyProfile) {
-		return averageOrNothing(energyProfile);
-	}
+    public static Double aggregateGas(List<Double> gasProfile) {
+        return sumOrNothing(gasProfile);
+    }
 
-	public static Double aggregateSoC(List<Double> socProfile) {
-		return averageOrNothing(socProfile);
-	}
+    public static Double aggregatePower(List<Double> energyProfile) {
+        return averageOrNothing(energyProfile);
+    }
 
-	private static Double sumOrNothing(List<Double> profile) {
-		if (profile == null || profile.isEmpty()) {
-			return Double.NaN;
-		} else {
-			return profile.stream().mapToDouble(fn -> fn.doubleValue()).sum();
-		}
-	}
+    public static Double aggregateSoC(List<Double> socProfile) {
+        return averageOrNothing(socProfile);
+    }
 
-	private static Double averageOrNothing(List<Double> profile) {
-		if (profile == null || profile.isEmpty()) {
-			return Double.NaN;
-		} else {
-			return profile.stream().mapToDouble(fn -> fn.doubleValue()).average().orElse(0.0);
-		}
-	}
+    private static Double sumOrNothing(List<Double> profile) {
+        if (profile == null || profile.isEmpty()) {
+            return Double.NaN;
+        } else {
+            return profile.stream().mapToDouble(fn -> fn.doubleValue()).sum();
+        }
+    }
 
-	public static boolean isPowerProfile(GenericProfile profile) {
-		if (profile instanceof ProfileReference) {
-			profile = ((ProfileReference) profile).getReference();
-		}
-		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
-		if (profileQandU != null) {
-			QuantityAndUnitType qu = null;
-			if (profileQandU instanceof QuantityAndUnitType) {
-				qu = (QuantityAndUnitType) profileQandU;
-			} else if (profileQandU instanceof QuantityAndUnitReference) {
-				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
-				qu = reference.getReference();
-			}
-			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.POWER);
-		}
+    private static Double averageOrNothing(List<Double> profile) {
+        if (profile == null || profile.isEmpty()) {
+            return Double.NaN;
+        } else {
+            return profile.stream().mapToDouble(fn -> fn.doubleValue()).average().orElse(0.0);
+        }
+    }
 
-		return (profile.getProfileType().getValue() <= ProfileTypeEnum.POWER_IN_TW_VALUE)
-				&& (profile.getProfileType().getValue() >= ProfileTypeEnum.POWER_IN_W_VALUE);
-	}
+    public static boolean isPowerProfile(GenericProfile profile) {
+        if (profile instanceof ProfileReference) {
+            profile = ((ProfileReference) profile).getReference();
+        }
+        AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
+        if (profileQandU != null) {
+            QuantityAndUnitType qu = null;
+            if (profileQandU instanceof QuantityAndUnitType) {
+                qu = (QuantityAndUnitType) profileQandU;
+            } else if (profileQandU instanceof QuantityAndUnitReference) {
+                QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
+                qu = reference.getReference();
+            }
+            return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.POWER);
+        }
 
-	public static boolean isEnergyProfile(GenericProfile profile) {
-		if (profile instanceof ProfileReference) {
-			profile = ((ProfileReference) profile).getReference();
-		}
-		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
-		if (profileQandU != null) {
-			QuantityAndUnitType qu = null;
-			if (profileQandU instanceof QuantityAndUnitType) {
-				qu = (QuantityAndUnitType) profileQandU;
-			} else if (profileQandU instanceof QuantityAndUnitReference) {
-				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
-				qu = reference.getReference();
-			}
-			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.ENERGY);
-		}
+        return (profile.getProfileType().getValue() <= ProfileTypeEnum.POWER_IN_TW_VALUE)
+                && (profile.getProfileType().getValue() >= ProfileTypeEnum.POWER_IN_W_VALUE);
+    }
 
-		return (profile.getProfileType().getValue() <= ProfileTypeEnum.ENERGY_IN_PJ_VALUE)
-				&& (profile.getProfileType().getValue() >= ProfileTypeEnum.ENERGY_IN_WH_VALUE);
-	}
+    public static boolean isEnergyProfile(GenericProfile profile) {
+        if (profile instanceof ProfileReference) {
+            profile = ((ProfileReference) profile).getReference();
+        }
+        AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
+        if (profileQandU != null) {
+            QuantityAndUnitType qu = null;
+            if (profileQandU instanceof QuantityAndUnitType) {
+                qu = (QuantityAndUnitType) profileQandU;
+            } else if (profileQandU instanceof QuantityAndUnitReference) {
+                QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
+                qu = reference.getReference();
+            }
+            return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.ENERGY);
+        }
 
-	public static boolean isPercentageProfile(GenericProfile profile) {
-		if (profile instanceof ProfileReference) {
-			profile = ((ProfileReference) profile).getReference();
-		}
-		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
-		if (profileQandU != null) {
-			QuantityAndUnitType qu = null;
-			if (profileQandU instanceof QuantityAndUnitType) {
-				qu = (QuantityAndUnitType) profileQandU;
-			} else if (profileQandU instanceof QuantityAndUnitReference) {
-				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
-				qu = reference.getReference();
-			}
-			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.COEFFICIENT);
-		}
+        return (profile.getProfileType().getValue() <= ProfileTypeEnum.ENERGY_IN_PJ_VALUE)
+                && (profile.getProfileType().getValue() >= ProfileTypeEnum.ENERGY_IN_WH_VALUE);
+    }
 
-		return (profile.getProfileType().getValue() == ProfileTypeEnum.PERCENTAGE_VALUE);
-	}
+    public static boolean isPercentageProfile(GenericProfile profile) {
+        if (profile instanceof ProfileReference) {
+            profile = ((ProfileReference) profile).getReference();
+        }
+        AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
+        if (profileQandU != null) {
+            QuantityAndUnitType qu = null;
+            if (profileQandU instanceof QuantityAndUnitType) {
+                qu = (QuantityAndUnitType) profileQandU;
+            } else if (profileQandU instanceof QuantityAndUnitReference) {
+                QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
+                qu = reference.getReference();
+            }
+            return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.COEFFICIENT);
+        }
 
-	public static boolean isSoCProfile(GenericProfile profile) {
-		if (profile instanceof ProfileReference) {
-			profile = ((ProfileReference) profile).getReference();
-		}
-		AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
-		if (profileQandU != null) {
-			QuantityAndUnitType qu = null;
-			if (profileQandU instanceof QuantityAndUnitType) {
-				qu = (QuantityAndUnitType) profileQandU;
-			} else if (profileQandU instanceof QuantityAndUnitReference) {
-				QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
-				qu = reference.getReference();
-			}
-			return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.STATE_OF_CHARGE);
-		}
+        return (profile.getProfileType().getValue() == ProfileTypeEnum.PERCENTAGE_VALUE);
+    }
 
-		return profile.getProfileType().equals(ProfileTypeEnum.STATEOFCHARGE_IN_WS);
-	}
+    public static boolean isSoCProfile(GenericProfile profile) {
+        if (profile instanceof ProfileReference) {
+            profile = ((ProfileReference) profile).getReference();
+        }
+        AbstractQuantityAndUnit profileQandU = profile.getProfileQuantityAndUnit();
+        if (profileQandU != null) {
+            QuantityAndUnitType qu = null;
+            if (profileQandU instanceof QuantityAndUnitType) {
+                qu = (QuantityAndUnitType) profileQandU;
+            } else if (profileQandU instanceof QuantityAndUnitReference) {
+                QuantityAndUnitReference reference = (QuantityAndUnitReference) profileQandU;
+                qu = reference.getReference();
+            }
+            return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.STATE_OF_CHARGE);
+        }
 
-	public static HashMap<EnergyAsset, Port> findAllConnectedAssets(EnergyAsset asset) {
-		HashMap<EnergyAsset, Port> connectedAssets = new HashMap<EnergyAsset, Port>();
+        return profile.getProfileType().equals(ProfileTypeEnum.STATEOFCHARGE_IN_WS);
+    }
 
-		for (Port port : asset.getPort()) {
-			if (port instanceof InPort) {
-				InPort inPort = (InPort) port;
-				for (OutPort outPort : inPort.getConnectedTo()) {
-					connectedAssets.put(outPort.getEnergyasset(), outPort);
-				}
-			} else if (port instanceof OutPort) {
-				OutPort outPort = (OutPort) port;
-				for (InPort inPort : outPort.getConnectedTo()) {
-					connectedAssets.put(inPort.getEnergyasset(), inPort);
-				}
-			} else {
-				throw new IllegalStateException("Port type " + port + " is not supported");
-			}
-		}
+    public static HashMap<EnergyAsset, Port> findAllConnectedAssets(EnergyAsset asset) {
+        HashMap<EnergyAsset, Port> connectedAssets = new HashMap<EnergyAsset, Port>();
 
-		return connectedAssets;
-	}
+        for (Port port : asset.getPort()) {
+            if (port instanceof InPort) {
+                InPort inPort = (InPort) port;
+                for (OutPort outPort : inPort.getConnectedTo()) {
+                    connectedAssets.put(outPort.getEnergyasset(), outPort);
+                }
+            } else if (port instanceof OutPort) {
+                OutPort outPort = (OutPort) port;
+                for (InPort inPort : outPort.getConnectedTo()) {
+                    connectedAssets.put(inPort.getEnergyasset(), inPort);
+                }
+            } else {
+                throw new IllegalStateException("Port type " + port + " is not supported");
+            }
+        }
 
-	public static double toStandardizedUnits(double value, AbstractQuantityAndUnit specifiedUnit) {
-		QuantityAndUnitType standardizedUnit;
-		if (specifiedUnit instanceof QuantityAndUnitType) {
-			standardizedUnit = (QuantityAndUnitType) specifiedUnit;
-		} else if (specifiedUnit instanceof QuantityAndUnitReference) {
-			QuantityAndUnitReference reference = (QuantityAndUnitReference) specifiedUnit;
-			standardizedUnit = reference.getReference();
-		} else {
-			return value;
-		}
+        return connectedAssets;
+    }
 
-		return value * (fromMultiplier(standardizedUnit.getMultiplier()) * toSIUnit(standardizedUnit.getUnit()))
-				/ (fromMultiplier(standardizedUnit.getPerMultiplier()) * toSIUnit(standardizedUnit.getPerUnit())
-						* toSIUnit(standardizedUnit.getPerTimeUnit()));
-	}
+    public static double toStandardizedUnits(double value, AbstractQuantityAndUnit specifiedUnit) {
+        QuantityAndUnitType standardizedUnit;
+        if (specifiedUnit instanceof QuantityAndUnitType) {
+            standardizedUnit = (QuantityAndUnitType) specifiedUnit;
+        } else if (specifiedUnit instanceof QuantityAndUnitReference) {
+            QuantityAndUnitReference reference = (QuantityAndUnitReference) specifiedUnit;
+            standardizedUnit = reference.getReference();
+        } else {
+            return value;
+        }
 
-	private static double toSIUnit(TimeUnitEnum unit) {
-		if (unit == null) {
-			return 1;
-		}
-		// Convert all to seconds
-		switch (unit) {
-		case DAY:
-			return 24 * 60 * 60;
-		case HOUR:
-			return 60 * 60;
-		case MINUTE:
-			return 60;
-		case MONTH:
-			return 30 * 24 * 60 * 60;
-		case NONE:
-			return 1;
-		case QUARTER:
-			return 15 * 60;
-		case SECOND:
-			return 1;
-		case WEEK:
-			return 7 * 24 * 60 * 60;
-		case YEAR:
-			return 365 * 24 * 60 * 60;
-		default:
-			return 1;
-		}
-	}
+        return value * (fromMultiplier(standardizedUnit.getMultiplier()) * toSIUnit(standardizedUnit.getUnit()))
+                / (fromMultiplier(standardizedUnit.getPerMultiplier()) * toSIUnit(standardizedUnit.getPerUnit())
+                * toSIUnit(standardizedUnit.getPerTimeUnit()));
+    }
 
-	private static double toSIUnit(UnitEnum unit) {
-		if (unit == null) {
-			return 1;
-		}
-		switch (unit) {
-		case ARE:
-			return 100; // m2
-		case BAR:
-			return 100000; // Pa
-		case CUBIC_METRE:
-			return 1; // m3
-		case DAY:
-			return 24 * 60 * 60; // sec
-		case DEGREES_CELSIUS:
-			return 1;
-		case DOLLAR:
-			return 1;
-		case EURO:
-			return 1;
-		case GRAM:
-			return 1e-3; // kg
-		case HECTARE:
-			return 1e4; // m2
-		case HOUR:
-			return 60 * 60; // sec
-		case JOULE:
-			return 1;
-		case KELVIN:
-			return 1;
-		case LITRE:
-			return 1e-3; // m3
-		case METRE:
-			return 1; // m
-		case MINUTE:
-			return 60; // sec
-		case MONTH:
-			return 30 * 24 * 60 * 60; // sec
-		case NONE:
-			return 1;
-		case PERCENT:
-			return 0.01;
-		case PSI:
-			return 6894.76; // Pa
-		case QUARTER:
-			return 15 * 60; // sec
-		case SECOND:
-			return 1;
-		case SQUARE_METRE:
-			return 1;
-		case VOLT:
-			return 1;
-		case WATT:
-			return 1;
-		case WATTHOUR:
-			return 3600; // J (Ws)
-		case WATTSECOND:
-			return 1; // J
-		case WEEK:
-			return 7 * 24 * 60 * 60; // sec
-		case YEAR:
-			return 365 * 24 * 60 * 60; // sec
-		default:
-			return 1;
-		}
-	}
+    private static double toSIUnit(TimeUnitEnum unit) {
+        if (unit == null) {
+            return 1;
+        }
+        // Convert all to seconds
+        switch (unit) {
+            case DAY:
+                return 24 * 60 * 60;
+            case HOUR:
+                return 60 * 60;
+            case MINUTE:
+                return 60;
+            case MONTH:
+                return 30 * 24 * 60 * 60;
+            case NONE:
+                return 1;
+            case QUARTER:
+                return 15 * 60;
+            case SECOND:
+                return 1;
+            case WEEK:
+                return 7 * 24 * 60 * 60;
+            case YEAR:
+                return 365 * 24 * 60 * 60;
+            default:
+                return 1;
+        }
+    }
 
-	private static double fromMultiplier(MultiplierEnum multiplier) {
-		if (multiplier == null) {
-			return 1;
-		}
-		switch (multiplier) {
-		case GIGA:
-			return 1e9;
-		case KILO:
-			return 1e3;
-		case MEGA:
-			return 1e6;
-		case MICRO:
-			return 1e-6;
-		case MILLI:
-			return 1e-3;
-		case NANO:
-			return 1e-9;
-		case NONE:
-			return 1;
-		case PETA:
-			return 1e15;
-		case PICO:
-			return 1e-12;
-		case TERRA:
-			return 1e12;
-		default:
-			return 1;
-		}
-	}
+    private static double toSIUnit(UnitEnum unit) {
+        if (unit == null) {
+            return 1;
+        }
+        switch (unit) {
+            case ARE:
+                return 100; // m2
+            case BAR:
+                return 100000; // Pa
+            case CUBIC_METRE:
+                return 1; // m3
+            case DAY:
+                return 24 * 60 * 60; // sec
+            case DEGREES_CELSIUS:
+                return 1;
+            case DOLLAR:
+                return 1;
+            case EURO:
+                return 1;
+            case GRAM:
+                return 1e-3; // kg
+            case HECTARE:
+                return 1e4; // m2
+            case HOUR:
+                return 60 * 60; // sec
+            case JOULE:
+                return 1;
+            case KELVIN:
+                return 1;
+            case LITRE:
+                return 1e-3; // m3
+            case METRE:
+                return 1; // m
+            case MINUTE:
+                return 60; // sec
+            case MONTH:
+                return 30 * 24 * 60 * 60; // sec
+            case NONE:
+                return 1;
+            case PERCENT:
+                return 0.01;
+            case PSI:
+                return 6894.76; // Pa
+            case QUARTER:
+                return 15 * 60; // sec
+            case SECOND:
+                return 1;
+            case SQUARE_METRE:
+                return 1;
+            case VOLT:
+                return 1;
+            case WATT:
+                return 1;
+            case WATTHOUR:
+                return 3600; // J (Ws)
+            case WATTSECOND:
+                return 1; // J
+            case WEEK:
+                return 7 * 24 * 60 * 60; // sec
+            case YEAR:
+                return 365 * 24 * 60 * 60; // sec
+            default:
+                return 1;
+        }
+    }
 
-	public static boolean isNumericString(String str) {
-		return str.matches("-?\\d+(\\.\\d+)?"); // match a number with optional '-' and decimal.
-	}
+    private static double fromMultiplier(MultiplierEnum multiplier) {
+        if (multiplier == null) {
+            return 1;
+        }
+        switch (multiplier) {
+            case GIGA:
+                return 1e9;
+            case KILO:
+                return 1e3;
+            case MEGA:
+                return 1e6;
+            case MICRO:
+                return 1e-6;
+            case MILLI:
+                return 1e-3;
+            case NANO:
+                return 1e-9;
+            case NONE:
+                return 1;
+            case PETA:
+                return 1e15;
+            case PICO:
+                return 1e-12;
+            case TERRA:
+                return 1e12;
+            default:
+                return 1;
+        }
+    }
 
-	/**
-	 * List directory contents for a resource folder. Not recursive. This is
-	 * basically a brute-force implementation. Works for regular files and also
-	 * JARs.
-	 * 
-	 * @author Greg Briggs
-	 * @param clazz Any java class that lives in the same place as the resources you
-	 *              want.
-	 * @param path  Should end with "/", but not start with one.
-	 * @return Just the name of each member item, not the full paths.
-	 * @throws URISyntaxException
-	 * @throws IOException
-	 */
-	public static String[] getResourceListing(Class clazz, String path) throws URISyntaxException, IOException {
-		URL dirURL = clazz.getClassLoader().getResource(path);
-		if (dirURL != null && dirURL.getProtocol().equals("file")) {
-			/* A file path: easy enough */
-			return new File(dirURL.toURI()).list();
-		}
+    public static boolean isNumericString(String str) {
+        return str.matches("-?\\d+(\\.\\d+)?"); // match a number with optional '-' and decimal.
+    }
 
-		if (dirURL == null) {
-			/*
-			 * In case of a jar file, we can't actually find a directory. Have to assume the
-			 * same jar as clazz.
-			 */
-			String me = clazz.getName().replace(".", "/") + ".class";
-			dirURL = clazz.getClassLoader().getResource(me);
-		}
+    /**
+     * List directory contents for a resource folder. Not recursive. This is
+     * basically a brute-force implementation. Works for regular files and also
+     * JARs.
+     *
+     * @param clazz Any java class that lives in the same place as the resources you
+     *              want.
+     * @param path  Should end with "/", but not start with one.
+     * @return Just the name of each member item, not the full paths.
+     * @throws URISyntaxException
+     * @throws IOException
+     * @author Greg Briggs
+     */
+    public static String[] getResourceListing(Class clazz, String path) throws URISyntaxException, IOException {
+        URL dirURL = clazz.getClassLoader().getResource(path);
+        if (dirURL != null && dirURL.getProtocol().equals("file")) {
+            /* A file path: easy enough */
+            return new File(dirURL.toURI()).list();
+        }
 
-		if (dirURL.getProtocol().equals("jar")) {
-			/* A JAR path */
-			String jarPath = dirURL.getPath().substring(5, dirURL.getPath().indexOf("!")); // strip out only the JAR
-																							// file
-			JarFile jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"));
-			Enumeration<JarEntry> entries = jar.entries(); // gives ALL entries in jar
-			Set<String> result = new HashSet<String>(); // avoid duplicates in case it is a subdirectory
-			while (entries.hasMoreElements()) {
-				String name = entries.nextElement().getName();
-				if (name.startsWith(path)) { // filter according to the path
-					String entry = name.substring(path.length());
-					int checkSubdir = entry.indexOf("/");
-					if (checkSubdir >= 0) {
-						// if it is a subdirectory, we just return the directory name
-						entry = entry.substring(0, checkSubdir);
-					}
-					result.add(entry);
-				}
-			}
-			return result.toArray(new String[result.size()]);
-		}
-		throw new UnsupportedOperationException("Cannot list files for URL " + dirURL);
-	}
+        if (dirURL == null) {
+            /*
+             * In case of a jar file, we can't actually find a directory. Have to assume the
+             * same jar as clazz.
+             */
+            String me = clazz.getName().replace(".", "/") + ".class";
+            dirURL = clazz.getClassLoader().getResource(me);
+        }
+
+        if (dirURL.getProtocol().equals("jar")) {
+            /* A JAR path */
+            String jarPath = dirURL.getPath().substring(5, dirURL.getPath().indexOf("!")); // strip out only the JAR
+            // file
+            JarFile jar = new JarFile(URLDecoder.decode(jarPath, "UTF-8"));
+            Enumeration<JarEntry> entries = jar.entries(); // gives ALL entries in jar
+            Set<String> result = new HashSet<String>(); // avoid duplicates in case it is a subdirectory
+            while (entries.hasMoreElements()) {
+                String name = entries.nextElement().getName();
+                if (name.startsWith(path)) { // filter according to the path
+                    String entry = name.substring(path.length());
+                    int checkSubdir = entry.indexOf("/");
+                    if (checkSubdir >= 0) {
+                        // if it is a subdirectory, we just return the directory name
+                        entry = entry.substring(0, checkSubdir);
+                    }
+                    result.add(entry);
+                }
+            }
+            return result.toArray(new String[result.size()]);
+        }
+        throw new UnsupportedOperationException("Cannot list files for URL " + dirURL);
+    }
 
 }

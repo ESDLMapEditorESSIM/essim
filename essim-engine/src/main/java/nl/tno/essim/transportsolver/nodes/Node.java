@@ -206,19 +206,6 @@ public abstract class Node implements INode {
         cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
     }
 
-    public BigDecimal[] allocateAndPropagate(BidFunction summedFunction, List<Observation> observations, EssimTime timestamp) {
-        // Allocate
-        var balancingPrice = findPriceFromCurve(summedFunction, BigDecimal.ZERO);
-        var imbalance = findDemandFromCurve(summedFunction, balancingPrice);
-//		log.trace("Market {} - summed function: {}", getNetworkId(), summedFunction);
-//		log.trace("Balancing price: {}, imbalance: {}", balancingPrice, imbalance);
-        // Propagate
-        propagate(balancingPrice, observations, timestamp);
-
-        BigDecimal[] vals = {imbalance, balancingPrice};
-        return vals;
-    }
-
     public JsonNode getJsonNode() {
         String ctrlStrategy = "";
         if (getAsset() instanceof Conversion) {
@@ -340,7 +327,7 @@ public abstract class Node implements INode {
                     });
         }
         demandFunction.setMarginalCost(cost);
-    }
+   }
 
     public void makeStorageFunction(double ecmax, double edmax, double soc, Double mcCharge, Double mcDischarge) {
         BigDecimal bdEcmax = BigDecimal.valueOf(ecmax);
@@ -399,7 +386,7 @@ public abstract class Node implements INode {
         return summedCurves;
     }
 
-    private void propagate(BigDecimal price, List<Observation> observations, EssimTime timestamp) {
+    public void propagate(BigDecimal price, List<Observation> observations, EssimTime timestamp) {
         // Allocate
         energy = findDemandFromCurve(demandFunction, price).doubleValue();
 

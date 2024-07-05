@@ -36,6 +36,8 @@
         <log4j.version>2.23.1</log4j.version>
         <swagger.version>2.2.21</swagger.version>
         <swagger-ui.version>5.17.2</swagger-ui.version>
+        <powsybl-core.version>6.3.2</powsybl-core.version>
+        <openloadflow.version>1.11.0</openloadflow.version>
     </properties>
 
     <repositories>

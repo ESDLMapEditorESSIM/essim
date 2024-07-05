@@ -172,7 +172,22 @@
             <artifactId>swagger-jaxrs2-servlet-initializer-v2</artifactId>
             <version>${swagger.version}</version>
         </dependency>
-
+        <!-- powersybl open loadflow -->
+        <dependency>
+            <groupId>com.powsybl</groupId>
+            <artifactId>powsybl-iidm-impl</artifactId>
+            <version>${powsybl-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.powsybl</groupId>
+            <artifactId>powsybl-ieee-cdf-converter</artifactId>
+            <version>${powsybl-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.powsybl</groupId>
+            <artifactId>powsybl-open-loadflow</artifactId>
+            <version>${openloadflow.version}</version>
+        </dependency>
     </dependencies>
 
 
