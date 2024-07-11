@@ -59,10 +59,11 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
         OutPort outputPort = null;
         for (Port port : conversion.getPort()) {
             if (port instanceof InPort) {
-                if (port.getCarrier() instanceof ElectricityCommodity) {
-                    eInputPort = (InPort) port;
-                } else if (port.getCarrier() instanceof ElectricityCommodity) {
+                if (port.getCarrier() instanceof HeatCommodity) {
                     hInputPort = (InPort) port;
+                }
+                else if (!(port.getCarrier() instanceof GasCommodity)) {
+                    eInputPort = (InPort) port;
                 }
             } else {
                 outputPort = (OutPort) port;
