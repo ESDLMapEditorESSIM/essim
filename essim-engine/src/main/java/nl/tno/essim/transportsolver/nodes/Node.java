@@ -98,7 +98,7 @@ public abstract class Node implements INode {
     }
 
     public double getDefaultMarginalCost() {
-        return (maxMarketPrice - minMarketPrice) / 2.0;
+        return minMarketPrice + (maxMarketPrice - minMarketPrice) / 2.0;
     }
 
     public void addChild(Node n) {
