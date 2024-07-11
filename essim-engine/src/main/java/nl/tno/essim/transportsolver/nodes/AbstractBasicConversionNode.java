@@ -193,6 +193,9 @@ public class AbstractBasicConversionNode extends Node {
 		DrivenByProfile drivenByProfile = (DrivenByProfile) controlStrategy;
 		GenericProfile convProfile = drivenByProfile.getProfile();
 		Port drivenByProfilePort = drivenByProfile.getPort();
+		if (drivenByProfilePort == null) {
+			drivenByProfilePort = getConnectedPort();
+		}
 		double energyOutput;
 		if (convProfile != null) {
 			if (Commons.isPowerProfile(convProfile)) {
