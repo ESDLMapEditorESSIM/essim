@@ -55,7 +55,7 @@ class DynamicPricesTest2 {
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 2 ,19, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(  LocalDateTime.of(2019, 2, 20, 0,0,0)));
 		Market market = new Market();
-		market.setMinPrice(-100.0);
+		market.setMinPrice(-110.0);
 		market.setMaxPrice(100.0);
 		market.setDeltaPrice(1E-10);
 		sim.setMarket(market);

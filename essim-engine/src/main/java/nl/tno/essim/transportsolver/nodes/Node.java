@@ -150,6 +150,7 @@ public abstract class Node implements INode {
             ;
             for (Node child : children) {
                 BidFunction nodeFunction = child.aggregateDemandFunction();
+                log.debug("{} Aggregated demand function: {}", child.getAsset().getName(), nodeFunction);
                 aggregatedFunction = sumCurves(nodeFunction, aggregatedFunction);
             }
             if (this.asset instanceof Transport) {

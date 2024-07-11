@@ -67,6 +67,7 @@ public class AbstractBasicConversionNode extends Node {
 	protected ControlStrategy controlStrategy;
 	private boolean specialConversion;
 	private String conversionName;
+    private GenericProfile marginalCostProfile;
 	private HashMap<Port, GenericProfile> costProfileMap = new HashMap<>();
 	private Port mainPort;
 	private HashMap<Port, Double> ratioMap = new HashMap<>();
@@ -82,17 +83,17 @@ public class AbstractBasicConversionNode extends Node {
 		this.conversionName = asset.getName() == null ? asset.getId() : asset.getName();
 		this.power = conversion.getPower();
 		this.costInformation = conversion.getCostInformation();
+        if (costInformation != null) {
+            marginalCostProfile = costInformation.getMarginalCosts();
+        }
 		this.controlStrategy = conversion.getControlStrategy();
 		for (Port port : conversion.getPort()) {
-			if (port instanceof InPort) {
-				InPort inputPort = (InPort) port;
-				Carrier inputCarrier = inputPort.getCarrier();
-				if (costInformation != null) {
-					costProfileMap.put(inputPort, costInformation.getMarginalCosts());
-				} else {
-					costProfileMap.put(port, inputCarrier.getCost());
+//            if (port instanceof InPort) {
+                GenericProfile portCost = port.getCarrier().getCost();
+                if (portCost != null) {
+                    costProfileMap.put(port, portCost);
 				}
-			}
+//            }
 		}
 
 		EList<AbstractBehaviour> conversionBehaviours = conversion.getBehaviour();
@@ -367,12 +368,14 @@ public class AbstractBasicConversionNode extends Node {
 
 	private void updateCost(Horizon now) {
 		Double aggregateCost = Double.NaN;
-		if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
+        if (marginalCostProfile != null) {
+            aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+        } else if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
 			double costSum = 0.0;
 			for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
 				Port inPort = portCostPair.getKey();
 				GenericProfile costProfile = portCostPair.getValue();
-				Double cost = getDefaultMarginalCost();
+                Double cost = 0.0;
 				double ratio = 1.0;
 				if (costProfile != null) {
 					cost = Commons.aggregateCost(Commons.readProfile(costProfile, now));

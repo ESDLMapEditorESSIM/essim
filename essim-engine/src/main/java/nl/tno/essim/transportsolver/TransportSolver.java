@@ -427,6 +427,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 		// Send demand functions upwards
 		BidFunction summedFunction = tree.aggregateDemandFunction();
+		log.debug("Summed function: {}", summedFunction);
+
 
 		// Allocate devices and collect observations
 		ArrayList<Observation> observations = new ArrayList<Observation>();
