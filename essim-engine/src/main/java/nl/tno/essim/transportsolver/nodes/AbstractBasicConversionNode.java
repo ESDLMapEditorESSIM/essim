@@ -61,7 +61,9 @@ import nl.tno.essim.time.Horizon;
 public class AbstractBasicConversionNode extends Node {
 
     protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
-    protected static final boolean DISABLE_PRICE_BASED_BID_DECISIONS = System.getenv("DISABLE_PRICE_BASED_BID_DECISIONS") != null;
+    @Getter
+    @Setter
+    private static boolean disablePriceBasedBidDecisions = System.getenv("DISABLE_PRICE_BASED_BID_DECISIONS") != null;
 
     protected AbstractBasicConversion conversion;
     protected double power;
@@ -221,7 +223,7 @@ public class AbstractBasicConversionNode extends Node {
     }
 
     private boolean marketPricesAllowBid(Horizon now) {
-        if (DISABLE_PRICE_BASED_BID_DECISIONS) {
+        if (disablePriceBasedBidDecisions) {
             return true;
         }
         Set<Entry<Port, Double>> entries = ratioMap.entrySet();
@@ -388,7 +390,7 @@ public class AbstractBasicConversionNode extends Node {
                         ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
                     }
                 }
-                costSum += cost * ratio;
+                costSum += cost / ratio;
             }
             if (costSum != 0.0) {
                 aggregateCost = costSum;
