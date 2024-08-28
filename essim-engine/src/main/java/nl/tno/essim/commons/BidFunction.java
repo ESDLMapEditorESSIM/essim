@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
@@ -56,11 +57,11 @@ public class BidFunction {
     @Getter
     @Setter
     private double marginalCost = 0.0;
-    private final double minPrice;
-    private final double maxPrice;
-    private final double minDeltaPrice;
+    private final BigDecimal minPrice;
+    private final BigDecimal maxPrice;
+    private final BigDecimal minDeltaPrice;
 
-    public BidFunction(double minPrice, double maxPrice, double minDeltaPrice, List<BidFunction.Point> list) {
+    private BidFunction(BigDecimal minPrice, BigDecimal maxPrice, BigDecimal minDeltaPrice, List<BidFunction.Point> list) {
         this.minPrice = minPrice;
         this.maxPrice = maxPrice;
         this.minDeltaPrice = minDeltaPrice;
@@ -69,9 +70,9 @@ public class BidFunction {
     }
 
     public BidFunction(double minPrice, double maxPrice, double minDeltaPrice, double[]... pointsList) {
-        this.minPrice = minPrice;
-        this.maxPrice = maxPrice;
-        this.minDeltaPrice = minDeltaPrice;
+        this.minPrice = BigDecimal.valueOf(minPrice);
+        this.maxPrice = BigDecimal.valueOf(maxPrice);
+        this.minDeltaPrice = BigDecimal.valueOf(minDeltaPrice);
         points = new ArrayList<BidFunction.Point>();
         for (double[] point : pointsList) {
             points.add(new Point(point[0], point[1]));
@@ -82,10 +83,10 @@ public class BidFunction {
     private void verifyAndUpdateBitCurve() {
         Collections.sort(points);
 
-        if (points.get(0).price.doubleValue() < minPrice) {
+        if (points.get(0).price.compareTo(minPrice) < 0) {
             // Rounding stuff
-            if (points.get(0).price.abs().doubleValue() < minDeltaPrice / 2) {
-                points.get(0).price = BigDecimal.ZERO;
+            if (points.get(0).price.subtract(minPrice).abs().compareTo(minDeltaPrice.divide(BigDecimal.TWO, MathContext.DECIMAL128)) < 0) {
+                points.get(0).price = minPrice;
             } else {
                 throw new IllegalArgumentException("Invalid bidcurve: price < " + minPrice + ": " + points);
             }
@@ -95,14 +96,13 @@ public class BidFunction {
             Point bidCurvePoint = i.previous();
             if (previous != null) {
 
-                if (previous.price.subtract(bidCurvePoint.price).abs().doubleValue() <= minDeltaPrice) {
+                if (previous.price.subtract(bidCurvePoint.price).abs().compareTo(minDeltaPrice) <= 0) {
                     if (previous.power.subtract(bidCurvePoint.power).abs().doubleValue() <= DELTA_POWER_THRESHOLD) {
                         // We don't need double points
                         i.remove();
                         continue;
                     }
-                    bidCurvePoint.price = previous.price
-                            .subtract(new BigDecimal(minDeltaPrice, MathContext.DECIMAL128));
+                    bidCurvePoint.price = previous.price.subtract(minDeltaPrice);
                 }
                 BigDecimal powerDelta = previous.power.subtract(bidCurvePoint.power);
                 // Correct minor errors
@@ -152,7 +152,9 @@ public class BidFunction {
         if (target.compareTo(end.price) > 0) {
             return getPowerAtMaxPrice(price, end);
         }
-        return getPowerAtPrice(target, begin, end).doubleValue();
+        double v = getPowerAtPrice(target, begin, end).doubleValue();
+        log.debug("Allocation: {} at {} for {}", v, price, toJsonArray());
+        return v;
     }
 
     public double findPriceFromCurve(double demand) {
@@ -176,7 +178,7 @@ public class BidFunction {
             return begin.price.doubleValue();
         }
         if (power.compareTo(end.power) < 0) {
-            return maxPrice;
+            return maxPrice.doubleValue();
         }
         return getPriceAtPower(demand, begin, end);
     }
@@ -209,7 +211,7 @@ public class BidFunction {
         return Collections.unmodifiableList(points);
     }
 
-    private static BigDecimal getPowerAtPrice(BigDecimal price, Point begin, Point end) {
+    private static BigDecimal getPowerAtPrice(@NotNull BigDecimal price, @NotNull Point begin, @NotNull Point end) {
         BigDecimal fraction;
         if (begin.price.equals(end.price)) {
             fraction = BigDecimal.ONE;
@@ -237,7 +239,7 @@ public class BidFunction {
         Point previous2 = null;
         for (; ; ) {
 
-            if (p1.price.subtract(p2.price).abs().doubleValue() < c1.minDeltaPrice) {
+            if (p1.price.subtract(p2.price).abs().compareTo(c1.minDeltaPrice) < 0) {
                 BigDecimal price = p1.price.add(p2.price).divide(BigDecimal.TWO, MathContext.DECIMAL128);
                 combined.add(new Point(price, p1.power.add(p2.power)));
                 if (i1.hasNext() && i2.hasNext()) {
