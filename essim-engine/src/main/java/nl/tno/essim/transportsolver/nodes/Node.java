@@ -65,7 +65,9 @@ public abstract class Node implements INode {
     protected Horizon now;
     protected Port connectedPort;
 
-    /** these are set by {@link #createBidCurve(long, Horizon, Market)} **/
+    /**
+     * these are set by {@link #createBidCurve(long, Horizon, Market)}
+     **/
     private double minMarketPrice;
     private double maxMarketPrice;
     private double deltaPrice;
@@ -163,7 +165,7 @@ public abstract class Node implements INode {
             BidFunction demandFunction = getDemandFunction();
             if (demandFunction == null) {
                 demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-                        new double[][]{{minMarketPrice, 0.0}, {maxMarketPrice, 0.0}});
+                        new double[][]{{minMarketPrice, 0.0}, {maxMarketPrice, -BidFunction.DELTA_POWER.doubleValue()}});
                 setDemandFunction(demandFunction);
             }
             return demandFunction;
@@ -249,42 +251,58 @@ public abstract class Node implements INode {
     }
 
     public void makeInflexibleProductionFunction(double emax) {
+        if (emax <= BidFunction.DELTA_POWER.doubleValue()) {
+            emax = 0;
+        }
         energy = -emax;
 
         demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-                new double[][]{{minMarketPrice, energy}, {maxMarketPrice, energy}});
+                new double[][]{{minMarketPrice, energy}, {maxMarketPrice, energy - BidFunction.DELTA_POWER.doubleValue()}});
         demandFunction.setMarginalCost(0.0); // no marginal cost to produce?
     }
 
     public void makeInflexibleConsumptionFunction(double emax) {
+        if (emax <= BidFunction.DELTA_POWER.doubleValue()) {
+            emax = 0;
+        }
         energy = emax;
 
-        demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-                new double[][]{{minMarketPrice, energy}, {maxMarketPrice, energy}});
+            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
+                    new double[][]{{minMarketPrice, energy + BidFunction.DELTA_POWER.doubleValue()}, {maxMarketPrice, energy}});
         demandFunction.setMarginalCost(0.0); // no marginal cost to consume?
     }
 
     public void makeAdjustableProductionFunction(double emax) {
         energy = -emax;
-
-        demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
-                {minMarketPrice, 0.0}, {cost, 0.0}, {cost + deltaPrice, energy}, {maxMarketPrice, energy}});
+        if (Math.abs(energy) <= BidFunction.DELTA_POWER.doubleValue() * 3) {
+            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
+                    {minMarketPrice, 0.0}, {cost, -BidFunction.DELTA_POWER.doubleValue()}, {cost + deltaPrice, -2 * BidFunction.DELTA_POWER.doubleValue()}, {maxMarketPrice, -3 * BidFunction.DELTA_POWER.doubleValue()}});
+        } else {
+            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
+                    {minMarketPrice, 0.0}, {cost, -BidFunction.DELTA_POWER.doubleValue()}, {cost + deltaPrice, energy}, {maxMarketPrice, energy - BidFunction.DELTA_POWER.doubleValue()}});
+        }
         demandFunction.setMarginalCost(cost);
     }
 
     public void makeAdjustableConsumptionFunction(double emax) {
         energy = emax;
-        demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
-                {minMarketPrice, energy}, {cost, energy}, {cost + deltaPrice, 0}, {maxMarketPrice, 0}});
+        if (energy <= BidFunction.DELTA_POWER.doubleValue() * 3) {
+            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
+                    {minMarketPrice, 3 * BidFunction.DELTA_POWER.doubleValue()},
+                    {cost, 2 * BidFunction.DELTA_POWER.doubleValue()},
+                    {cost + deltaPrice, BidFunction.DELTA_POWER.doubleValue()},
+                    {maxMarketPrice, 0}});
+
+        } else {
+
+            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
+                    {minMarketPrice, energy + BidFunction.DELTA_POWER.doubleValue()},
+                    {cost, energy},
+                    {cost + deltaPrice, BidFunction.DELTA_POWER.doubleValue()},
+                    {maxMarketPrice, 0}});
+        }
         demandFunction.setMarginalCost(cost);
-//		demandFunction.addPoint(minMarketPrice, energy);
-//		demandFunction.addPoint(0.0, energy);
-//		if (cost > 0.0) { // TODO make this work for negative mc
-//			demandFunction.addPoint(cost, 0.0);
-//		}
-//		demandFunction.addPoint(cost, energy);
-//		demandFunction.addPoint(maxMarketPrice, 0.0);
-    }
+   }
 
     public void makeStorageFunction(double ecmax, double edmax, double soc, Double mcCharge, Double mcDischarge) {
 
@@ -301,13 +319,19 @@ public abstract class Node implements INode {
         if (mcDischarge == null || Double.isNaN(mcDischarge)) {
             mcDischarge = Math.min(1.0, 1.05 * cost);
         }
+        if (ecmax < 3 * BidFunction.DELTA_POWER.doubleValue()) {
+            ecmax = 3 * BidFunction.DELTA_POWER.doubleValue();
+        }
+        if (edmax < 3 * BidFunction.DELTA_POWER.doubleValue()) {
+            edmax = 3 * BidFunction.DELTA_POWER.doubleValue();
+        }
 
         demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
                 new double[][]{{minMarketPrice, ecmax},
-                        {Math.max(minMarketPrice, Math.min(mcCharge, maxMarketPrice)), ecmax},
-                        {Math.max(minMarketPrice, Math.min(mcCharge + delta, maxMarketPrice)), 0.0},
-                        {Math.max(minMarketPrice, Math.min(mcDischarge, maxMarketPrice)), 0.0},
-                        {Math.max(minMarketPrice, Math.min(mcDischarge + delta, maxMarketPrice)), -edmax},
+                        {Math.max(minMarketPrice, Math.min(mcCharge, maxMarketPrice)), ecmax - BidFunction.DELTA_POWER.doubleValue()},
+                        {Math.max(minMarketPrice, Math.min(mcCharge + delta, maxMarketPrice)), BidFunction.DELTA_POWER.doubleValue()},
+                        {Math.max(minMarketPrice, Math.min(mcDischarge, maxMarketPrice)), -BidFunction.DELTA_POWER.doubleValue()},
+                        {Math.max(minMarketPrice, Math.min(mcDischarge + delta, maxMarketPrice)), -edmax + BidFunction.DELTA_POWER.doubleValue()},
                         {maxMarketPrice, -edmax}});
         demandFunction.setMarginalCost(mcCharge);
     }
@@ -331,7 +355,9 @@ public abstract class Node implements INode {
         } else if (b == null) {
             return a;
         }
-        return BidFunction.sumCurves(a, b);
+        BidFunction summedCurves = BidFunction.sumCurves(a, b);
+        log.trace("Adding:\n{}\n{}\nRESULT:\n{}", a, b, summedCurves);
+        return summedCurves;
     }
 
     private void propagate(double price, List<Observation> observations, EssimTime timestamp) {

@@ -1,38 +1,32 @@
 package nl.tno.essim.tests;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map.Entry;
-
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-
-import esdl.Asset;
-import esdl.EnergyAsset;
-import esdl.EnergySystem;
-import esdl.GasHeater;
-import esdl.HeatPump;
-import esdl.HeatingDemand;
-import esdl.Import;
-import esdl.Port;
+import esdl.*;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import tech.tablesaw.api.DoubleColumn;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.io.csv.CsvWriteOptions;
 import tech.tablesaw.io.csv.CsvWriter;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map.Entry;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DynamicPricesTest2 {
 
@@ -52,6 +46,9 @@ class DynamicPricesTest2 {
 						
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulation sim = new EssimSimulation();
+		if (System.getenv("INFLUX_URL") != null) {
+			sim.setInfluxURL(System.getenv("INFLUX_URL"));
+		}
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 2 ,19, 0,0,0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(  LocalDateTime.of(2019, 2, 20, 0,0,0)));
 		Market market = new Market();
@@ -68,7 +65,12 @@ class DynamicPricesTest2 {
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
-		
+
+		String grafanaDashboard = "";
+		if (System.getenv("INFLUX_URL") != null) {
+            grafanaDashboard = essimEngine.createGrafanaDashboard();
+		}
+
 		essimEngine.startSimulation();
 		while (mongo.getSimulationStatus(simId).getState() != Status.COMPLETE) {
 			Thread.sleep(100);
@@ -78,18 +80,11 @@ class DynamicPricesTest2 {
 		EnergySystem es = essimEngine.getEnergySystem();
 		EList<Asset> assets = es.getInstance().get(0).getArea().getAsset();
 		assets.stream().filter(a -> a instanceof EnergyAsset).map(EnergyAsset.class::cast).forEach(a -> {
-			//if (a.getName().equals("ElectricityDemand_c106")) {
 			for (Port p: a.getPort()) {
-				//a.getPort().stream().filter(InPort.class::isInstance).map(InPort.class::cast).findFirst().ifPresent(inPort -> {
 					System.out.println(a.getName() + " " + p.getProfile());
-				//});
-			//}
 			}
 		});
 		
-		// Export: 7e47b79a-4cde-4db9-81ae-67fd40a92de0
-		// The network does not have allocationPower,
-		//String export_id = "7e47b79a-4cde-4db9-81ae-67fd40a92de0";
 		HashMap<String,Table> tables = inMemoryObservationConsumer.getAssets();
 		System.out.println("Assets: " + tables.keySet());
 		System.out.println("Totals:");
@@ -106,7 +101,10 @@ class DynamicPricesTest2 {
 		// validate output of simulation by iterating through the tables
 		for (Entry<String, Table> entry : tables.entrySet()) {			
 			Table table = entry.getValue();
-			double total = table.doubleColumn("allocationEnergy").sum();
+			DoubleColumn allocationEnergy = table.doubleColumn("allocationEnergy");
+			System.out.println("\t" + entry.getKey());
+			System.out.println(Arrays.toString(allocationEnergy.asDoubleArray()));
+			double total = allocationEnergy.sum();
 			System.out.println("- " + table.stringColumn("assetName").get(0) + ": " + total);
 			Resource eResource = es.eResource();
 			EnergyAsset asset = (EnergyAsset)eResource.getEObject(entry.getKey());
@@ -118,16 +116,16 @@ class DynamicPricesTest2 {
 				assertEquals(-55E6, total, 1E6);
 			} else if (asset instanceof HeatPump) {
 				var carriers = table.stringColumn("carrierName");				
-				var total_elek = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Elek")).sum();
-				var total_heat = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Heat")).sum();
+				var total_elek = allocationEnergy.where(carriers.equalsIgnoreCase("Elek")).sum();
+				var total_heat = allocationEnergy.where(carriers.equalsIgnoreCase("Heat")).sum();
 				System.out.println("Total HP Elek:" + total_elek);
 				System.out.println("Total HP Heat:" + total_heat);
 				assertEquals(55E6, total_elek, 1E6);
 				assertEquals(-110E6, total_heat, 1E6);
 			} else if (asset instanceof GasHeater) {
 				var carriers = table.stringColumn("carrierName");				
-				var total_gas = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Gas")).sum();
-				var total_heat = table.doubleColumn("allocationEnergy").where(carriers.equalsIgnoreCase("Heat")).sum();
+				var total_gas = allocationEnergy.where(carriers.equalsIgnoreCase("Gas")).sum();
+				var total_heat = allocationEnergy.where(carriers.equalsIgnoreCase("Heat")).sum();
 				System.out.println("Total GH gas:" + total_gas);
 				System.out.println("Total GH Heat:" + total_heat);
 				assertEquals(147E6, total_gas, 1E6);
@@ -135,7 +133,7 @@ class DynamicPricesTest2 {
 			}
 			csvWriter.write(table, CsvWriteOptions.builder("output/" + asset.getName() + ".csv").separator(';').build());
 		}
-		
+
 		HashMap<String,Table> networks = inMemoryObservationConsumer.getNetworks();
 		for (Entry<String, Table> network : networks.entrySet()) {
 			Table table = network.getValue();
@@ -144,5 +142,9 @@ class DynamicPricesTest2 {
 			assertEquals(0.0, sum, 1.0); // max 1 joule difference
 			csvWriter.write(table, CsvWriteOptions.builder("output/" + network.getKey() + ".csv").separator(';').build());
 		}
+		if (System.getenv("INFLUX_URL") != null) {
+			System.out.println("Grafana  dashboard at: " + grafanaDashboard);
+		}
+
 	}
 }
