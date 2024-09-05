@@ -5,18 +5,15 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 @EqualsAndHashCode
 @Slf4j
 public class BidFunction {
-    public final static double DELTA_POWER_THRESHOLD = 10;
-    private final static BigDecimal DELTA_POWER = new BigDecimal("1e-6", MathContext.DECIMAL128);
+    public final static BigDecimal DELTA_POWER = new BigDecimal("1e-6", MathContext.DECIMAL128);
 
     @EqualsAndHashCode
     public static class Point implements Comparable<Point> {
@@ -52,74 +49,54 @@ public class BidFunction {
         }
     }
 
-    private List<Point> points;
+    private final List<Point> points;
     @Getter
     @Setter
     private double marginalCost = 0.0;
-    private final double minPrice;
-    private final double maxPrice;
-    private final double minDeltaPrice;
+    private final BigDecimal minPrice;
+    private final BigDecimal maxPrice;
+    private final BigDecimal minDeltaPrice;
+    private final BigDecimal mergePriceDelta;
 
-    public BidFunction(double minPrice, double maxPrice, double minDeltaPrice, List<BidFunction.Point> list) {
+    private BidFunction(BigDecimal minPrice, BigDecimal maxPrice, BigDecimal minDeltaPrice, List<BidFunction.Point> list) {
         this.minPrice = minPrice;
         this.maxPrice = maxPrice;
         this.minDeltaPrice = minDeltaPrice;
-        this.points = new ArrayList<BidFunction.Point>(list);
+        this.mergePriceDelta = this.minDeltaPrice.divide(BigDecimal.valueOf(100), MathContext.DECIMAL128);
+        this.points = new ArrayList<>(list);
         verifyAndUpdateBitCurve();
     }
 
     public BidFunction(double minPrice, double maxPrice, double minDeltaPrice, double[]... pointsList) {
-        this.minPrice = minPrice;
-        this.maxPrice = maxPrice;
-        this.minDeltaPrice = minDeltaPrice;
-        points = new ArrayList<BidFunction.Point>();
-        for (double[] point : pointsList) {
-            points.add(new Point(point[0], point[1]));
-        }
-        verifyAndUpdateBitCurve();
+        this(BigDecimal.valueOf(minPrice), BigDecimal.valueOf(maxPrice), BigDecimal.valueOf(minDeltaPrice), Arrays.stream(pointsList).map(p -> new Point(BigDecimal.valueOf(p[0]), BigDecimal.valueOf(p[1]))).toList());
     }
 
     private void verifyAndUpdateBitCurve() {
         Collections.sort(points);
 
-        if (points.get(0).price.doubleValue() < minPrice) {
+        if (points.get(0).price.compareTo(minPrice) < 0) {
             // Rounding stuff
-            if (points.get(0).price.abs().doubleValue() < minDeltaPrice / 2) {
-                points.get(0).price = BigDecimal.ZERO;
+            if (points.get(0).price.subtract(minPrice).abs().compareTo(mergePriceDelta) < 0) {
+                points.get(0).price = minPrice;
             } else {
                 throw new IllegalArgumentException("Invalid bidcurve: price < " + minPrice + ": " + points);
             }
         }
         Point previous = null;
-        for (var i = points.listIterator(points.size()); i.hasPrevious(); ) {
-            Point bidCurvePoint = i.previous();
+        for (var i = points.iterator(); i.hasNext(); ) {
+            Point point = i.next();
             if (previous != null) {
-
-                if (previous.price.subtract(bidCurvePoint.price).abs().doubleValue() <= minDeltaPrice) {
-                    if (previous.power.subtract(bidCurvePoint.power).abs().doubleValue() <= DELTA_POWER_THRESHOLD) {
-                        // We don't need double points
-                        i.remove();
-                        continue;
-                    }
-                    bidCurvePoint.price = previous.price
-                            .subtract(new BigDecimal(minDeltaPrice, MathContext.DECIMAL128));
-                }
-                BigDecimal powerDelta = previous.power.subtract(bidCurvePoint.power);
-                // Correct minor errors
-                BigDecimal minDeltaPower = new BigDecimal(DELTA_POWER_THRESHOLD, MathContext.DECIMAL128);
-                if (powerDelta.compareTo(BigDecimal.ZERO) >= 0 && powerDelta.compareTo(minDeltaPower) <= 0) {
-                    bidCurvePoint.power = previous.power.add(DELTA_POWER);
-                } else if (powerDelta.compareTo(minDeltaPower) > 0) {
-                    // Don't allow big errors
-                    throw new InvalidBidCurveException("BidCurve is not mathematically decreasing: " + this);
+                BigDecimal powerDelta = point.power.subtract(previous.power);
+                if (powerDelta.compareTo(BigDecimal.ZERO) >= 0) {
+                    throw new InvalidBidCurveException("BidCurve is not mathematically decreasing: {}" + this);
                 }
             }
-            previous = bidCurvePoint;
+            previous = point;
         }
     }
 
     private static double getPowerAtMaxPrice(double price, Point lastPoint) {
-        return lastPoint.power.doubleValue() - ((price - lastPoint.price.doubleValue()) / price) * DELTA_POWER_THRESHOLD;
+        return lastPoint.power.doubleValue() - ((price - lastPoint.price.doubleValue()) / price) * DELTA_POWER.doubleValue();
     }
 
     private static double getPriceAtPower(double target, Point begin, Point end) {
@@ -152,7 +129,9 @@ public class BidFunction {
         if (target.compareTo(end.price) > 0) {
             return getPowerAtMaxPrice(price, end);
         }
-        return getPowerAtPrice(target, begin, end).doubleValue();
+        double v = getPowerAtPrice(target, begin, end).doubleValue();
+        log.trace("Allocation: {} at {} for {}", v, price, toJsonArray());
+        return v;
     }
 
     public double findPriceFromCurve(double demand) {
@@ -161,7 +140,7 @@ public class BidFunction {
         Point end = null;
         for (Point p : points) {
             end = p;
-            if (p.power.compareTo(power) < 0) {
+            if (p.power.compareTo(power) <= 0) {
                 break;
             }
             begin = p;
@@ -176,7 +155,7 @@ public class BidFunction {
             return begin.price.doubleValue();
         }
         if (power.compareTo(end.power) < 0) {
-            return maxPrice;
+            return maxPrice.doubleValue();
         }
         return getPriceAtPower(demand, begin, end);
     }
@@ -194,7 +173,7 @@ public class BidFunction {
     public String toJsonArray() {
         StringBuilder sb = new StringBuilder();
         for (BidFunction.Point point : getPoints()) {
-            sb.append(sb.length() == 0 ? '[' : ',');
+            sb.append(sb.isEmpty() ? '[' : ',');
             sb.append('[');
             sb.append(point.getPrice());
             sb.append(',');
@@ -209,15 +188,14 @@ public class BidFunction {
         return Collections.unmodifiableList(points);
     }
 
-    private static BigDecimal getPowerAtPrice(BigDecimal price, Point begin, Point end) {
+    private static BigDecimal getPowerAtPrice(@NotNull BigDecimal price, @NotNull Point begin, @NotNull Point end) {
         BigDecimal fraction;
         if (begin.price.equals(end.price)) {
             fraction = BigDecimal.ONE;
         } else {
             fraction = (price.subtract(begin.price)).divide(end.price.subtract(begin.price), MathContext.DECIMAL128);
         }
-        BigDecimal power = begin.power.add(fraction.multiply(end.power.subtract(begin.power)));
-        return power;
+        return begin.power.add(fraction.multiply(end.power.subtract(begin.power)));
     }
 
     public static BidFunction sumCurves(BidFunction c1, BidFunction c2) {
@@ -237,7 +215,7 @@ public class BidFunction {
         Point previous2 = null;
         for (; ; ) {
 
-            if (p1.price.subtract(p2.price).abs().doubleValue() < c1.minDeltaPrice) {
+            if (p1.price.subtract(p2.price).abs().compareTo(c1.mergePriceDelta) < 0) {
                 BigDecimal price = p1.price.add(p2.price).divide(BigDecimal.TWO, MathContext.DECIMAL128);
                 combined.add(new Point(price, p1.power.add(p2.power)));
                 if (i1.hasNext() && i2.hasNext()) {

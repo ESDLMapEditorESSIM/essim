@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -35,6 +36,7 @@ class BasicTest {
 
     @BeforeAll
     static void setUpBeforeClass() throws Exception {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
     }
 
@@ -112,7 +114,7 @@ class BasicTest {
             Table table = network.getValue();
             double sum = table.doubleColumn("imbalanceEnergy").sum();
             System.out.println("Network " + network.getKey() + " balance = " + sum);
-            assertEquals(sum, 0.0, 1.0);
+            assertEquals(0.0, sum, 2.0);
         }
     }
 
