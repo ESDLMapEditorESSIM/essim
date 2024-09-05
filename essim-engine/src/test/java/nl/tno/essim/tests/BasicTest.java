@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -35,6 +36,7 @@ class BasicTest {
 
     @BeforeAll
     static void setUpBeforeClass() throws Exception {
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
     }
 
