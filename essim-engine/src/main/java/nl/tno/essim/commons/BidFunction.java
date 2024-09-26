@@ -67,6 +67,10 @@ public class BidFunction {
         verifyAndUpdateBitCurve();
     }
 
+    public BidFunction(BigDecimal minPrice, BigDecimal maxPrice, BigDecimal minDeltaPrice, BigDecimal[]... pointsList) {
+        this(minPrice, maxPrice, minDeltaPrice, Arrays.stream(pointsList).map(p -> new Point(p[0], p[1])).toList());
+    }
+
     public BidFunction(double minPrice, double maxPrice, double minDeltaPrice, double[]... pointsList) {
         this(BigDecimal.valueOf(minPrice), BigDecimal.valueOf(maxPrice), BigDecimal.valueOf(minDeltaPrice), Arrays.stream(pointsList).map(p -> new Point(BigDecimal.valueOf(p[0]), BigDecimal.valueOf(p[1]))).toList());
     }

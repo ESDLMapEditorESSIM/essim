@@ -37,6 +37,7 @@ import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -255,10 +256,16 @@ public abstract class Node implements INode {
             emax = 0;
         }
         energy = -emax;
-
-        demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-                new double[][]{{minMarketPrice, energy}, {maxMarketPrice, energy - BidFunction.DELTA_POWER.doubleValue()}});
-        demandFunction.setMarginalCost(0.0); // no marginal cost to produce?
+        BigDecimal bdEnergy = BigDecimal.valueOf(energy);
+        demandFunction = new BidFunction(
+                BigDecimal.valueOf(minMarketPrice),
+                BigDecimal.valueOf(maxMarketPrice),
+                BigDecimal.valueOf(deltaPrice),
+                new BigDecimal[][]{
+                        {BigDecimal.valueOf(minMarketPrice), bdEnergy},
+                        {BigDecimal.valueOf(maxMarketPrice), bdEnergy.subtract(BidFunction.DELTA_POWER)}
+                });
+        demandFunction.setMarginalCost(0.0); // No marginal cost to produce?
     }
 
     public void makeInflexibleConsumptionFunction(double emax) {
@@ -266,74 +273,107 @@ public abstract class Node implements INode {
             emax = 0;
         }
         energy = emax;
-
-            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-                    new double[][]{{minMarketPrice, energy + BidFunction.DELTA_POWER.doubleValue()}, {maxMarketPrice, energy}});
-        demandFunction.setMarginalCost(0.0); // no marginal cost to consume?
+        BigDecimal dbEnergy = BigDecimal.valueOf(energy);
+        demandFunction = new BidFunction(
+                BigDecimal.valueOf(minMarketPrice),
+                BigDecimal.valueOf(maxMarketPrice),
+                BigDecimal.valueOf(deltaPrice),
+                new BigDecimal[][]{
+                        {BigDecimal.valueOf(minMarketPrice), dbEnergy.add(BidFunction.DELTA_POWER)},
+                        {BigDecimal.valueOf(maxMarketPrice), dbEnergy}
+                });
+        demandFunction.setMarginalCost(0.0); // No marginal cost to consume?
     }
 
     public void makeAdjustableProductionFunction(double emax) {
         energy = -emax;
+        BigDecimal bdEnergy = BigDecimal.valueOf(energy);
         if (Math.abs(energy) <= BidFunction.DELTA_POWER.doubleValue() * 3) {
-            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
-                    {minMarketPrice, 0.0}, {cost, -BidFunction.DELTA_POWER.doubleValue()}, {cost + deltaPrice, -2 * BidFunction.DELTA_POWER.doubleValue()}, {maxMarketPrice, -3 * BidFunction.DELTA_POWER.doubleValue()}});
+            demandFunction = new BidFunction(
+                    BigDecimal.valueOf(minMarketPrice),
+                    BigDecimal.valueOf(maxMarketPrice),
+                    BigDecimal.valueOf(deltaPrice),
+                    new BigDecimal[][]{
+                            {BigDecimal.valueOf(minMarketPrice), BigDecimal.ZERO},
+                            {BigDecimal.valueOf(cost), BidFunction.DELTA_POWER.negate()},
+                            {BigDecimal.valueOf(cost).add(BigDecimal.valueOf(deltaPrice)), BidFunction.DELTA_POWER.multiply(BigDecimal.valueOf(2)).negate()},
+                            {BigDecimal.valueOf(maxMarketPrice), BidFunction.DELTA_POWER.multiply(BigDecimal.valueOf(3)).negate()},
+                    });
         } else {
-            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
-                    {minMarketPrice, 0.0}, {cost, -BidFunction.DELTA_POWER.doubleValue()}, {cost + deltaPrice, energy}, {maxMarketPrice, energy - BidFunction.DELTA_POWER.doubleValue()}});
+            demandFunction = new BidFunction(
+                    BigDecimal.valueOf(minMarketPrice),
+                    BigDecimal.valueOf(maxMarketPrice),
+                    BigDecimal.valueOf(deltaPrice),
+                    new BigDecimal[][]{
+                            {BigDecimal.valueOf(minMarketPrice), BigDecimal.ZERO},
+                            {BigDecimal.valueOf(cost), BidFunction.DELTA_POWER.negate()},
+                            {BigDecimal.valueOf(cost).add(BigDecimal.valueOf(deltaPrice)), bdEnergy},
+                            {BigDecimal.valueOf(maxMarketPrice), bdEnergy.subtract(BidFunction.DELTA_POWER)},
+                    });
         }
         demandFunction.setMarginalCost(cost);
     }
 
     public void makeAdjustableConsumptionFunction(double emax) {
         energy = emax;
+        BigDecimal bdEnergy = BigDecimal.valueOf(emax);
         if (energy <= BidFunction.DELTA_POWER.doubleValue() * 3) {
-            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
-                    {minMarketPrice, 3 * BidFunction.DELTA_POWER.doubleValue()},
-                    {cost, 2 * BidFunction.DELTA_POWER.doubleValue()},
-                    {cost + deltaPrice, BidFunction.DELTA_POWER.doubleValue()},
-                    {maxMarketPrice, 0}});
-
+            demandFunction = new BidFunction(
+                    BigDecimal.valueOf(minMarketPrice),
+                    BigDecimal.valueOf(maxMarketPrice),
+                    BigDecimal.valueOf(deltaPrice),
+                    new BigDecimal[][]{
+                            {BigDecimal.valueOf(minMarketPrice), BidFunction.DELTA_POWER.multiply(BigDecimal.valueOf(3))},
+                            {BigDecimal.valueOf(cost), BidFunction.DELTA_POWER.multiply(BigDecimal.valueOf(2))},
+                            {BigDecimal.valueOf(cost).add(BigDecimal.valueOf(deltaPrice)), BidFunction.DELTA_POWER},
+                            {BigDecimal.valueOf(maxMarketPrice), BigDecimal.ZERO}
+                    });
         } else {
-
-            demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice, new double[][]{
-                    {minMarketPrice, energy + BidFunction.DELTA_POWER.doubleValue()},
-                    {cost, energy},
-                    {cost + deltaPrice, BidFunction.DELTA_POWER.doubleValue()},
-                    {maxMarketPrice, 0}});
+            demandFunction = new BidFunction(
+                    BigDecimal.valueOf(minMarketPrice),
+                    BigDecimal.valueOf(maxMarketPrice),
+                    BigDecimal.valueOf(deltaPrice),
+                    new BigDecimal[][]{
+                            {BigDecimal.valueOf(minMarketPrice), bdEnergy.add(BidFunction.DELTA_POWER)},
+                            {BigDecimal.valueOf(cost), bdEnergy},
+                            {BigDecimal.valueOf(cost).add(BigDecimal.valueOf(deltaPrice)), BidFunction.DELTA_POWER},
+                            {BigDecimal.valueOf(maxMarketPrice), BigDecimal.ZERO}
+                    });
         }
         demandFunction.setMarginalCost(cost);
-   }
+    }
 
     public void makeStorageFunction(double ecmax, double edmax, double soc, Double mcCharge, Double mcDischarge) {
+        BigDecimal bdEcmax = BigDecimal.valueOf(ecmax);
+        BigDecimal bdEdmax = BigDecimal.valueOf(edmax);
 
-        // Marginal cost of storage moves inversely as SOC.
-        // Higher the SOC, the more eager it is to start producing.
-        // cost = 0.9 - 0.8 * soc;
-        // cost = 1 - 0.9 * soc * soc;
-        // cost = Math.max(0, Math.min(1, 1 - soc));
-        double delta = deltaPrice;
-        cost = 0.15 * (maxMarketPrice - minMarketPrice);
-        if (mcCharge == null || Double.isNaN(mcCharge)) {
-            mcCharge = Math.max(0.0, 0.95 * cost);
-        }
-        if (mcDischarge == null || Double.isNaN(mcDischarge)) {
-            mcDischarge = Math.min(1.0, 1.05 * cost);
-        }
+        BigDecimal cost = BigDecimal.valueOf(0.15 * (maxMarketPrice - minMarketPrice));
+        BigDecimal bdMinMarketPrice = BigDecimal.valueOf(minMarketPrice);
+        BigDecimal bdMaxMarketPrice = BigDecimal.valueOf(maxMarketPrice);
+        BigDecimal bdMcCharge = (mcCharge == null || Double.isNaN(mcCharge)) ? cost.multiply(BigDecimal.valueOf(0.95)).max(bdMinMarketPrice) : BigDecimal.valueOf(mcCharge);
+        BigDecimal bdMcDischarge = (mcDischarge == null || Double.isNaN(mcDischarge)) ? cost.multiply(BigDecimal.valueOf(1.05)).min(bdMaxMarketPrice) : BigDecimal.valueOf(mcDischarge);
+
         if (ecmax < 3 * BidFunction.DELTA_POWER.doubleValue()) {
-            ecmax = 3 * BidFunction.DELTA_POWER.doubleValue();
+            bdEcmax = BidFunction.DELTA_POWER.multiply(BigDecimal.valueOf(3));
         }
         if (edmax < 3 * BidFunction.DELTA_POWER.doubleValue()) {
-            edmax = 3 * BidFunction.DELTA_POWER.doubleValue();
+            bdEdmax = BidFunction.DELTA_POWER.multiply(BigDecimal.valueOf(3));
         }
 
-        demandFunction = new BidFunction(minMarketPrice, maxMarketPrice, deltaPrice,
-                new double[][]{{minMarketPrice, ecmax},
-                        {Math.max(minMarketPrice, Math.min(mcCharge, maxMarketPrice)), ecmax - BidFunction.DELTA_POWER.doubleValue()},
-                        {Math.max(minMarketPrice, Math.min(mcCharge + delta, maxMarketPrice)), BidFunction.DELTA_POWER.doubleValue()},
-                        {Math.max(minMarketPrice, Math.min(mcDischarge, maxMarketPrice)), -BidFunction.DELTA_POWER.doubleValue()},
-                        {Math.max(minMarketPrice, Math.min(mcDischarge + delta, maxMarketPrice)), -edmax + BidFunction.DELTA_POWER.doubleValue()},
-                        {maxMarketPrice, -edmax}});
-        demandFunction.setMarginalCost(mcCharge);
+        BigDecimal bdDeltaPrice = BigDecimal.valueOf(deltaPrice);
+        demandFunction = new BidFunction(
+                bdMinMarketPrice,
+                bdMaxMarketPrice,
+                bdDeltaPrice,
+                new BigDecimal[][]{
+                        {bdMinMarketPrice, bdEcmax},
+                        {bdMcCharge.min(bdMaxMarketPrice).max(bdMinMarketPrice), bdEcmax.subtract(BidFunction.DELTA_POWER)},
+                        {bdMcCharge.add(bdDeltaPrice).min(bdMaxMarketPrice).max(bdMinMarketPrice), BidFunction.DELTA_POWER},
+                        {bdMcDischarge.min(bdMaxMarketPrice).max(bdMinMarketPrice), BidFunction.DELTA_POWER.negate()},
+                        {bdMcDischarge.add(bdDeltaPrice).min(bdMaxMarketPrice).max(bdMinMarketPrice), bdEdmax.negate().add(BidFunction.DELTA_POWER)},
+                        {bdMaxMarketPrice, bdEdmax.negate()}
+                });
+        demandFunction.setMarginalCost(bdMcCharge.doubleValue());
     }
 
     @Override
