@@ -451,11 +451,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
         calculateLoadFlow(balancingPrice);
 
-        double balancingPrice = summedFunction.findPriceFromCurve(0.0);
-        double imbalance = summedFunction.findDemandFromCurve(balancingPrice);
-
-        calculateLoadFlow(balancingPrice);
-
 		// Allocate devices and collect observations
 		ArrayList<Observation> observations = new ArrayList<Observation>();
         tree.propagate(balancingPrice, observations, timestamp);
