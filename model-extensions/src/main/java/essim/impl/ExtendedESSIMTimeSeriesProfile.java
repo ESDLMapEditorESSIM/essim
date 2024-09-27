@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
 
-    private Object lock = new Object();
+    private final Object lock = new Object();
     private long profileStart = 0;
     private long stepSize = 0;
 

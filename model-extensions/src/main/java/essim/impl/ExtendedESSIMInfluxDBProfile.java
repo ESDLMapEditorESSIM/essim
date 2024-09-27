@@ -30,8 +30,6 @@ import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.InfluxDBIOException;
 import org.influxdb.dto.QueryResult;
-import org.influxdb.dto.QueryResult.Result;
-import org.influxdb.dto.QueryResult.Series;
 
 import java.io.*;
 import java.time.LocalDateTime;
@@ -44,21 +42,16 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
     private static final String USERNAME_PROP = "username";
     private static final String PASSWORD_PROP = "password";
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private InfluxDB influxClient;
     private TimeSeriesDataCache dataCache;
     private Duration aggregationPrecision;
-    private ProfileCache profileCache;
-    private LocalDateTime simStartDate;
-    private LocalDateTime simEndDate;
     private DataProcessor dataProcessor;
 
     public ExtendedESSIMInfluxDBProfile() {
         super();
-        profileCache = ProfileCache.getInstance();
     }
 
     private InfluxDB connectToInfluxHost() {
-        if (getHost().equals("") || getPort() <= 0) {
+        if (getHost().isEmpty() || getPort() <= 0) {
             throw new IllegalArgumentException("InfluxDB profile not configured correctly: " + this);
         }
         final String serverId = getHost() + ":" + getPort();
@@ -107,8 +100,6 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         }
 
         this.aggregationPrecision = aggregationPrecision;
-        simStartDate = EssimTime.dateToLocalDateTime(from);
-        simEndDate = EssimTime.dateToLocalDateTime(to);
 
         Date profileStartDate = getStartDate();
         Date profileEndDate = getEndDate();
@@ -131,13 +122,11 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         }
         if (getProfileQuantityAndUnit() != null) {
             dataProcessor = new DataProcessor(getProfileQuantityAndUnit(), getMultiplier());
-            fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
-                    getAnnualChangePercentage());
         } else {
             dataProcessor = new DataProcessor(getProfileType(), getMultiplier());
-            fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
-                    getAnnualChangePercentage());
         }
+        fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
+                getAnnualChangePercentage());
     }
 
     /*
@@ -174,20 +163,19 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
             command += filter.startsWith("AND") ? " " + filter : " AND " + filter;
         }
 
-        log.debug("Influx Call for: " + command);
+        log.debug("Influx Call for: {}", command);
         ProfileCacheKey profileCacheKey = new ProfileCacheKey(getHost(), getPort(), getDatabase(), getMeasurement(),
                 getField(), getAnnualChangePercentage());
 
-        synchronized (profileCache) {
-            dataCache = profileCache.getDataCache(profileCacheKey);
+        synchronized (ProfileCache.getInstance()) {
+            dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
             if (dataCache == null) {
-                log.debug("Profile {} is not cached! Proceeding to query InfluxDB!", profileCacheKey);
+                log.debug("Profile {} is not cached, proceeding to query InfluxDB", profileCacheKey);
 
-                influxClient = connectToInfluxHost();
+                try (InfluxDB influxClient = connectToInfluxHost()) {
 
-                QueryResult queryResult = null;
-                while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
-                    try {
+                    QueryResult queryResult = null;
+                    while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
                         connectionAttempts++;
                         EssimQuery query = new EssimQuery(command, database);
                         log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
@@ -196,29 +184,25 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
                             throw new IllegalStateException("Error querying InfluxDB for query " + query.getCommand()
                                     + ", queryError: " + queryResult.getError());
                         }
-                    } catch (InfluxDBIOException e) {
-                        log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
-                    } finally {
-                        influxClient.close();
                     }
-                }
-                if (queryResult == null) {
-                    throw new IllegalArgumentException("Cannot connect to InfluxDB service at [" + getHost() + ":"
-                            + getPort() + "] to query profile with id " + getId() + ". Please verify the URL!");
-                }
-                for (Result result : queryResult.getResults()) {
-                    if (result.getSeries() == null) {
-                        throw new IllegalArgumentException("No results returned on querying " + command + " at database ["
-                                + database + "] at [" + getHost() + ":" + getPort() + "] for profile with id " + getId()
-                                + ". Please verify the database name, measurement and field names and timeframe of query!");
+                    for (QueryResult.Result result : queryResult.getResults()) {
+                        if (result.getSeries() == null) {
+                            throw new IllegalArgumentException("No results returned on querying " + command + " at database ["
+                                    + database + "] at [" + getHost() + ":" + getPort() + "] for profile with id " + getId()
+                                    + ". Please verify the database name, measurement and field names and timeframe of query!");
+                        }
+                        for (QueryResult.Series series : result.getSeries()) {
+                            log.debug("Query returned {} values for {}", series.getValues().size(), profileCacheKey);
+                            dataCache = new TimeSeriesDataCache(field, series.getValues(),
+                                    annualChange);
+                        }
                     }
-                    for (Series series : result.getSeries()) {
-                        log.debug("Query returned {} values for {}", series.getValues().size(), profileCacheKey);
-                        dataCache = new TimeSeriesDataCache(field, series.getValues(), simStartDate, simEndDate,
-                                simulationStepLength, annualChange);
-                    }
+                    ProfileCache.getInstance().cache(profileCacheKey, dataCache);
+                } catch (InfluxDBIOException e) {
+                    log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
                 }
-                profileCache.cache(profileCacheKey, dataCache);
+            } else {
+                log.debug("Using profile {} from cache", profileCacheKey);
             }
         }
     }

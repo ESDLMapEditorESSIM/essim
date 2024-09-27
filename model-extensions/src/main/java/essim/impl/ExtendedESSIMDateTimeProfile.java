@@ -36,7 +36,7 @@ import nl.tno.essim.util.Converter;
 @Slf4j
 public class ExtendedESSIMDateTimeProfile extends ESSIMDateTimeProfileImpl {
 
-	private HashMap<LocalDateTime, Double> profile;
+	private final HashMap<LocalDateTime, Double> profile;
 
 	public ExtendedESSIMDateTimeProfile() {
 		profile = new LinkedHashMap<LocalDateTime, Double>();

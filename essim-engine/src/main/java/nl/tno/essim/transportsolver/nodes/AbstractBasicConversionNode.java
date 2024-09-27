@@ -256,10 +256,10 @@ public class AbstractBasicConversionNode extends Node {
         }
         if (sumOut < sumIn) {
             // It is too expensive to convert
-            log.debug("{}: generating flat bidcurve ", getConversionName());
+            log.trace("{}: generating flat bidcurve ", getConversionName());
             return false;
         } else {
-            log.debug("{}: generating normal bidcurve ", getConversionName());
+            log.trace("{}: generating normal bidcurve ", getConversionName());
 
         }
         return true;
