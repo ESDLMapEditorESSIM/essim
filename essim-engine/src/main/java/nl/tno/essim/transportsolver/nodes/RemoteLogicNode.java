@@ -36,6 +36,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -139,7 +140,7 @@ public class RemoteLogicNode extends Node {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
         ObjectNode message = ESSimEngine.getObjectMapper().createObjectNode().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
                 .put("price", price).put("carrierId", carrier.getId());
 

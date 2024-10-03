@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.*;
 
 @EqualsAndHashCode
@@ -16,6 +17,7 @@ public class BidFunction {
     public final static BigDecimal DELTA_POWER = new BigDecimal("1e-6", MathContext.DECIMAL128);
 
     @EqualsAndHashCode
+    @Getter
     public static class Point implements Comparable<Point> {
         private BigDecimal price;
         private BigDecimal power;
@@ -38,14 +40,6 @@ public class BidFunction {
         @Override
         public String toString() {
             return "{" + price + ", " + power + "}";
-        }
-
-        public double getPrice() {
-            return price.doubleValue();
-        }
-
-        public double getPower() {
-            return power.doubleValue();
         }
     }
 
@@ -99,29 +93,31 @@ public class BidFunction {
         }
     }
 
-    private static double getPowerAtMaxPrice(double price, Point lastPoint) {
-        return lastPoint.power.doubleValue() - ((price - lastPoint.price.doubleValue()) / price) * DELTA_POWER.doubleValue();
+    private static BigDecimal getPowerAtMaxPrice(BigDecimal price, Point lastPoint) {
+        return lastPoint.power
+                .subtract(price.subtract(lastPoint.price)
+                        .divide(price, RoundingMode.HALF_UP)
+                        .multiply(DELTA_POWER));
     }
 
-    private static double getPriceAtPower(double target, Point begin, Point end) {
+    private static BigDecimal getPriceAtPower(BigDecimal target, Point begin, Point end) {
         BigDecimal fraction;
         if (begin.power == end.power) {
             fraction = BigDecimal.ONE;
         } else {
-            fraction = new BigDecimal(target, MathContext.DECIMAL128).subtract(begin.power)
+            fraction = target.subtract(begin.power)
                     .divide(end.power.subtract(begin.power), MathContext.DECIMAL128);
         }
         BigDecimal price = begin.price.add(fraction.multiply(end.price.subtract(begin.price)));
-        return price.doubleValue();
+        return price;
     }
 
-    public double findDemandFromCurve(double price) {
-        BigDecimal target = new BigDecimal(price, MathContext.DECIMAL128);
+    public BigDecimal findDemandFromCurve(BigDecimal price) {
         Point begin = null;
         Point end = null;
         for (Point p : points) {
             end = p;
-            if (p.price.compareTo(target) > 0) {
+            if (p.price.compareTo(price) > 0) {
                 break;
             }
             begin = p;
@@ -130,21 +126,20 @@ public class BidFunction {
         if (begin == null) {
             throw new IllegalArgumentException("Price must be positive or zero!");
         }
-        if (target.compareTo(end.price) > 0) {
+        if (price.compareTo(end.price) > 0) {
             return getPowerAtMaxPrice(price, end);
         }
-        double v = getPowerAtPrice(target, begin, end).doubleValue();
+        BigDecimal v = getPowerAtPrice(price, begin, end);
         log.trace("Allocation: {} at {} for {}", v, price, toJsonArray());
         return v;
     }
 
-    public double findPriceFromCurve(double demand) {
-        BigDecimal power = new BigDecimal(demand, MathContext.DECIMAL128);
+    public BigDecimal findPriceFromCurve(BigDecimal demand) {
         Point begin = null;
         Point end = null;
         for (Point p : points) {
             end = p;
-            if (p.power.compareTo(power) <= 0) {
+            if (p.power.compareTo(demand) <= 0) {
                 break;
             }
             begin = p;
@@ -153,13 +148,13 @@ public class BidFunction {
             if (end == null) {
                 throw new InvalidBidCurveException("Illegal BidCurve data");
             }
-            return end.price.doubleValue();
+            return end.price;
         }
         if (end == null) {
-            return begin.price.doubleValue();
+            return begin.price;
         }
-        if (power.compareTo(end.power) < 0) {
-            return maxPrice.doubleValue();
+        if (demand.compareTo(end.power) < 0) {
+            return maxPrice;
         }
         return getPriceAtPower(demand, begin, end);
     }

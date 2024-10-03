@@ -16,6 +16,7 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import esdl.Carrier;
@@ -152,7 +153,7 @@ public class ProducerNode extends Node {
 	}
 
 	@Override
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
 		builder.tag("capability", "Producer");
 		if (producerType != null) {
 			builder.tag("energyType", producerType.toString());

@@ -16,30 +16,7 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.eclipse.emf.common.util.EList;
-
-import esdl.AbstractBasicConversion;
-import esdl.AbstractBehaviour;
-import esdl.Carrier;
-import esdl.ControlStrategy;
-import esdl.CostInformation;
-import esdl.DrivenByDemand;
-import esdl.DrivenByProfile;
-import esdl.DrivenBySupply;
-import esdl.EnergyAsset;
-import esdl.EnergyCarrier;
-import esdl.GenericProfile;
-import esdl.InPort;
-import esdl.InputOutputRelation;
-import esdl.OutPort;
-import esdl.Port;
-import esdl.PortRelation;
+import esdl.*;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -53,6 +30,14 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import org.eclipse.emf.common.util.EList;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -366,8 +351,7 @@ public class AbstractBasicConversionNode extends Node {
             } else {
                 throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
             }
-            makeInflexibleProductionFunction(
-                    energyOutput);
+            makeInflexibleProductionFunction(energyOutput);
         } else {
             throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
         }
@@ -400,7 +384,7 @@ public class AbstractBasicConversionNode extends Node {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
         builder.tag("capability", "Conversion");
         if (getRole().equals(Role.PRODUCER)) {
             EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));

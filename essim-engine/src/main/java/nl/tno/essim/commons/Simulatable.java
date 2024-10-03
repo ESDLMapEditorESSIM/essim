@@ -23,9 +23,7 @@ public interface Simulatable {
 	void init(EssimTime timestamp);
 	void step(EssimTime timestamp);
 	void stop();
-	void reset();
 	SimulationStatus getState();
-	void pause();
 	void setSimulationManager(ISimulationManager manager);
 	void setObservationManager(IObservationManager manager);
 

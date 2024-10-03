@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 
+import java.math.BigDecimal;
+
 class BidFunctionTest {
 
     @BeforeAll
@@ -21,7 +23,7 @@ class BidFunctionTest {
 
     static void compareBidFunctions(BidFunction expected, BidFunction actual, double powerAccuracy) {
         for (BidFunction.Point point : expected.getPoints()) {
-            assertEquals(point.getPower(), actual.findDemandFromCurve(point.getPrice()), powerAccuracy);
+            assertEquals(point.getPower().doubleValue(), actual.findDemandFromCurve(point.getPrice()).doubleValue(), powerAccuracy);
         }
     }
 
@@ -80,10 +82,10 @@ class BidFunctionTest {
         });
         compareBidFunctions(expected, sumCurves, 1E-5);
 
-        double equilibriumPrice = sumCurves.findPriceFromCurve(0);
+        var equilibriumPrice = sumCurves.findPriceFromCurve(BigDecimal.ZERO);
         System.out.println("equilibriumPrice: " + equilibriumPrice);
-        double allocation = sumCurves.findDemandFromCurve(equilibriumPrice);
+        BigDecimal allocation = sumCurves.findDemandFromCurve(equilibriumPrice);
         System.out.println("allocation: " + allocation);
-        assertEquals(0, allocation, 1E-5);
+        assertEquals(0, allocation.doubleValue(), 1E-5);
     }
 }

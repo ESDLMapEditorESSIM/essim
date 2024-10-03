@@ -411,20 +411,11 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		instanceMap.clear();
 	}
 
-	@Override
-	public void reset() {
-		// TODO Auto-generated method stub
-	}
 
 	@Override
 	public SimulationStatus getState() {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public void pause() {
-		// TODO Auto-generated method stub
 	}
 
 	@Override

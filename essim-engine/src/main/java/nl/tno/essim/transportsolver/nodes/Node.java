@@ -206,17 +206,16 @@ public abstract class Node implements INode {
         cost = (cost - minMaxCosts[0]) / (minMaxCosts[1] - minMaxCosts[0]);
     }
 
-    public double[] allocateAndPropagate(BidFunction summedFunction, List<Observation> observations,
-                                         EssimTime timestamp) {
+    public BigDecimal[] allocateAndPropagate(BidFunction summedFunction, List<Observation> observations, EssimTime timestamp) {
         // Allocate
-        double balancingPrice = findPriceFromCurve(summedFunction, 0.0);
-        double imbalance = findDemandFromCurve(summedFunction, balancingPrice);
+        var balancingPrice = findPriceFromCurve(summedFunction, BigDecimal.ZERO);
+        var imbalance = findDemandFromCurve(summedFunction, balancingPrice);
 //		log.trace("Market {} - summed function: {}", getNetworkId(), summedFunction);
 //		log.trace("Balancing price: {}, imbalance: {}", balancingPrice, imbalance);
         // Propagate
         propagate(balancingPrice, observations, timestamp);
 
-        double[] vals = {imbalance, balancingPrice};
+        BigDecimal[] vals = {imbalance, balancingPrice};
         return vals;
     }
 
@@ -400,9 +399,9 @@ public abstract class Node implements INode {
         return summedCurves;
     }
 
-    private void propagate(double price, List<Observation> observations, EssimTime timestamp) {
+    private void propagate(BigDecimal price, List<Observation> observations, EssimTime timestamp) {
         // Allocate
-        energy = findDemandFromCurve(demandFunction, price);
+        energy = findDemandFromCurve(demandFunction, price).doubleValue();
 
         // print curve to stdout
         // log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(),
@@ -447,11 +446,11 @@ public abstract class Node implements INode {
 
     }
 
-    private double findDemandFromCurve(BidFunction demandFunction, double price) {
+    private BigDecimal findDemandFromCurve(BidFunction demandFunction, BigDecimal price) {
         return demandFunction.findDemandFromCurve(price);
     }
 
-    private double findPriceFromCurve(BidFunction demandFunction, double demand) {
+    private BigDecimal findPriceFromCurve(BidFunction demandFunction, BigDecimal demand) {
         return demandFunction.findPriceFromCurve(demand);
     }
 
@@ -473,7 +472,7 @@ public abstract class Node implements INode {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
 
     }
 

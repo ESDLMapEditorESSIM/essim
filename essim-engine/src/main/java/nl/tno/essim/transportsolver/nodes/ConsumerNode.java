@@ -16,6 +16,7 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import esdl.Carrier;
@@ -122,7 +123,7 @@ public class ConsumerNode extends Node {
 	}
 
 	@Override
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
 		builder.tag("capability", "Consumer");
 		EmissionManager.getInstance(simulationId).addConsumer(networkId, consumer, Math.abs(energy));
 	}

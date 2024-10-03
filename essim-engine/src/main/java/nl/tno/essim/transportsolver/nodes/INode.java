@@ -21,9 +21,11 @@ import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
+import java.math.BigDecimal;
+
 public interface INode {
 
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo);
 
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price);
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price);
 }

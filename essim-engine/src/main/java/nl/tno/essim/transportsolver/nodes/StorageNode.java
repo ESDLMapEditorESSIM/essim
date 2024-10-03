@@ -16,6 +16,7 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -129,7 +130,7 @@ public class StorageNode extends Node {
 	}
 
 	@Override
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, double price) {
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
 		builder.tag("capability", "Storage");
 		builder.value("soc", storage.getFillLevel());
 		if (energy > 0) {
