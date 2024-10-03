@@ -446,8 +446,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 //		log.debug("Summed function: {}", summedFunction);
 
 
-        double balancingPrice = summedFunction.findPriceFromCurve(0.0);
-        double imbalance = summedFunction.findDemandFromCurve(balancingPrice);
+        BigDecimal balancingPrice = summedFunction.findPriceFromCurve(BigDecimal.ZERO);
+        BigDecimal imbalance = summedFunction.findDemandFromCurve(balancingPrice);
 
         calculateLoadFlow(balancingPrice);
 
@@ -461,8 +461,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 					Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
 							.tag("carrierId", carrier.getId())
 							.tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
-                            .value("imbalanceEnergy", imbalance).value("matchingPrice", balancingPrice)
-                            .value("imbalancePower", imbalance / timeStep).build());
+                            .value("imbalanceEnergy", imbalance.doubleValue()).value("matchingPrice", balancingPrice)
+                            .value("imbalancePower", imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
 
 			for (Observation observation : observations) {
 				observationManager.publish(this, observation);
@@ -473,10 +473,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
     }
 
-    private void calculateLoadFlow(double balancingPrice) {
-	}
-
-    private void calculateLoadFlow(double balancingPrice) {
+    private void calculateLoadFlow(BigDecimal balancingPrice) {
 	}
 
 	@Override
