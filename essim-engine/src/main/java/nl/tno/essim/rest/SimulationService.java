@@ -32,7 +32,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
-@Tag(name = "ESSIM")
+@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
 @Path("/simulation")
 @Slf4j
 public class SimulationService {
@@ -43,13 +43,15 @@ public class SimulationService {
     @POST
     @Produces("application/json")
     @Consumes("application/json")
-    @Operation(summary = "Start a new simulation",
-            description = "Start a new Simulation with the provided ESDL",
-            requestBody = @RequestBody(description = "Simulation description", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
+    @Operation(
+            summary = "Start a new simulation",
+            description = "Initiates a new simulation with the provided ESDL",
+            requestBody = @RequestBody(description = "Details of the simulation to be started", required = true, content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
             responses = {
-                    @ApiResponse(description = "The simulation status", content = @Content(schema = @Schema(implementation = KPIStatus.class))),
-                    @ApiResponse(responseCode = "400", description = "Error", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
-            })
+                    @ApiResponse(description = "The status of the simulation", content = @Content(schema = @Schema(implementation = KPIStatus.class))),
+                    @ApiResponse(responseCode = "400", description = "Invalid input data", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            }
+    )
     public Response postSimulation(EssimSimulation simulation) {
         ErrorStatus error = new ErrorStatus();
         error.setStatus(Status.ERROR);
@@ -122,11 +124,13 @@ public class SimulationService {
 
     @GET
     @Produces("application/json")
-    @Operation(summary = "Get all simulations",
-            description = "Get all simulations. BE CAREFUL! this can be a lot of data!",
+    @Operation(
+            summary = "Retrieve all simulations",
+            description = "Fetches all simulations stored in the system. NOTE: This can return a large dataset.",
             responses = {
-                    @ApiResponse(description = "The list of simulations", content = @Content(array = @ArraySchema(schema = @Schema(implementation = EssimSimulation.class)))),
-            })
+                    @ApiResponse(description = "A list of all simulations", content = @Content(array = @ArraySchema(schema = @Schema(implementation = EssimSimulation.class))))
+            }
+    )
     public Response getSimulations() {
         List<EssimSimulation> simulations = mongo.getSimulations();
         return Response.ok(simulations).build();
@@ -135,13 +139,14 @@ public class SimulationService {
     @GET
     @Path("/status")
     @Produces("text/plain")
-    @Operation(summary = "Get the status of ESSIM",
-            description = "Get the status of ESSIM",
+    @Operation(
+            summary = "Retrieve ESSIM status",
+            description = "Gets the current status of the ESSIM simulation service",
             responses = {
-                    @ApiResponse(description = "The simulation status", content = @Content(schema = @Schema(implementation = String.class))),
-                    @ApiResponse(responseCode = "503", description = "Service unavailable", content = @Content(schema = @Schema(implementation = String.class)))
-
-            })
+                    @ApiResponse(description = "The current status of ESSIM", content = @Content(schema = @Schema(implementation = String.class))),
+                    @ApiResponse(responseCode = "503", description = "Service is unavailable", content = @Content(schema = @Schema(implementation = String.class)))
+            }
+    )
     public Response getSimulationStatus() {
         String status = mongo.getStatus();
         if (status.equals("Busy")) {
@@ -153,11 +158,13 @@ public class SimulationService {
     @GET
     @Path("/kpiModules")
     @Produces("application/json")
-    @Operation(summary = "Get a list of available KPI modules",
-            description = "Get a list of available KPI modules",
+    @Operation(
+            summary = "Retrieve available KPI modules",
+            description = "Fetches a list of all available KPI modules connected to ESSIM",
             responses = {
-                    @ApiResponse(description = "List of KPI modules", content = @Content(array = @ArraySchema(schema = @Schema(implementation = KPIModuleInfo.class)))),
-            })
+                    @ApiResponse(description = "A list of available KPI modules", content = @Content(array = @ArraySchema(schema = @Schema(implementation = KPIModuleInfo.class))))
+            }
+    )
     public Response getSimulationKpiModules() {
         KPIManager.getInstance().queryStatus();
         List<KPIModuleInfo> allKPIModules = KPIManager.getInstance().getAllKPIModules();
@@ -167,12 +174,14 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}")
     @Produces("application/json")
-    @Operation(summary = "Get a simulation",
-            description = "Get the information of a single simulation",
+    @Operation(
+            summary = "Retrieve a specific simulation",
+            description = "Fetches the details of a specific simulation based on the provided simulation ID",
             responses = {
-                    @ApiResponse(description = "The simulation information", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
-                    @ApiResponse(responseCode = "404", description = "Simulation id not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
-            })
+                    @ApiResponse(description = "Details of the requested simulation", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
+                    @ApiResponse(responseCode = "404", description = "Simulation ID not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            }
+    )
     public Response getSimulationBySimulationId(
             @Parameter(description = "The id of the requested simulation", required = true)
             @PathParam("simulationId") String simulationId) {
