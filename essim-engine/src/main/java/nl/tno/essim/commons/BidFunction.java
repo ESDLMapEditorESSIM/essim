@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
@@ -187,7 +186,7 @@ public class BidFunction {
         return Collections.unmodifiableList(points);
     }
 
-    private static BigDecimal getPowerAtPrice(@NotNull BigDecimal price, @NotNull Point begin, @NotNull Point end) {
+    private static BigDecimal getPowerAtPrice(BigDecimal price, Point begin, Point end) {
         BigDecimal fraction;
         if (begin.price.equals(end.price)) {
             fraction = BigDecimal.ONE;

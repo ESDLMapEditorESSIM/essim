@@ -4,14 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.Commons;
@@ -21,8 +25,6 @@ import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.rest.util.MongoInject;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -32,8 +34,14 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
-@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
-@Path("/simulation")
+@OpenAPIDefinition(
+        info = @Info(
+                title = "ESSIM API",
+                version = "1.0",
+                description = "API for managing ESSIM simulations"
+        )
+)@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
+@Path("/essim/simulation")
 @Slf4j
 public class SimulationService {
     private static final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);
