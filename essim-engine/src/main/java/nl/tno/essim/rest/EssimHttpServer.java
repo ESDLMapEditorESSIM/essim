@@ -36,11 +36,7 @@ public class EssimHttpServer {
 		// direct java.util.logging to slf4j (Jersey/Grizzly)
 		SLF4JBridgeHandler.removeHandlersForRootLogger();
 		SLF4JBridgeHandler.install();
-		Logger logger = Logger.getLogger("org.mongodb.driver");
-		logger.setLevel(Level.ALL);
-
-		Logger.getGlobal()
-				.setLevel(Level.ALL);
+		Logger.getLogger("").setLevel(Level.FINEST);
 
 		publishURI = URI.create(String.format("%s://%s:%d/%s", scheme, host, port, path));
 

@@ -33,6 +33,8 @@
 
     <Loggers>
         <Logger name="nl.tno" level="debug" />
+        <Logger name="org.glassfish.grizzly" level="Info" />
+        <Logger name="org.glassfish.jersey" level="INFO" />
 <!--        <logger name="nl.tno.essim.kpi" level="TRACE"/>-->
 
         <Root level="INFO">

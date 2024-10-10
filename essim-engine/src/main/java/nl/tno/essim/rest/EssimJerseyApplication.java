@@ -52,6 +52,7 @@ import java.util.logging.Logger;
                 contact = @Contact(name = "TNO", url = "https://energytransition.gitbook.io/esdl/esdl-based-tools/essim")
         ))
 public class EssimJerseyApplication extends ResourceConfig {
+    Logger jullog = Logger.getLogger(EssimJerseyApplication.class.getName());
 
     public EssimJerseyApplication() {
         // Configure
@@ -69,6 +70,7 @@ public class EssimJerseyApplication extends ResourceConfig {
             }
         });
         register(MultiPartFeature.class);
+        register(new LoggingFeature(jullog,  LoggingFeature.Verbosity.HEADERS_ONLY));
         property(CommonProperties.OUTBOUND_CONTENT_LENGTH_BUFFER, 2000000);
         property(ServerProperties.WADL_FEATURE_DISABLE, true);
 
