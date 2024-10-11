@@ -59,6 +59,26 @@ public class EssimLoadFlowUtil {
 
     public static void createNetwork(String networkName, Asset rootAsset, List<EnergyAsset> assetList) {
         Network network = Network.create(networkName, "code");
+         /* We may need a substation, because many elements can only be created in a substation
+          * Substations contain voltagelevels and transformers
+          * Voltagelevels contain generators, loads and batteries. And buses and breakers (in busbreaker view getBusBreakerView().newBus())
+          *                                                        OR nodes, but I don't understand nodes yet
+          * Network contains substations and lines and voltage levels. And also subnetworks....
+          * So, for now we create:
+          * - a substation if we encounter a transformer
+          * - a bus for each device port
+          * - A generator/load/battery per device. If a device has multiple ports, create a substation
+          * - A line for each line
+          * - A voltagelevel per carrier
+          */
+//        network.newLine().setNode1()
+
+
+        /*
+         * - First create a voltagelevel per carrier
+         * - Then iterate through the elements connected to the carrier
+         */
+
         HashMap<Port, Bus> portBusMap = new HashMap<>();
         List<EnergyAsset> elements = new ArrayList<>();
         for (EnergyAsset asset : assetList) {
@@ -142,9 +162,7 @@ public class EssimLoadFlowUtil {
         for (var a : connectedAssets.entrySet()) {
             if (a.getKey() instanceof Transport && !handled.contains(a.getKey())) {
 
-            }
-
-            else {
+            } else {
                 AssetPair e = new AssetPair(asset, a.getKey());
                 e.addConnection(transport);
                 pairs.add(e);
@@ -187,9 +205,5 @@ public class EssimLoadFlowUtil {
         } else {
             throw new IllegalStateException("Port type " + port + " is not supported");
         }
-
-
     }
-
-
 }
