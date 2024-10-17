@@ -1,9 +1,11 @@
 package nl.tno.essim.loadflow;
 
-import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.Battery;
+import com.powsybl.iidm.network.Bus;
+import com.powsybl.iidm.network.*;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.emf.common.util.EList;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -14,8 +16,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class EssimLoadFlowController {
     private final Map<Asset, Object> translationMap = new HashMap<>();
+    private final Map<String, String> busMap = new HashMap<>();
 
-    public void createNetwork(String networkName, Asset rootAsset, List<EnergyAsset> assetList) {
+    public void createNetwork(String networkName, Carrier carrier, Asset rootAsset, List<EnergyAsset> assetList) {
         Network network = Network.create(networkName, "code");
         /* We may need a substation, because many elements can only be created in a substation
          * Substations contain voltagelevels and transformers
@@ -36,50 +39,69 @@ public class EssimLoadFlowController {
          * - Then iterate through the assets connected to the carrier to create loads/batteries/generators
          * - Then iterate through the lines to connect the assets
          */
-        assetList.stream().filter(carrier -> carrier instanceof ElectricityCommodity).forEach(carrier -> {
-            VoltageLevel voltageLevel = network.newVoltageLevel()
-                    .setId(carrier.getId())
-                    .setNominalV(((ElectricityCommodity) carrier).getVoltage())
-                    .setTopologyKind(TopologyKind.BUS_BREAKER)
-                    .setName(carrier.getName())
-                    .add();
-            translationMap.put(carrier, voltageLevel);
-            // Create the network elements for the connected assets
-            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).toList().isEmpty()).toList();
-            createAssets(connectedAssets, (ElectricityCommodity) carrier, voltageLevel);
-            // TODO create transformers!!
+        VoltageLevel voltageLevel = network.newVoltageLevel()
+                .setId(carrier.getId())
+                .setNominalV(((ElectricityCommodity) carrier).getVoltage())
+                .setTopologyKind(TopologyKind.BUS_BREAKER)
+                .setName(carrier.getName())
+                .add();
+//        translationMap.put(carrier, voltageLevel);
+        // Create the network elements for the connected assets
+        List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).toList().isEmpty()).toList();
+        createAssets(connectedAssets, (ElectricityCommodity) carrier, voltageLevel);
+        // TODO create transformers!!
 
-            // Create the cables
-            createLines(connectedAssets, network);
-        });
+        // Create the cables
+        createLines(connectedAssets, network);
     }
 
     private void createLines(List<EnergyAsset> connectedAssets, Network network) {
         connectedAssets.stream().filter(a -> a instanceof ElectricityCable).forEach(cable -> {
             if (cable.getPort().size() != 2) {
-                throw new IllegalStateException("Electricity cable with" + cable.getPort().size() + " ports not allowed!");
+                throw new IllegalStateException("Electricity cable with " + cable.getPort().size() + " ports not allowed!");
             }
             ((ElectricityCable) cable).getLength();
             Iterator<Port> iterator = cable.getPort().iterator();
-            Port port1 = iterator.next();
-            Port port2 = iterator.next();
+            String busId1 = getBusId(getConnectedPortId(iterator.next()));
+            String busId2 = getBusId(getConnectedPortId(iterator.next()));
             String cableTypeName = cable.getAssetType();
             if (cableTypeName == null || cableTypeName.isEmpty()) {
                 cableTypeName = "NA2XS2Y 1x95 RM/25 12/20 kV";
-                log.warn("No asset type for cable {} ({}) assuming default type {}", cable.getName(), cable.getId(), cableTypeName);
+                log.warn("No asset type for cable {} ({}) assuming default type '{}'", cable.getName(), cable.getId(), cableTypeName);
             }
             CableSpec cableSpec = CableSpec.getCableSpec(cableTypeName);
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / 1000.0;
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / 1000.0;
 
             network.newLine()
-                    .setConnectableBus1(port1.getId())
-                    .setConnectableBus2(port2.getId())
+                    .setConnectableBus1(busId1)
+                    .setConnectableBus2(busId2)
                     .setX(x)
                     .setR(r)
+                    .setId(cable.getId())
                     .add();
         });
 
+    }
+
+    private String getConnectedPortId(Port port1) {
+        String busId = null;
+        if (port1 instanceof InPort) {
+            EList<OutPort> connectedTo = ((InPort) port1).getConnectedTo();
+            if (connectedTo.size() != 1) {
+                throw new IllegalStateException("Inport " + port1.getName() + " connected to " + connectedTo.size() + " outports");
+            }
+            busId = connectedTo.get(0).getId();
+        } else if (port1 instanceof OutPort) {
+            EList<InPort> connectedTo = ((OutPort) port1).getConnectedTo();
+            if (connectedTo.size() != 1) {
+                throw new IllegalStateException("Outport " + port1.getName() + " connected to " + connectedTo.size() + " inports");
+            }
+            busId = connectedTo.get(0).getId();
+        } else {
+            throw new IllegalStateException("Port type " + port1.getClass().getSimpleName() + " is not supported in loadflow");
+        }
+        return busId;
     }
 
     private void createAssets(List<EnergyAsset> assetList, ElectricityCommodity carrier, VoltageLevel voltageLevel) {
@@ -90,10 +112,16 @@ public class EssimLoadFlowController {
             translationMap.put(consumer, createConsumer(voltageLevel, consumer));
         });
         assetList.stream().filter(a -> a instanceof Storage).forEach(storage -> {
-            translationMap.put(storage, createStorage(voltageLevel, storage));
+            translationMap.put(storage, createStorage(voltageLevel, (Storage) storage));
         });
         assetList.stream().filter(a -> a instanceof AbstractBasicConversion).forEach(conversion -> {
             translationMap.put(conversion, createConversion(voltageLevel, carrier, (AbstractBasicConversion) conversion));
+        });
+        assetList.stream().filter(a -> a instanceof EConnection).forEach(connection -> {
+            // TODO create single bus
+//            netw
+
+            translationMap.put(connection, createConversion(voltageLevel, carrier, (AbstractBasicConversion) connection));
         });
     }
 
@@ -101,7 +129,7 @@ public class EssimLoadFlowController {
         AtomicReference<Object> result = new AtomicReference<>();
         conversion.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).findFirst().ifPresent(port -> {
             String portId = port.getId();
-            voltageLevel.getBusBreakerView().newBus().setId(portId).add();
+            createBus(voltageLevel, portId);
             if (port instanceof InPort) {
                 result.set(voltageLevel.newLoad()
                         .setBus(portId)
@@ -125,17 +153,25 @@ public class EssimLoadFlowController {
         return result.get();
     }
 
-    private Battery createStorage(VoltageLevel voltageLevel, EnergyAsset storage) {
+    private static Bus createBus(VoltageLevel voltageLevel, String portId) {
+        return voltageLevel.getBusBreakerView().newBus().setId(portId).setName(portId).add();
+    }
+
+    private Battery createStorage(VoltageLevel voltageLevel, Storage storage) {
         if (storage.getPort().size() > 1) {
             throw new IllegalStateException("Batteries with multiple ports not supported in loadflow");
         }
         String portId = storage.getPort().get(0).getId();
-        voltageLevel.getBusBreakerView().newBus().setId(portId).add();
+        createBus(voltageLevel, portId);
         Battery battery = voltageLevel.newBattery()
                 .setBus(portId)
                 .setConnectableBus(portId)
                 .setId(storage.getId())
                 .setName(storage.getName())
+                .setMaxP(storage.getMaxChargeRate())
+                .setMinP(0)
+                .setTargetP(0)
+                .setTargetQ(0)
                 .add();
         return battery;
     }
@@ -145,13 +181,14 @@ public class EssimLoadFlowController {
             throw new IllegalStateException("Consumers with multiple ports not supported in loadflow");
         }
         String portId = consumer.getPort().get(0).getId();
-        voltageLevel.getBusBreakerView().newBus().setId(portId).add();
+        createBus(voltageLevel, portId);
         Load load = voltageLevel.newLoad()
                 .setBus(portId)
                 .setConnectableBus(portId)
                 .setId(consumer.getId())
                 .setName(consumer.getName())
-//                .setP0()
+                .setP0(0)
+                .setQ0(0)
                 .add();
         return load;
     }
@@ -161,16 +198,27 @@ public class EssimLoadFlowController {
             throw new IllegalStateException("Producers with multiple ports not supported in loadflow");
         }
         String portId = producer.getPort().get(0).getId();
-        voltageLevel.getBusBreakerView().newBus().setId(portId).add();
+        createBus(voltageLevel, portId);
         Generator generator = voltageLevel.newGenerator()
                 .setId(producer.getId())
-                .setName(producer.getName())
+                .setName(producer.getName() + "-" + producer.getName())
                 .setMaxP(Math.abs(producer.getPower()))
                 .setMinP(0)
-//                .setTargetP()
+                .setTargetP(0)
+                .setTargetQ(0)
                 .setBus(portId)
+                .setVoltageRegulatorOn(false)
                 .add();
         return generator;
     }
 
+    String getBusId(String portId) {
+        String prevId;
+        String busId = portId;
+        do {
+            prevId = busId;
+            busId = busMap.get(prevId);
+        } while (busId != null && !busId.equals(prevId));
+        return busId;
+    }
 }

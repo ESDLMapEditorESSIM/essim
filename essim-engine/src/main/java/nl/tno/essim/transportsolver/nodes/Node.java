@@ -386,9 +386,17 @@ public abstract class Node implements INode {
         return summedCurves;
     }
 
-    public void propagate(BigDecimal price, List<Observation> observations, EssimTime timestamp) {
-        // Allocate
+    public void calculateAssignedEnergies(BigDecimal price) {
         energy = findDemandFromCurve(demandFunction, price).doubleValue();
+        if (children != null) {
+            for (Node child : children) {
+                child.calculateAssignedEnergies(price);
+            }
+        }
+
+    }
+
+    public void processAssignedEnergies(BigDecimal price, List<Observation> observations, EssimTime timestamp) {
 
         // print curve to stdout
         // log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(),
@@ -427,7 +435,7 @@ public abstract class Node implements INode {
         // Propagate
         if (children != null) {
             for (Node child : children) {
-                child.propagate(price, observations, timestamp);
+                child.processAssignedEnergies(price, observations, timestamp);
             }
         }
 

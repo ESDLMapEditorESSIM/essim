@@ -17,7 +17,7 @@
 package nl.tno.essim.transportsolver;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.powsybl.iidm.network.*;
+import com.powsybl.iidm.network.Network;
 import esdl.*;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
@@ -41,6 +41,7 @@ import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
 import nl.tno.essim.util.Converter;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintWriter;
 import java.math.BigDecimal;
@@ -95,6 +96,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		processedList = new ArrayList<EnergyAsset>();
 		deviceNodes = new ArrayList<Node>();
 		this.roleMap = roleMap;
+		loadFlowController = new EssimLoadFlowController();
 	}
 
 	public boolean isPartOfNetwork(Asset asset) {
@@ -152,6 +154,60 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	}
 
 	public List<EnergyAsset> createTree() throws Exception {
+		EnergyAsset rootAsset = getRootAsset();
+		Role rootRole;
+
+		if (rootAsset == null) {
+			List<String> assetListString = new ArrayList<String>();
+			for (EnergyAsset asset : assetList) {
+				assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
+						+ roleMap.get(asset));
+			}
+			log.error("Cannot find a producer or consumer in network " + getId() + " for carrier: "
+					+ getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
+			log.error("This network ({}) will not be created!", getId());
+			return null;
+		}
+		loadFlowController.createNetwork(id, carrier, rootAsset, assetList);
+
+		rootRole = roleMap.get(rootAsset);
+
+		String rootAssetId = rootAsset.getId();
+		NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
+				.esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
+		if (nodeConfig != null) {
+			this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
+					.ifPresent(nodeBuilder::config);
+		}
+		tree = nodeBuilder.build();
+
+		processedList.add(rootAsset);
+		assetList.remove(rootAsset);
+		if (rootAsset instanceof Transport) {
+			transportCount += 1;
+			if (((Transport) rootAsset).getCapacity() - 0.0 > eps) {
+				transportWithCapacityCount += 1;
+			}
+		}
+		makeTree(tree);
+		tree.findDeviceNodes(deviceNodes);
+
+		if (deviceNodes.size() <= 1) {
+			log.error("Only one asset in network " + getId() + " for carrier: " + getCarrier().getId() + "!! : "
+					+ deviceNodes.get(0));
+			log.error("This network ({}) will not be created!", getId());
+			return assetList;
+		}
+		// only generate tree HTML when PRINT_TREE environmental variable is present
+		String printTreeEnv = System.getenv("PRINT_TREE");
+		if (printTreeEnv != null) {
+			printTree(getId());
+		}
+		return assetList;
+	}
+
+	@Nullable
+	private EnergyAsset getRootAsset() {
 		EnergyAsset rootAsset = null;
 		double maxCapacity = Double.NEGATIVE_INFINITY;
 		Role rootRole = Role.TRANSPORT;
@@ -190,54 +246,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 				}
 			}
 		}
-
-		if (rootAsset == null) {
-			List<String> assetListString = new ArrayList<String>();
-			for (EnergyAsset asset : assetList) {
-				assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
-						+ roleMap.get(asset));
-			}
-			log.error("Cannot find a producer or consumer in network " + getId() + " for carrier: "
-					+ getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
-			log.error("This network ({}) will not be created!", getId());
-			return null;
-		}
-
-		rootRole = roleMap.get(rootAsset);
-
-		String rootAssetId = rootAsset.getId();
-		NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
-				.esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
-		if (nodeConfig != null) {
-			this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
-					.ifPresent(nodeBuilder::config);
-		}
-		tree = nodeBuilder.build();
-
-		processedList.add(rootAsset);
-		assetList.remove(rootAsset);
-		if (rootAsset instanceof Transport) {
-			transportCount += 1;
-			if (((Transport) rootAsset).getCapacity() - 0.0 > eps) {
-				transportWithCapacityCount += 1;
-			}
-		}
-		makeTree(tree);
-		tree.findDeviceNodes(deviceNodes);
-
-		if (deviceNodes.size() <= 1) {
-			log.error("Only one asset in network " + getId() + " for carrier: " + getCarrier().getId() + "!! : "
-					+ deviceNodes.get(0));
-			log.error("This network ({}) will not be created!", getId());
-			return assetList;
-		}
-		// only generate tree HTML when PRINT_TREE environmental variable is present
-		String printTreeEnv = System.getenv("PRINT_TREE");
-		if (printTreeEnv != null) {
-			printTree(getId());
-		}
-		loadFlowController.createNetwork(id, rootAsset, assetList);
-		return assetList;
+		return rootAsset;
 	}
 
 
@@ -439,11 +448,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         BigDecimal balancingPrice = summedFunction.findPriceFromCurve(BigDecimal.ZERO);
         BigDecimal imbalance = summedFunction.findDemandFromCurve(balancingPrice);
 
-        calculateLoadFlow(balancingPrice);
+        calculateLoadFlow(tree, balancingPrice);
 
 		// Allocate devices and collect observations
 		ArrayList<Observation> observations = new ArrayList<Observation>();
-        tree.propagate(balancingPrice, observations, timestamp);
+        tree.processAssignedEnergies(balancingPrice, observations, timestamp);
 
 		// Publish observations
 		if (observationManager != null) {
@@ -463,7 +472,12 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
     }
 
-    private void calculateLoadFlow(BigDecimal balancingPrice) {
+    private void calculateLoadFlow(Node tree, BigDecimal balancingPrice) {
+		tree.calculateAssignedEnergies(balancingPrice);
+//		LoadFlowParameters parameters = new LoadFlowParameters().setDc(true);
+//		OpenLoadFlowParameters parametersExt = OpenLoadFlowParameters.create(parameters).setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR);
+//		OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
+//		LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 	}
 
 	@Override
