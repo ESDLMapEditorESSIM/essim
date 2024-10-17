@@ -18,13 +18,6 @@ package nl.tno.essim.transportsolver;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.powsybl.iidm.network.*;
-import com.powsybl.iidm.network.Bus;
-import com.powsybl.loadflow.LoadFlow;
-import com.powsybl.loadflow.LoadFlowParameters;
-import com.powsybl.math.matrix.DenseMatrixFactory;
-import com.powsybl.openloadflow.OpenLoadFlowParameters;
-import com.powsybl.openloadflow.OpenLoadFlowProvider;
-import com.powsybl.openloadflow.network.SlackBusSelectionMode;
 import esdl.*;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
@@ -34,8 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.*;
 import nl.tno.essim.commons.Commons.Role;
-import nl.tno.essim.loadflow.EssimLoadFlowUtil;
-import nl.tno.essim.loadflow.EssimNetworkFactory;
+import nl.tno.essim.loadflow.EssimLoadFlowController;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
@@ -48,7 +40,6 @@ import nl.tno.essim.time.Horizon;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
-import nl.tno.essim.transportsolver.nodes.TransportNode;
 import nl.tno.essim.util.Converter;
 
 import java.io.PrintWriter;
@@ -90,6 +81,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private String esdlString;
 	private Market market;
     private Network network;
+	private EssimLoadFlowController loadFlowController;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
 			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem,
@@ -244,9 +236,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		if (printTreeEnv != null) {
 			printTree(getId());
 		}
-
-        EssimLoadFlowUtil.createNetwork(id, rootAsset, assetList);
-
+		loadFlowController.createNetwork(id, rootAsset, assetList);
 		return assetList;
 	}
 

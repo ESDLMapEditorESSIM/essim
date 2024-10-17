@@ -2,18 +2,20 @@ package nl.tno.essim.loadflow;
 
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.Battery;
-import com.powsybl.iidm.network.Bus;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
-public class EssimLoadFlowUtil {
+public class EssimLoadFlowController {
+    private final Map<Asset, Object> translationMap = new HashMap<>();
 
-    public static void createNetwork(String networkName, Asset rootAsset, List<EnergyAsset> assetList) {
+    public void createNetwork(String networkName, Asset rootAsset, List<EnergyAsset> assetList) {
         Network network = Network.create(networkName, "code");
         /* We may need a substation, because many elements can only be created in a substation
          * Substations contain voltagelevels and transformers
@@ -41,8 +43,9 @@ public class EssimLoadFlowUtil {
                     .setTopologyKind(TopologyKind.BUS_BREAKER)
                     .setName(carrier.getName())
                     .add();
+            translationMap.put(carrier, voltageLevel);
             // Create the network elements for the connected assets
-            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier().equals(a)).toList().isEmpty()).toList();
+            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).toList().isEmpty()).toList();
             createAssets(connectedAssets, (ElectricityCommodity) carrier, voltageLevel);
             // TODO create transformers!!
 
@@ -51,7 +54,7 @@ public class EssimLoadFlowUtil {
         });
     }
 
-    private static void createLines(List<EnergyAsset> connectedAssets, Network network) {
+    private void createLines(List<EnergyAsset> connectedAssets, Network network) {
         connectedAssets.stream().filter(a -> a instanceof ElectricityCable).forEach(cable -> {
             if (cable.getPort().size() != 2) {
                 throw new IllegalStateException("Electricity cable with" + cable.getPort().size() + " ports not allowed!");
@@ -79,48 +82,50 @@ public class EssimLoadFlowUtil {
 
     }
 
-    private static void createAssets(List<EnergyAsset> assetList, ElectricityCommodity carrier, VoltageLevel voltageLevel) {
+    private void createAssets(List<EnergyAsset> assetList, ElectricityCommodity carrier, VoltageLevel voltageLevel) {
         assetList.stream().filter(a -> a instanceof Producer).forEach(producer -> {
-            createProducer(voltageLevel, (Producer) producer);
+            translationMap.put(producer, createProducer(voltageLevel, (Producer) producer));
         });
         assetList.stream().filter(a -> a instanceof Consumer).forEach(consumer -> {
-            createConsumer(voltageLevel, consumer);
+            translationMap.put(consumer, createConsumer(voltageLevel, consumer));
         });
         assetList.stream().filter(a -> a instanceof Storage).forEach(storage -> {
-            createStorage(voltageLevel, storage);
+            translationMap.put(storage, createStorage(voltageLevel, storage));
         });
-        assetList.stream().filter(a -> a instanceof Conversion).forEach(conversion -> {
-            createConversion(voltageLevel, carrier, conversion);
+        assetList.stream().filter(a -> a instanceof AbstractBasicConversion).forEach(conversion -> {
+            translationMap.put(conversion, createConversion(voltageLevel, carrier, (AbstractBasicConversion) conversion));
         });
     }
 
-    private static void createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, EnergyAsset conversion) {
+    private Object createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, AbstractBasicConversion conversion) {
+        AtomicReference<Object> result = new AtomicReference<>();
         conversion.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).findFirst().ifPresent(port -> {
             String portId = port.getId();
             voltageLevel.getBusBreakerView().newBus().setId(portId).add();
             if (port instanceof InPort) {
-                voltageLevel.newLoad()
+                result.set(voltageLevel.newLoad()
                         .setBus(portId)
                         .setConnectableBus(portId)
                         .setId(conversion.getId())
                         .setName(conversion.getName())
-                        .add();
+                        .add());
             } else if (port instanceof OutPort) {
-                // TODO set max power
-                voltageLevel.newGenerator()
+                result.set(voltageLevel.newGenerator()
                         .setId(conversion.getId())
                         .setName(conversion.getName())
                         .setBus(portId)
                         .setConnectableBus(portId)
-//                        .setMaxP()
-                        .add();
+                        // Do we need to convert based on port???
+                        .setMaxP(conversion.getPower())
+                        .add());
             } else {
                 throw new IllegalStateException("Port type " + port + " is not supported in loadflow");
             }
         });
+        return result.get();
     }
 
-    private static Battery createStorage(VoltageLevel voltageLevel, EnergyAsset storage) {
+    private Battery createStorage(VoltageLevel voltageLevel, EnergyAsset storage) {
         if (storage.getPort().size() > 1) {
             throw new IllegalStateException("Batteries with multiple ports not supported in loadflow");
         }
@@ -135,7 +140,7 @@ public class EssimLoadFlowUtil {
         return battery;
     }
 
-    private static Load createConsumer(VoltageLevel voltageLevel, EnergyAsset consumer) {
+    private Load createConsumer(VoltageLevel voltageLevel, EnergyAsset consumer) {
         if (consumer.getPort().size() > 1) {
             throw new IllegalStateException("Consumers with multiple ports not supported in loadflow");
         }
@@ -151,7 +156,7 @@ public class EssimLoadFlowUtil {
         return load;
     }
 
-    private static Generator createProducer(VoltageLevel voltageLevel, Producer producer) {
+    private Generator createProducer(VoltageLevel voltageLevel, Producer producer) {
         if (producer.getPort().size() > 1) {
             throw new IllegalStateException("Producers with multiple ports not supported in loadflow");
         }

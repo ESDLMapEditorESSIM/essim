@@ -299,7 +299,7 @@ public class ESSimEngine implements IStatusProvider {
         for (Carrier carrier : carriers.getCarrier()) {
             List<EnergyAsset> remainingAssets = new ArrayList<EnergyAsset>(energyAssets);
             int i = 0;
-            List<EnergyAsset> filteredAssets = filterAssetsByCarrier(remainingAssets, carrier);
+            List<EnergyAsset> filteredAssets = filterAssetsAndAssignRoles(remainingAssets, carrier);
             do {
                 String solverId = energySystemId + " "
                         + (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
@@ -492,10 +492,10 @@ public class ESSimEngine implements IStatusProvider {
     }
 
     private List<String> printableSolverList(List<TransportSolver> x) {
-        return x.stream().map(y -> y.getId()).collect(Collectors.toList());
+        return x.stream().map(TransportSolver::getId).toList();
     }
 
-    private List<EnergyAsset> filterAssetsByCarrier(List<EnergyAsset> energyAssets, Carrier carrier) {
+    private List<EnergyAsset> filterAssetsAndAssignRoles(List<EnergyAsset> energyAssets, Carrier carrier) {
         List<EnergyAsset> filteredAssets = new ArrayList<EnergyAsset>();
         energyAssetRoles = new HashMap<EnergyAsset, Role>();
 
