@@ -5,6 +5,10 @@ import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.*;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.observation.IObservation;
+import nl.tno.essim.observation.IObservationConsumer;
+import nl.tno.essim.observation.IObservationProcessor;
+import nl.tno.essim.observation.IObservationProvider;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 
@@ -16,11 +20,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
-public class EssimLoadFlowController {
+public class EssimLoadFlowController implements IObservationProcessor {
     /*
-     * The translationMap maps ESDL assets to powsybl elements like generators and loads
+     * The translationMap maps ESDL assets ids to powsybl elements like generators and loads
      */
-    private final Map<Asset, Object> translationMap = new HashMap<>();
+    private final Map<String, Object> translationMap = new HashMap<>();
 
     /*
      * The busMap maps ESDL port ids to powsybl bus ids. When creating a bus, the id of the first port that will be connected
@@ -32,6 +36,28 @@ public class EssimLoadFlowController {
 
     public EssimLoadFlowController(String networkName) {
         network = Network.create(networkName, "code");
+        new IObservationConsumer() {
+
+            @Override
+            public void init(String scenarioName) {
+
+            }
+
+            @Override
+            public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
+
+            }
+
+            @Override
+            public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
+
+            }
+
+            @Override
+            public void cleanup() {
+
+            }
+        };
     }
 
     public void createNetwork(List<Carrier> carriers, List<EnergyAsset> assetList) {
@@ -220,16 +246,16 @@ public class EssimLoadFlowController {
 
     private void createAssets(List<EnergyAsset> assetList, ElectricityCommodity carrier, VoltageLevel voltageLevel) {
         assetList.stream().filter(a -> a instanceof Producer).forEach(producer -> {
-            translationMap.put(producer, createProducer(voltageLevel, (Producer) producer));
+            translationMap.put(producer.getId(), createProducer(voltageLevel, (Producer) producer));
         });
         assetList.stream().filter(a -> a instanceof Consumer).forEach(consumer -> {
-            translationMap.put(consumer, createConsumer(voltageLevel, consumer));
+            translationMap.put(consumer.getId(), createConsumer(voltageLevel, consumer));
         });
         assetList.stream().filter(a -> a instanceof Storage).forEach(storage -> {
-            translationMap.put(storage, createStorage(voltageLevel, (Storage) storage));
+            translationMap.put(storage.getId(), createStorage(voltageLevel, (Storage) storage));
         });
         assetList.stream().filter(a -> a instanceof AbstractBasicConversion).forEach(conversion -> {
-            translationMap.put(conversion, createConversion(voltageLevel, carrier, (AbstractBasicConversion) conversion));
+            translationMap.put(conversion.getId(), createConversion(voltageLevel, carrier, (AbstractBasicConversion) conversion));
         });
         assetList.stream().filter(a -> a instanceof Transformer).forEach(connection -> {
 //            // TODO create single bus
@@ -333,4 +359,22 @@ public class EssimLoadFlowController {
         return voltageLevel.getBusBreakerView().newBus().setId(portId).setName(portId).add();
     }
 
+
+    @Override
+    public void process(IObservationProvider source, IObservation observation) {
+        String assetId = (String) observation.getValues().get("assetId");
+        Double power = (Double) observation.getValues().get("allocationPower");
+        Object o = translationMap.get(assetId);
+        if (o == null) {
+            return;
+        }
+        if (o instanceof Load) {
+            ((Load) o).setP0(power);
+        } else if (o instanceof Generator) {
+            ((Generator) o).setTargetP(power);
+        } else if (o instanceof Battery) {
+            ((Battery) o).setTargetP(power);
+        }
+
+    }
 }

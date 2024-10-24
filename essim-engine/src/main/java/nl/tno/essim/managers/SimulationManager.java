@@ -253,7 +253,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 					simulatable.step(time);
 				}));
 			}
-
 			barrier.await();
 		}
 	}

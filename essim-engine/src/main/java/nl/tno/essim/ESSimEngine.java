@@ -149,7 +149,6 @@ public class ESSimEngine implements IStatusProvider {
         loadFlowController = new EssimLoadFlowController(simulationId);
 
 
-
         Market market = simulation.getMarket();
         // Set default min/max market prices if not defined by the input
         if (market == null) {
@@ -233,8 +232,7 @@ public class ESSimEngine implements IStatusProvider {
             Carriers carriers = esInformation.getCarriers();
             if (carriers != null) {
                 // Here we have all the information to build the powsybl network
-                loadFlowController.createNetwork(carriers.getCarrier().stream().filter( c-> c instanceof ElectricityCommodity).toList(), energyAssets);
-
+                loadFlowController.createNetwork(carriers.getCarrier().stream().filter(c -> c instanceof ElectricityCommodity).toList(), energyAssets);
 
                 TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
                 if (transportSolveOrder.isEmpty()) {
@@ -313,6 +311,7 @@ public class ESSimEngine implements IStatusProvider {
                         + (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
                 TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
                         energyAssetRoles, esdlString, this.market);
+                solver.setObservationProcessor(loadFlowController);
                 solver.setSimulationManager(simulationManager);
                 for (EnergyAsset filteredAsset : filteredAssets) {
                     solver.addToNetwork(filteredAsset);
