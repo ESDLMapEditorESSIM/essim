@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+/**
+ * Specs taken from https://pandapower.readthedocs.io/en/v2.6.0/std_types/basic.html#lines
+ */
 @AllArgsConstructor
 @Getter
 @EqualsAndHashCode

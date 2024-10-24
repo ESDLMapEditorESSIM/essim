@@ -28,6 +28,7 @@ import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.grafana.GrafanaClient;
 import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIInfo;
+import nl.tno.essim.loadflow.EssimLoadFlowController;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
@@ -60,7 +61,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
@@ -73,6 +73,7 @@ public class ESSimEngine implements IStatusProvider {
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
+    private final EssimLoadFlowController loadFlowController;
     private List<EnergyAsset> energyAssets;
     @Getter
     private String simulationId;
@@ -144,6 +145,9 @@ public class ESSimEngine implements IStatusProvider {
         if (timeStep != null) {
             simulationStepLength = parseTimeStep(timeStep);
         }
+
+        loadFlowController = new EssimLoadFlowController(simulationId);
+
 
 
         Market market = simulation.getMarket();
@@ -228,6 +232,10 @@ public class ESSimEngine implements IStatusProvider {
         if (esInformation != null) {
             Carriers carriers = esInformation.getCarriers();
             if (carriers != null) {
+                // Here we have all the information to build the powsybl network
+                loadFlowController.createNetwork(carriers.getCarrier().stream().filter( c-> c instanceof ElectricityCommodity).toList(), energyAssets);
+
+
                 TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
                 if (transportSolveOrder.isEmpty()) {
                     throw new IllegalStateException("Conflicting Control Strategies found!!");
@@ -420,7 +428,7 @@ public class ESSimEngine implements IStatusProvider {
         return grafanaClient.getDashboardUrl();
     }
 
-    public void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
+    public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
         EList<Asset> areaAssets = area.getAsset();
         if (areaAssets != null) {
             for (Asset asset : areaAssets) {
@@ -441,7 +449,7 @@ public class ESSimEngine implements IStatusProvider {
         }
     }
 
-    public void findAllEnergyAssets(AbstractBuilding building, List<EnergyAsset> assetList) {
+    public static void findAllEnergyAssets(AbstractBuilding building, List<EnergyAsset> assetList) {
         EList<Asset> buildingAssets = building.getAsset();
         if (buildingAssets != null) {
             for (Asset asset : buildingAssets) {

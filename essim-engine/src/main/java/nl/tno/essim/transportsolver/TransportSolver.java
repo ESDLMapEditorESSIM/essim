@@ -82,7 +82,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 	private String esdlString;
 	private Market market;
     private Network network;
-	private EssimLoadFlowController loadFlowController;
 
 	public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
 			Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem,
@@ -96,7 +95,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 		processedList = new ArrayList<EnergyAsset>();
 		deviceNodes = new ArrayList<Node>();
 		this.roleMap = roleMap;
-		loadFlowController = new EssimLoadFlowController();
 	}
 
 	public boolean isPartOfNetwork(Asset asset) {
@@ -168,7 +166,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 			log.error("This network ({}) will not be created!", getId());
 			return null;
 		}
-		loadFlowController.createNetwork(id, carrier, rootAsset, assetList);
 
 		rootRole = roleMap.get(rootAsset);
 
