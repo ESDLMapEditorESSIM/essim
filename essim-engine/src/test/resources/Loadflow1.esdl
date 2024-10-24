@@ -27,8 +27,8 @@
         <geometry xsi:type="esdl:Point" CRS="WGS84" lat="51.4462175269164" lon="5.4980671405792245"/>
       </asset>
       <asset xsi:type="esdl:Transformer" assetType="63 MVA 110/20 kV" name="Transformer_f300" id="f3005325-7577-473d-a50f-587743cafdb1">
-        <port xsi:type="esdl:InPort" id="ab887267-1ab1-4e7e-9492-d0278d9e2244" carrier="6a9d1250-f539-4ec4-8ee0-b8c0a11a193d" name="PrimIn" connectedTo="777c60a0-9a70-4b80-8333-d751a5d82356 05001546-124f-4a8d-a419-d637342ec24c"/>
-        <port xsi:type="esdl:OutPort" id="05001546-124f-4a8d-a419-d637342ec24c" connectedTo="ab887267-1ab1-4e7e-9492-d0278d9e2244 35ee69ac-50c5-4042-88bc-3b2a56987948" carrier="ca9149c7-2a72-43ec-a481-5c81d619b8b1" name="SecOut"/>
+        <port xsi:type="esdl:InPort" id="ab887267-1ab1-4e7e-9492-d0278d9e2244" carrier="6a9d1250-f539-4ec4-8ee0-b8c0a11a193d" name="PrimIn" connectedTo="777c60a0-9a70-4b80-8333-d751a5d82356"/>
+        <port xsi:type="esdl:OutPort" id="05001546-124f-4a8d-a419-d637342ec24c" connectedTo="35ee69ac-50c5-4042-88bc-3b2a56987948" carrier="ca9149c7-2a72-43ec-a481-5c81d619b8b1" name="SecOut"/>
         <geometry xsi:type="esdl:Point" lat="51.44577202094711" lon="5.496005192399026"/>
       </asset>
       <asset xsi:type="esdl:ElectricityCable" name="ElectricityCable_9c9f" id="9c9f7410-06fc-4df2-95fc-e3de9a227f5d" length="155.5">

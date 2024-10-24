@@ -53,9 +53,10 @@ public class EssimLoadFlowController {
          * - Then iterate through the assets connected to the carrier to create loads/batteries/generators
          * - Then iterate through the lines to connect the assets
          */
+        Substation substation = network.newSubstation().setId(network.getId() + "-substation").add();
 
         carriers.forEach(carrier -> {
-            VoltageLevel voltageLevel = network.newVoltageLevel()
+            VoltageLevel voltageLevel = substation.newVoltageLevel()
                     .setId(carrier.getId())
                     .setNominalV(((ElectricityCommodity) carrier).getVoltage())
                     .setTopologyKind(TopologyKind.BUS_BREAKER)
@@ -72,7 +73,7 @@ public class EssimLoadFlowController {
 
         // Then we create the transformers connecting the carriers
         assetList.stream().filter(a -> a instanceof Transformer).forEach(esdlTransformer -> {
-            Substation substation = network.newSubstation().setId(esdlTransformer.getId() + "-substation").add();
+//            Substation substation = network.newSubstation().setId(esdlTransformer.getId() + "-substation").add();
             TransformerSpec transformerSpec = TransformerSpec.getTransformerSpec(esdlTransformer.getAssetType());
             if (transformerSpec == null) {
                 throw new IllegalStateException("Cannot use a transformer without a type");
@@ -132,9 +133,9 @@ public class EssimLoadFlowController {
          * Now we create busses for implicit connections
          */
         connectedAssets.forEach(asset -> {
-            asset.getPort().forEach(port -> {
+            asset.getPort().stream().forEach(port -> {
                 String portId = port.getId();
-                if (!busMap.containsKey(portId)) {
+                if (!busMap.containsKey(portId) && port.getCarrier().equals(carrier)) {
                     createBus(voltageLevel, portId);
                     busCounter.incrementAndGet();
                     busMap.put(portId, portId);
