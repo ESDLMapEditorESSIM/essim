@@ -32,10 +32,11 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="nl.tno" level="debug" />
-        <Logger name="org.glassfish.grizzly" level="Info" />
-        <Logger name="org.glassfish.jersey" level="INFO" />
-<!--        <logger name="nl.tno.essim.kpi" level="TRACE"/>-->
+        <Logger name="nl.tno" level="debug"/>
+        <Logger name="org.glassfish.grizzly" level="Info"/>
+        <Logger name="org.glassfish.jersey" level="INFO"/>
+        <Logger name="com.powsybl.openloadflow.OpenLoadFlowParameters" level="WARN"/>
+        <!--        <logger name="nl.tno.essim.kpi" level="TRACE"/>-->
 
         <Root level="INFO">
             <AppenderRef ref="logfile"/>

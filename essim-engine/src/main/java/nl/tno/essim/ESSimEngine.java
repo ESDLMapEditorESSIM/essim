@@ -165,6 +165,7 @@ public class ESSimEngine implements IStatusProvider {
         // Initialise SimulationManager
         simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
                 simulationStepLength, mongo);
+        simulationManager.setLoadFlowController(loadFlowController);
 
         observationManager = new ObservationManager(simulationId);
 

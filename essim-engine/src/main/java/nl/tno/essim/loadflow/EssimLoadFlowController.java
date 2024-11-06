@@ -1,8 +1,11 @@
 package nl.tno.essim.loadflow;
 
+import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.iidm.network.Battery;
 import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.*;
+import com.powsybl.iidm.serde.XMLExporter;
+import com.powsybl.loadflow.LoadFlow;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
@@ -12,10 +15,8 @@ import nl.tno.essim.observation.IObservationProvider;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -33,9 +34,11 @@ public class EssimLoadFlowController implements IObservationProcessor {
     private final Map<String, String> busMap = new HashMap<>();
     private final Map<Carrier, VoltageLevel> voltageLevelMap = new HashMap<>();
     private final Network network;
+    private final String networkName;
 
     public EssimLoadFlowController(String networkName) {
         network = Network.create(networkName, "code");
+        this.networkName = networkName;
         new IObservationConsumer() {
 
             @Override
@@ -94,7 +97,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
         // Now we create the network per carrier
         carriers.forEach(carrier -> {
             List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(carrier)).toList().isEmpty()).toList();
-            createNetworkPerCarrier(carrier, connectedAssets);
+            createVoltageLevelPerCarrier(carrier, connectedAssets);
         });
 
         // Then we create the transformers connecting the carriers
@@ -133,10 +136,11 @@ public class EssimLoadFlowController implements IObservationProcessor {
                     .setId(esdlTransformer.getId() + "-transformer")
                     .add();
         });
-
+        Exporter ex = new XMLExporter();
+        ex.export(network, new Properties(), DataSource.fromPath(Paths.get("."), "essim-network-" + networkName + ".xml"));
     }
 
-    private void createNetworkPerCarrier(Carrier carrier, List<EnergyAsset> connectedAssets) {
+    private void createVoltageLevelPerCarrier(Carrier carrier, List<EnergyAsset> connectedAssets) {
         VoltageLevel voltageLevel = voltageLevelMap.get(carrier);
         AtomicInteger busCounter = new AtomicInteger();
         /*
@@ -245,24 +249,27 @@ public class EssimLoadFlowController implements IObservationProcessor {
     }
 
     private void createAssets(List<EnergyAsset> assetList, ElectricityCommodity carrier, VoltageLevel voltageLevel) {
+        AtomicInteger producerCounter = new AtomicInteger();
+        AtomicInteger consumerCounter = new AtomicInteger();
+        AtomicInteger storageCounter = new AtomicInteger();
+        AtomicInteger conversionCounter = new AtomicInteger();
         assetList.stream().filter(a -> a instanceof Producer).forEach(producer -> {
             translationMap.put(producer.getId(), createProducer(voltageLevel, (Producer) producer));
+            producerCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof Consumer).forEach(consumer -> {
             translationMap.put(consumer.getId(), createConsumer(voltageLevel, consumer));
+            consumerCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof Storage).forEach(storage -> {
             translationMap.put(storage.getId(), createStorage(voltageLevel, (Storage) storage));
+            storageCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof AbstractBasicConversion).forEach(conversion -> {
             translationMap.put(conversion.getId(), createConversion(voltageLevel, carrier, (AbstractBasicConversion) conversion));
+            conversionCounter.incrementAndGet();
         });
-        assetList.stream().filter(a -> a instanceof Transformer).forEach(connection -> {
-//            // TODO create single bus
-////            netw
-//
-//            translationMap.put(connection, createConversion(voltageLevel, carrier, (AbstractBasicConversion) connection));
-        });
+        log.debug("Created {} producers, {} consumers, {} storages and {} conversions", producerCounter.get(), consumerCounter.get(), storageCounter.get(), conversionCounter.get());
     }
 
     private Object createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, AbstractBasicConversion conversion) {
@@ -340,7 +347,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setTargetQ(0)
                 .setBus(busId)
                 .setConnectableBus(busId)
-                .setVoltageRegulatorOn(false)
+                .setVoltageRegulatorOn(true)
+                .setTargetV(voltageLevel.getNominalV())
                 .add();
         return generator;
     }
@@ -362,8 +370,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
 
     @Override
     public void process(IObservationProvider source, IObservation observation) {
-        String assetId = (String) observation.getValues().get("assetId");
-        Double power = (Double) observation.getValues().get("allocationPower");
+        String assetId = (String) observation.getTags().get("assetId");
+        Double power = Math.abs((Double) observation.getValues().get("allocationPower"));
         Object o = translationMap.get(assetId);
         if (o == null) {
             return;
@@ -376,5 +384,9 @@ public class EssimLoadFlowController implements IObservationProcessor {
             ((Battery) o).setTargetP(power);
         }
 
+    }
+
+    public void run() {
+        LoadFlow.run(network);
     }
 }
