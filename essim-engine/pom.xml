@@ -286,7 +286,7 @@
                 <executions>
                     <!--Unpack Swagger UI-->
                     <execution>
-                        <id>unpack</id>
+                        <id>unpack-swagger</id>
                         <goals>
                             <goal>unpack</goal>
                         </goals>
@@ -298,8 +298,15 @@
                                     <artifactId>swagger-ui</artifactId>
                                     <version>${swagger-ui.version}</version>
                                     <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.outputDirectory}/web/swagger-ui/</outputDirectory>
                                     <includes>META-INF/resources/webjars/swagger-ui/${swagger-ui.version}/*</includes>
-                                    <outputDirectory>${java.io.tmpdir}/mvn/swagger-ui/</outputDirectory>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                                            <pattern>^.*/${swagger-ui.version}/</pattern>
+                                            <replacement>./</replacement>
+                                        </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
+                                    </fileMappers>
                                     <destFileName>swagger-ui</destFileName>
                                 </artifactItem>
                             </artifactItems>
@@ -372,23 +379,6 @@
                             </resources>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>copy-jars</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/web/swagger-ui/</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>
-                                        ${java.io.tmpdir}/mvn/swagger-ui/META-INF/resources/webjars/swagger-ui/${swagger-ui.version}/
-                                    </directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -397,7 +387,7 @@
                 <version>1.5.3</version>
                 <executions>
                     <execution>
-                        <phase>process-sources</phase>
+                        <phase>process-resources</phase>
                         <goals>
                             <goal>replace</goal>
                         </goals>
