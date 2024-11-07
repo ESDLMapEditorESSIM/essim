@@ -280,7 +280,7 @@
                         <goals>
                             <goal>unpack</goal>
                         </goals>
-                        <phase>initialize</phase>
+                        <phase>generate-resources</phase>
                         <configuration>
                             <artifactItems>
                                 <artifactItem>
@@ -364,7 +364,7 @@
                     </execution>
                     <execution>
                         <id>copy-jars</id>
-                        <phase>initialize</phase>
+                        <phase>generate-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
@@ -387,7 +387,7 @@
                 <version>1.5.3</version>
                 <executions>
                     <execution>
-                        <phase>initialize</phase>
+                        <phase>process-sources</phase>
                         <goals>
                             <goal>replace</goal>
                         </goals>
