@@ -15,7 +15,6 @@
  */
 package nl.tno.essim.rest;
 
-import io.swagger.v3.jaxrs2.integration.OpenApiServlet;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -42,7 +41,7 @@ public class EssimHttpServer extends ContextHandler {
         servletContext.setContextPath("/");
 
 
-        ServletHolder jerseyServlet = servletContext.addServlet(ServletContainer.class, "/*");
+        ServletHolder jerseyServlet = servletContext.addServlet(ServletContainer.class, "/essim/*");
         jerseyServlet.setInitOrder(1);
         jerseyServlet.setInitParameter(
                 "jersey.config.server.provider.packages",
@@ -59,23 +58,24 @@ public class EssimHttpServer extends ContextHandler {
         jerseyServlet.setInitParameter("jakarta.ws.rs.Application", EssimJerseyApplication.class.getCanonicalName());
         jerseyServlet.setInitParameter("jersey.config.property.WebPageContentRegex", "/.*");
         jerseyServlet.setInitParameter("jersey.config.server.provider.classnames", "org.glassfish.jersey.media.multipart.MultiPartFeature,org.glassfish.jersey.logging.LoggingFeature");
-        jerseyServlet.setInitParameter("openApi.configuration.prettyPrint", "true");
         jerseyServlet.setInitParameter("jersey.config.servlet.filter.forwardOn404", "true");
         jerseyServlet.setInitParameter("jersey.config.server.trace", "ALL");
+        jerseyServlet.setInitParameter("openApi.configuration.prettyPrint", "true");
 
-// Expose API definition independently into yaml/json
         Server server = new Server(port);
         server.setHandler(
                 new HandlerList(
-                        createContextHandler("/swagger-ui", createStaticFileHandler("swagger-ui")),
+                        createContextHandler("/openapi", createStaticFileHandler("/web/swagger-ui")),
                         servletContext
                 )
         );
+        server.setRequestLog(new JettyRequestLog());
 
         server.start();
-        log.info("ESSIM OpenAPI endpoint available at {}://{}:{}/swagger-ui/", scheme, host, port);
+        log.info("ESSIM OpenAPI endpoint available at {}://{}:{}/openapi/", scheme, host, port);
         URI publishURI = URI.create(String.format("%s://%s:%d/%s", scheme, host, port, path));
         log.info("ESSIM @ {}", publishURI);
+        server.join();
     }
 
 

@@ -2,7 +2,6 @@ package nl.tno.essim.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +40,7 @@ import java.util.List;
                 description = "API for managing ESSIM simulations"
         )
 )@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
-@Path("/essim/simulation")
+@Path("/simulation")
 @Slf4j
 public class SimulationService {
     private static final String ESSIM_ID = System.getProperty(Commons.ESSIM_REVISION);

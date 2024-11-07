@@ -59,9 +59,9 @@ public class ESSimMain {
         // Setup RAML server
         log.debug("Starting ESSIM REST Server");
         try {
+            KPIManager.getInstance();
             httpServer = new EssimHttpServer(System.getenv(HTTP_SERVER_SCHEME), System.getenv(HTTP_SERVER_HOSTNAME),
                     Integer.parseInt(System.getenv(HTTP_SERVER_PORT)), System.getenv(HTTP_SERVER_PATH));
-            KPIManager.getInstance();
         } catch (Exception e) {
             log.error("Could not start HTTP server", e);
             System.exit(1);

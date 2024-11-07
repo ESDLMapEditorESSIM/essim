@@ -37,7 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Slf4j
-@ApplicationPath("/")
+@ApplicationPath("/essim")
 @OpenAPIDefinition(
         servers = @Server(
                 url = "/",
