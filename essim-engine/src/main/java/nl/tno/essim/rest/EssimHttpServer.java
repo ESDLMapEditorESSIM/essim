@@ -27,6 +27,8 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Slf4j
 public class EssimHttpServer extends ContextHandler {
@@ -35,7 +37,7 @@ public class EssimHttpServer extends ContextHandler {
         // direct java.util.logging to slf4j (Jersey/Grizzly)
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
-
+//        Logger.getGlobal().setLevel(Level.ALL);
 
         ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
         servletContext.setContextPath("/");
@@ -62,7 +64,9 @@ public class EssimHttpServer extends ContextHandler {
         jerseyServlet.setInitParameter("jersey.config.server.trace", "ALL");
         jerseyServlet.setInitParameter("openApi.configuration.prettyPrint", "true");
 
+
         Server server = new Server(port);
+        server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", "100000000");
         server.setHandler(
                 new HandlerList(
                         createContextHandler("/openapi", createStaticFileHandler("/web/swagger-ui")),
