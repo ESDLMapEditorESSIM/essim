@@ -27,8 +27,6 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.URI;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Slf4j
 public class EssimHttpServer extends ContextHandler {
