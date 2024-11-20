@@ -20,7 +20,6 @@ import esdl.EsdlFactory;
 import esdl.ProfileElement;
 import esdl.ProfileTypeEnum;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.BasicEList;
@@ -43,9 +42,12 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
             return;
         }
 
-        EssimDuration simStep = Converter.toEssimDuration(step);
         synchronized (lock) {
-            setTimestep((int) simStep.getSeconds());
+            int timeStep = (int) Converter.toEssimDuration(step).getSeconds();
+            if (timeStep != 0) {
+                setTimestep(timeStep);
+            }
+
 
             long seriesStart = EssimTime.localDateTimeToDate(EssimTime.dateFromGUI(getStartDateTime())).getTime() / 1000L;
             if ((from.getTime() - profileStart) % getTimestep() == 0) {
@@ -150,30 +152,24 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
                     }
                 }
                 if (getTimestep() == 0) {
-                    if (elementStartSeconds == profileStart) {
-                        // just replace it
-                        values.set(0, profileElement.getValue());
-                    } else if (elementStartSeconds > profileStart) {
-                        setTimestep((int) (elementStartSeconds - profileStart));
-                        values.add(profileElement.getValue());
-                    } else {
-                        throw new IllegalArgumentException("Cannot add an element before the start of the profile");
-                    }
+                    setTimestep(TIMESTEP_EDEFAULT);
+                }
+                if (elementStartSeconds < profileStart) {
+                    throw new IllegalArgumentException("Cannot add an element before the start of the profile");
+                }
+                // timestep != 0 -> we need to add/replace an element
+                if ((elementStartSeconds - profileStart) % getTimestep() != 0) {
+                    throw new IllegalArgumentException("Cannot add an element to a TimeSeriesProfile with a different step size");
+                }
+                int elementIndex = (int) ((elementStartSeconds - profileStart) / getTimestep());
+                if (elementIndex < values.size()) {
+                    values.set(elementIndex, profileElement.getValue());
                 } else {
-                    // timestep != 0 -> we need to add/replace an element
-                    if ((elementStartSeconds - profileStart) % getTimestep() != 0) {
-                        throw new IllegalArgumentException("Cannot add an element to a TimeSeriesProfile with a different step size");
+                    // Fill until the element
+                    while (elementIndex > values.size()) {
+                        values.add(0.0);
                     }
-                    int elementIndex = (int) ((elementStartSeconds - profileStart) / getTimestep());
-                    if (elementIndex < values.size()) {
-                        values.set(elementIndex, profileElement.getValue());
-                    } else {
-                        // Fill until the element
-                        while (elementIndex > values.size()) {
-                            values.add(0.0);
-                        }
-                        values.add(profileElement.getValue());
-                    }
+                    values.add(profileElement.getValue());
                 }
             }
         }
