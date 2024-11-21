@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
+import nl.tno.essim.util.ProfileUtil;
 import org.eclipse.emf.common.util.EList;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
@@ -146,7 +147,15 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         LocalDateTime startTime = EssimTime.dateToLocalDateTime(from);
         LocalDateTime endTime = EssimTime.dateToLocalDateTime(to);
 
-        EList<ProfileElement> eList = dataCache.get(startTime, endTime, aggregationPrecision, dataProcessor);
+        EList<ProfileElement> eList = dataCache.get(startTime, endTime, dataProcessor);
+        if (ProfileUtil.isEnergyProfile(this)) {
+            for (ProfileElement profileElement : eList) {
+                var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
+                var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();
+                double fraction = (partEnd.getTime() - partStart.getTime()) / (double) (profileElement.getTo().getTime() - profileElement.getFrom().getTime());
+                profileElement.setValue(profileElement.getValue() * fraction);
+            }
+        }
         return eList;
     }
 
@@ -193,8 +202,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
                         }
                         for (QueryResult.Series series : result.getSeries()) {
                             log.debug("Query returned {} values for {}", series.getValues().size(), profileCacheKey);
-                            dataCache = new TimeSeriesDataCache(field, series.getValues(),
-                                    annualChange);
+                            dataCache = new TimeSeriesDataCache(field, series.getValues(), annualChange);
                         }
                     }
                     ProfileCache.getInstance().cache(profileCacheKey, dataCache);
