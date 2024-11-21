@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
-import nl.tno.essim.util.ProfileUtil;
 import org.eclipse.emf.common.util.EList;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;

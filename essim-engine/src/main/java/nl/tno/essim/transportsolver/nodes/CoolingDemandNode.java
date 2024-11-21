@@ -37,7 +37,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtil;
+import nl.tno.essim.util.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -82,7 +82,7 @@ public class CoolingDemandNode extends Node {
 		double energyOutput = Double.NaN;
 		GenericProfile convProfile = null;
 		if (profilePort != null) {
-			convProfile = ProfileUtil.getEnergyProfile(profilePort);
+			convProfile = ProfileUtils.getEnergyProfile(profilePort);
 		}
 
 		// Checks if an asset is operational (accounts for Commissioning and
@@ -92,10 +92,10 @@ public class CoolingDemandNode extends Node {
 			return;
 		}
 		if (convProfile != null) {
-			if (ProfileUtil.isPowerProfile(convProfile)) {
-				energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(convProfile, now));
-			} else if (ProfileUtil.isEnergyProfile(convProfile)) {
-				energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(convProfile, now));
+			if (ProfileUtils.isPowerProfile(convProfile)) {
+				energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(convProfile, now));
+			} else if (ProfileUtils.isEnergyProfile(convProfile)) {
+				energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(convProfile, now));
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {
@@ -103,13 +103,13 @@ public class CoolingDemandNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalCostProfile, now));
+				Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalCostProfile, now));
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-				Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(costProfile, now));
+				Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(costProfile, now));
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}

@@ -37,7 +37,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtil;
+import nl.tno.essim.util.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -80,7 +80,7 @@ public class ConsumerNode extends Node {
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
 		updateMarketInfo(marketInfo);
 		double energyOutput = Double.NaN;
-		GenericProfile consumerProfile = ProfileUtil.getEnergyProfile(inputPort);
+		GenericProfile consumerProfile = ProfileUtils.getEnergyProfile(inputPort);
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
@@ -89,12 +89,12 @@ public class ConsumerNode extends Node {
 			return;
 		}
 		if (consumerProfile != null) {
-			if (ProfileUtil.isPowerProfile(consumerProfile)) {
-				energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(consumerProfile, now));
-			} else if (ProfileUtil.isEnergyProfile(consumerProfile)) {
-				energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(consumerProfile, now));
-			} else if (ProfileUtil.isPercentageProfile(consumerProfile)) {
-				energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(consumerProfile, inputPort, now));
+			if (ProfileUtils.isPowerProfile(consumerProfile)) {
+				energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(consumerProfile, now));
+			} else if (ProfileUtils.isEnergyProfile(consumerProfile)) {
+				energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(consumerProfile, now));
+			} else if (ProfileUtils.isPercentageProfile(consumerProfile)) {
+				energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(consumerProfile, inputPort, now));
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {
@@ -102,13 +102,13 @@ public class ConsumerNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalCostProfile, now));
+				Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalCostProfile, now));
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-				Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(costProfile, now));
+				Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(costProfile, now));
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}

@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ProfileUtil {
+public class ProfileUtils {
     public static GenericProfile getEnergyProfile(Port port) {
         GenericProfile energyProfile = null;
         for (GenericProfile profile : port.getProfile()) {
@@ -65,7 +65,7 @@ public class ProfileUtil {
             Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
             EList<ProfileElement> profileElements = profile.getProfile(from, to, Converter.toESDLDuration(horizon.getPeriod()));
-            if (ProfileUtil.isEnergyProfile(profile)) {
+            if (ProfileUtils.isEnergyProfile(profile)) {
                 for (ProfileElement profileElement : profileElements) {
                     var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
                     var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();

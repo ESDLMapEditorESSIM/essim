@@ -114,14 +114,27 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public String addSimulation(EssimSimulation simulation) {
+        String esdl = simulation.getEsdlContents();
+        // Ugly temporary hack: remove ESDL content if it is too big
+        if (simulation.getEsdlContents().length() > 16777216) {
+            simulation.setEsdlContents("");
+        }
         InsertOneResult insertOneResult = essimCollection.insertOne(simulation);
-        return insertOneResult.getInsertedId().asObjectId().getValue().toHexString();
+        String hexId = insertOneResult.getInsertedId().asObjectId().getValue().toHexString();
+        simulation.setEsdlContents(esdl);
+        return hexId;
     }
 
     @Override
     public void updateSimulationData(String simulationId, EssimSimulation simulationData) {
+        String esdl = simulationData.getEsdlContents();
+        // Ugly temporary hack: remove ESDL content if it is too big
+        if (simulationData.getEsdlContents().length() > 16777216) {
+            simulationData.setEsdlContents("");
+        }
         simulationData.getAdditionalProperties().clear();
         essimCollection.replaceOne(Filters.eq("_id", new ObjectId(simulationId)), simulationData);
+        simulationData.setEsdlContents(esdl);
     }
 
     @Override

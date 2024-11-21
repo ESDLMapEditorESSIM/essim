@@ -40,7 +40,7 @@ import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtil;
+import nl.tno.essim.util.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -81,15 +81,15 @@ public class StorageNode extends Node {
 		if (storage.getProfile() != null) {
 			double energy = 0.0;
 			GenericProfile storageProfile = storage.getProfile();
-			if (ProfileUtil.isPowerProfile(storageProfile)) {
-				energy = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(storageProfile, now));
-			} else if (ProfileUtil.isEnergyProfile(storageProfile)) {
-				energy = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(storageProfile, now));
-			} else if (ProfileUtil.isSoCProfile(storageProfile)) {
+			if (ProfileUtils.isPowerProfile(storageProfile)) {
+				energy = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(storageProfile, now));
+			} else if (ProfileUtils.isEnergyProfile(storageProfile)) {
+				energy = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(storageProfile, now));
+			} else if (ProfileUtils.isSoCProfile(storageProfile)) {
 				LocalDateTime startTime = now.getStartTime().minus(timeStep, ChronoUnit.SECONDS);
 				Horizon last = new Horizon(startTime, timeStepinDT);
-				double currentSoC = ProfileUtil.aggregateSoC(ProfileUtil.readProfile(storageProfile, last));
-				double newSoC = ProfileUtil.aggregateSoC(ProfileUtil.readProfile(storageProfile, now));
+				double currentSoC = ProfileUtils.aggregateSoC(ProfileUtils.readProfile(storageProfile, last));
+				double newSoC = ProfileUtils.aggregateSoC(ProfileUtils.readProfile(storageProfile, now));
 				energy = ((newSoC - currentSoC) * capacity);
 			}
 
@@ -116,11 +116,11 @@ public class StorageNode extends Node {
 					StorageStrategy storageStrategy = (StorageStrategy) controlStrategy;
 					GenericProfile marginalChargeCosts = storageStrategy.getMarginalChargeCosts();
 					if (marginalChargeCosts != null) {
-						mcCharge = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalChargeCosts, now));
+						mcCharge = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalChargeCosts, now));
 					}
 					GenericProfile marginalDischargeCosts = storageStrategy.getMarginalDischargeCosts();
 					if (marginalDischargeCosts != null) {
-						mcDischarge = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalDischargeCosts, now));
+						mcDischarge = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalDischargeCosts, now));
 					}
 				}
 			}

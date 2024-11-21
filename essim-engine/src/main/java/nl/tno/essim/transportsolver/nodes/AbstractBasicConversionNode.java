@@ -30,7 +30,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtil;
+import nl.tno.essim.util.ProfileUtils;
 import org.eclipse.emf.common.util.EList;
 
 import java.math.BigDecimal;
@@ -189,10 +189,10 @@ public class AbstractBasicConversionNode extends Node {
         }
         double energyOutput;
         if (convProfile != null) {
-            if (ProfileUtil.isPowerProfile(convProfile)) {
-                energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(convProfile, now));
-            } else if (ProfileUtil.isEnergyProfile(convProfile)) {
-                energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(convProfile, now));
+            if (ProfileUtils.isPowerProfile(convProfile)) {
+                energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(convProfile, now));
+            } else if (ProfileUtils.isEnergyProfile(convProfile)) {
+                energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(convProfile, now));
             } else {
                 throw new IllegalStateException(
                         "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
@@ -228,7 +228,7 @@ public class AbstractBasicConversionNode extends Node {
                 }
                 carrierCost = getCost();
             } else {
-                carrierCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(carrierCostProfile, now));
+                carrierCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(carrierCostProfile, now));
             }
             if (entry.getKey() instanceof InPort) {
                 sumIn += entry.getValue() * carrierCost;
@@ -267,7 +267,7 @@ public class AbstractBasicConversionNode extends Node {
             }
         } else {
             // CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-            GenericProfile convProfile = ProfileUtil.getEnergyProfile(getConnectedPort());
+            GenericProfile convProfile = ProfileUtils.getEnergyProfile(getConnectedPort());
             makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
         }
     }
@@ -280,17 +280,17 @@ public class AbstractBasicConversionNode extends Node {
             double energyOutput;
             InPort inputPort = (InPort) getConnectedPort();
             if (inputPort != null) {
-                convProfile = ProfileUtil.getEnergyProfile(inputPort);
+                convProfile = ProfileUtils.getEnergyProfile(inputPort);
             } else {
                 // Impossible!
                 throw new IllegalStateException("Conversion " + conversionName + " should not exist in this network!");
             }
 
             if (convProfile != null) {
-                if (ProfileUtil.isPowerProfile(convProfile)) {
-                    energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(convProfile, now));
-                } else if (ProfileUtil.isEnergyProfile(convProfile)) {
-                    energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(convProfile, now));
+                if (ProfileUtils.isPowerProfile(convProfile)) {
+                    energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(convProfile, now));
+                } else if (ProfileUtils.isEnergyProfile(convProfile)) {
+                    energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(convProfile, now));
                 } else {
                     throw new IllegalStateException(
                             "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
@@ -310,7 +310,7 @@ public class AbstractBasicConversionNode extends Node {
             GenericProfile convProfile;
             OutPort outputPort = (OutPort) getConnectedPort();
             if (outputPort != null) {
-                convProfile = ProfileUtil.getEnergyProfile(outputPort);
+                convProfile = ProfileUtils.getEnergyProfile(outputPort);
             } else {
                 // Impossible!
                 throw new IllegalStateException("Conversion " + conversionName + " should not exist in this network!");
@@ -336,7 +336,7 @@ public class AbstractBasicConversionNode extends Node {
             }
         } else {
             // PRODUCER + DRIVENBYDEMAND + OTHER OUTPUT CARRIER
-            GenericProfile convProfile = ProfileUtil.getEnergyProfile(getConnectedPort());
+            GenericProfile convProfile = ProfileUtils.getEnergyProfile(getConnectedPort());
             makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
         }
     }
@@ -345,10 +345,10 @@ public class AbstractBasicConversionNode extends Node {
                                                     Horizon now) {
         double energyOutput;
         if (convProfile != null) {
-            if (ProfileUtil.isPowerProfile(convProfile)) {
-                energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(convProfile, now));
-            } else if (ProfileUtil.isEnergyProfile(convProfile)) {
-                energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(convProfile, now));
+            if (ProfileUtils.isPowerProfile(convProfile)) {
+                energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(convProfile, now));
+            } else if (ProfileUtils.isEnergyProfile(convProfile)) {
+                energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(convProfile, now));
             } else {
                 throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
             }
@@ -361,7 +361,7 @@ public class AbstractBasicConversionNode extends Node {
     private void updateCost(Horizon now) {
         Double aggregateCost = Double.NaN;
         if (marginalCostProfile != null) {
-            aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalCostProfile, now));
+            aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalCostProfile, now));
         } else if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
             double costSum = 0.0;
             for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
@@ -370,7 +370,7 @@ public class AbstractBasicConversionNode extends Node {
                 Double cost = 0.0;
                 double ratio = 1.0;
                 if (costProfile != null) {
-                    cost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(costProfile, now));
+                    cost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(costProfile, now));
                     if (inPort != null) {
                         ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
                     }
@@ -416,7 +416,7 @@ public class AbstractBasicConversionNode extends Node {
                 if (getRole().equals(Role.PRODUCER)) {
                     portEnergy = -portEnergy;
                 }
-                ProfileUtil.writeProfile(entry.getKey(), timestamp, portEnergy);
+                ProfileUtils.writeProfile(entry.getKey(), timestamp, portEnergy);
                 if (entry.getKey().getCarrier() instanceof EnergyCarrier) {
                     calculateCarrierProperties(timestamp, builder, portEnergy, entry.getKey().getCarrier());
 
@@ -441,8 +441,8 @@ public class AbstractBasicConversionNode extends Node {
             builder.value("emission", emission);
             builder.value("fuelConsumption", inputCarrierQuantity);
 
-            double currentInputCarrierCost = ProfileUtil.aggregateCost(
-                    ProfileUtil.readProfile(cost, new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
+            double currentInputCarrierCost = ProfileUtils.aggregateCost(
+                    ProfileUtils.readProfile(cost, new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
             if (!Double.isNaN(currentInputCarrierCost)) {
                 double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
                 builder.value("cost", inputCarrierCost);
