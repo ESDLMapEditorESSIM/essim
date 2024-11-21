@@ -45,6 +45,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.ProfileUtil;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -158,7 +159,7 @@ public class HybridHeatPumpNode extends Node {
 				double totalPossibleThermalOutput = maxElecPowerThermal + maxGasPowerThermal;
 				double energyOutput = timeStep * totalPossibleThermalOutput;
 				if (marginalCostProfile != null) {
-					Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+					Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalCostProfile, now));
 					if (Double.isNaN(aggregateCost)) {
 						aggregateCost = getDefaultMarginalCost();
 					}
@@ -173,8 +174,8 @@ public class HybridHeatPumpNode extends Node {
 				// PRODUCER + DRIVENBYDEMAND
 				// At least one of the input ports was already solved, so read connected port
 				// and make an inflexible production curve
-				GenericProfile energyOutputProfile = Commons.getEnergyProfile(connectedPort);
-				double energyOutput = Commons.aggregateEnergy(Commons.readProfile(energyOutputProfile, now));
+				GenericProfile energyOutputProfile = ProfileUtil.getEnergyProfile(connectedPort);
+				double energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(energyOutputProfile, now));
 				makeInflexibleProductionFunction(energyOutput);
 
 			} else if (controlStrategy instanceof DrivenByProfile) {
@@ -190,10 +191,10 @@ public class HybridHeatPumpNode extends Node {
 					double profileValue = 0.0;
 					double energyOutput = 0.0;
 					if (drivingProfile != null) {
-						if (Commons.isPowerProfile(drivingProfile)) {
-							profileValue = timeStep * Commons.aggregatePower(Commons.readProfile(drivingProfile, now));
-						} else if (Commons.isEnergyProfile(drivingProfile)) {
-							profileValue = Commons.aggregateEnergy(Commons.readProfile(drivingProfile, now));
+						if (ProfileUtil.isPowerProfile(drivingProfile)) {
+							profileValue = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(drivingProfile, now));
+						} else if (ProfileUtil.isEnergyProfile(drivingProfile)) {
+							profileValue = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(drivingProfile, now));
 						} else {
 							throw new IllegalStateException("Profile in the DrivenByProfile control strategy of HHP "
 									+ hhpName + " is neither Power nor Energy!");
@@ -222,8 +223,8 @@ public class HybridHeatPumpNode extends Node {
 				// CONSUMER + DRIVENBYDEMAND
 				// Heat network was already solved at this point, so read connected port and
 				// make an inflexible consumption curve
-				GenericProfile energyInputProfile = Commons.getEnergyProfile(connectedPort);
-				double energyInput = Commons.aggregateEnergy(Commons.readProfile(energyInputProfile, now));
+				GenericProfile energyInputProfile = ProfileUtil.getEnergyProfile(connectedPort);
+				double energyInput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(energyInputProfile, now));
 				makeInflexibleConsumptionFunction(energyInput);
 
 			} else if (controlStrategy instanceof DrivenBySupply) {
@@ -234,7 +235,7 @@ public class HybridHeatPumpNode extends Node {
 				if (connectedPort.equals(eInPort)) {
 					energyInput = maxElecPowerThermal / cop;
 					if (elecCostProfile != null) {
-						carrierCost = Commons.aggregateCost(Commons.readProfile(elecCostProfile, now));
+						carrierCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(elecCostProfile, now));
 						if (Double.isNaN(carrierCost)) {
 							carrierCost = getDefaultMarginalCost();
 						}
@@ -242,7 +243,7 @@ public class HybridHeatPumpNode extends Node {
 				} else if (connectedPort.equals(gInPort)) {
 					energyInput = maxGasPowerThermal / efficiency;
 					if (gasCostProfile != null) {
-						carrierCost = Commons.aggregateCost(Commons.readProfile(gasCostProfile, now));
+						carrierCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(gasCostProfile, now));
 						if (Double.isNaN(carrierCost)) {
 							carrierCost = getDefaultMarginalCost();
 						}
@@ -252,7 +253,7 @@ public class HybridHeatPumpNode extends Node {
 							+ " cannot be a consumer in this network -> " + networkId + "!");
 				}
 				if (marginalCostProfile != null) {
-					Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+					Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalCostProfile, now));
 					if(Double.isNaN(aggregateCost)) {
 						aggregateCost = getDefaultMarginalCost();
 					}
@@ -272,10 +273,10 @@ public class HybridHeatPumpNode extends Node {
 				GenericProfile drivingProfile = drivenByProfile.getProfile();
 				double profileValue = 0.0;
 				if (drivingProfile != null) {
-					if (Commons.isPowerProfile(drivingProfile)) {
-						profileValue = timeStep * Commons.aggregatePower(Commons.readProfile(drivingProfile, now));
-					} else if (Commons.isEnergyProfile(drivingProfile)) {
-						profileValue = Commons.aggregateEnergy(Commons.readProfile(drivingProfile, now));
+					if (ProfileUtil.isPowerProfile(drivingProfile)) {
+						profileValue = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(drivingProfile, now));
+					} else if (ProfileUtil.isEnergyProfile(drivingProfile)) {
+						profileValue = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(drivingProfile, now));
 					} else {
 						throw new IllegalStateException("Profile in the DrivenByProfile control strategy of HHP "
 								+ hhpName + " is neither Power nor Energy!");
@@ -340,8 +341,8 @@ public class HybridHeatPumpNode extends Node {
 					eInputEnergy = (maxElecPowerThermal * timeStep) / cop;
 					gInputEnergy = (maxGasPowerThermal * timeStep) / efficiency;
 				}
-				Commons.writeProfile(eInPort, timestamp, eInputEnergy);
-				Commons.writeProfile(gInPort, timestamp, gInputEnergy);
+				ProfileUtil.writeProfile(eInPort, timestamp, eInputEnergy);
+				ProfileUtil.writeProfile(gInPort, timestamp, gInputEnergy);
 
 			} else if (controlStrategy instanceof DrivenBySupply) {
 				// PRODUCER + DRIVENBYSUPPLY
@@ -383,9 +384,9 @@ public class HybridHeatPumpNode extends Node {
 					throw new IllegalStateException("Hybrid heat pump " + hhpName
 							+ " cannot be a consumer in this network -> " + networkId + "!");
 				}
-				Commons.writeProfile(eInPort, timestamp, eInputEnergy);
-				Commons.writeProfile(gInPort, timestamp, gInputEnergy);
-				Commons.writeProfile(hOutPort, timestamp, hOutputEnergy);
+				ProfileUtil.writeProfile(eInPort, timestamp, eInputEnergy);
+				ProfileUtil.writeProfile(gInPort, timestamp, gInputEnergy);
+				ProfileUtil.writeProfile(hOutPort, timestamp, hOutputEnergy);
 
 			} else {
 				// CONSUMER + DRIVENBYPROFILE

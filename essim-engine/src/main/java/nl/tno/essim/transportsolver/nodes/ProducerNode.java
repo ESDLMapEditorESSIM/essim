@@ -42,6 +42,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.ProfileUtil;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -103,17 +104,17 @@ public class ProducerNode extends Node {
 		}
 		for (Port port : producer.getPort()) {
 			if (port instanceof OutPort) {
-				GenericProfile producerProfile = Commons.getEnergyProfile(port);
+				GenericProfile producerProfile = ProfileUtil.getEnergyProfile(port);
 				if (producerProfile != null) {
-					if (Commons.isPowerProfile(producerProfile)) {
-						energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(producerProfile, now));
+					if (ProfileUtil.isPowerProfile(producerProfile)) {
+						energyOutput = timeStep * ProfileUtil.aggregatePower(ProfileUtil.readProfile(producerProfile, now));
 						break;
-					} else if (Commons.isEnergyProfile(producerProfile)) {
-						energyOutput = Commons.aggregateEnergy(Commons.readProfile(producerProfile, now));
+					} else if (ProfileUtil.isEnergyProfile(producerProfile)) {
+						energyOutput = ProfileUtil.aggregateEnergy(ProfileUtil.readProfile(producerProfile, now));
 						break;
-					} else if (Commons.isPercentageProfile(producerProfile)) {
+					} else if (ProfileUtil.isPercentageProfile(producerProfile)) {
 						energyOutput = timeStep
-								* Commons.aggregatePower(Commons.readProfile(producerProfile, port, now));
+								* ProfileUtil.aggregatePower(ProfileUtil.readProfile(producerProfile, port, now));
 					}
 				}
 			}
@@ -127,13 +128,13 @@ public class ProducerNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+				Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(marginalCostProfile, now));
 				if (Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+				Double aggregateCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(costProfile, now));
 				if (Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
@@ -178,7 +179,7 @@ public class ProducerNode extends Node {
 					builder.value("emission", emission);
 					builder.value("fuelConsumption", inputCarrierQuantity);
 
-					double currentInputCarrierCost = Commons.aggregateCost(Commons.readProfile(carrier.getCost(),
+					double currentInputCarrierCost = ProfileUtil.aggregateCost(ProfileUtil.readProfile(carrier.getCost(),
 							new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength())));
 					if (!Double.isNaN(currentInputCarrierCost)) {
 						double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
