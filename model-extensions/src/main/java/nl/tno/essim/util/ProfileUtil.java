@@ -64,8 +64,16 @@ public class ProfileUtil {
             Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
             Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
-            EList<ProfileElement> profileElements = profile.getProfile(from, to,
-                    Converter.toESDLDuration(horizon.getPeriod()));
+            EList<ProfileElement> profileElements = profile.getProfile(from, to, Converter.toESDLDuration(horizon.getPeriod()));
+            if (ProfileUtil.isEnergyProfile(profile)) {
+                for (ProfileElement profileElement : profileElements) {
+                    var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
+                    var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();
+                    double fraction = (partEnd.getTime() - partStart.getTime()) / (double) (profileElement.getTo().getTime() - profileElement.getFrom().getTime());
+                    profileElement.setValue(profileElement.getValue() * fraction);
+                }
+            }
+            // TODO aggregate here!
             return profileElements.stream().mapToDouble(s -> s.getValue()).boxed().collect(Collectors.toList());
         }
         return null;
@@ -218,4 +226,33 @@ public class ProfileUtil {
 
         return profile.getProfileType().equals(ProfileTypeEnum.STATEOFCHARGE_IN_WS);
     }
-}
+
+    /**
+     * Determines if the date ranges of two ProfileElement instances overlap.
+     *
+     * @param element1 The first ProfileElement.
+     * @param element2 The second ProfileElement.
+     * @return true if there is an overlap in the date ranges, false otherwise.
+     */
+    public static boolean hasOverlap(ProfileElement element1, ProfileElement element2) {
+        Date from1 = element1.getFrom();
+        Date from2 = element2.getFrom();
+        Date to1 = element1.getTo();
+        Date to2 = element2.getTo();
+
+        // If both `to` values are null, they overlap infinitely
+        if (to1 == null && to2 == null) {
+            return true;
+        }
+
+        // Swap null end dates with the latest possible date
+        if (to1 == null) {
+            to1 = new Date(Long.MAX_VALUE);
+        }
+        if (to2 == null) {
+            to2 = new Date(Long.MAX_VALUE);
+        }
+
+        // Compare the ranges
+        return (from1.before(to2) || from1.equals(to2)) && (from2.before(to1) || from2.equals(to1));
+    }}

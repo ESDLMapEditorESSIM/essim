@@ -148,14 +148,6 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         LocalDateTime endTime = EssimTime.dateToLocalDateTime(to);
 
         EList<ProfileElement> eList = dataCache.get(startTime, endTime, dataProcessor);
-        if (ProfileUtil.isEnergyProfile(this)) {
-            for (ProfileElement profileElement : eList) {
-                var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
-                var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();
-                double fraction = (partEnd.getTime() - partStart.getTime()) / (double) (profileElement.getTo().getTime() - profileElement.getFrom().getTime());
-                profileElement.setValue(profileElement.getValue() * fraction);
-            }
-        }
         return eList;
     }
 

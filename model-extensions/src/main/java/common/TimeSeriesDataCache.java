@@ -20,6 +20,7 @@ import esdl.EsdlFactory;
 import esdl.ProfileElement;
 import lombok.Getter;
 import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.util.DateRangeUtils;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
@@ -69,7 +70,7 @@ public class TimeSeriesDataCache {
         EList<ProfileElement> item = ECollections.newBasicEList();
 
         for (int i = 0; i < totalSize - 1; i++) {
-            if (start.isBefore(timestamps[i + 1]) && !start.isBefore(timestamps[i])) {
+            if (DateRangeUtils.hasOverlap(start, end, timestamps[i], timestamps[i + 1])) {
                 ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
                 profileElement.setFrom(EssimTime.localDateTimeToDate(timestamps[i]));
                 profileElement.setTo(EssimTime.localDateTimeToDate(timestamps[i + 1]));
