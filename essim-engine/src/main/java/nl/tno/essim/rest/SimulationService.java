@@ -18,6 +18,8 @@ import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.Commons;
+import nl.tno.essim.influxdb.InfluxConnectionProvider;
+import nl.tno.essim.influxdb.InfluxDBService;
 import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.model.*;
@@ -39,7 +41,8 @@ import java.util.List;
                 version = "1.0",
                 description = "API for managing ESSIM simulations"
         )
-)@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
+)
+@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
 @Path("/simulation")
 @Slf4j
 public class SimulationService {
@@ -227,6 +230,38 @@ public class SimulationService {
             return Response.ok(simulationId).build();
         }
     }
+
+    @DELETE
+    @Path("/{simulationId}")
+    @Produces("application/json")
+    @Operation(
+            summary = "Remove a specific simulation",
+            description = "Removes a specific simulation including all simulation data.",
+            responses = {
+                    @ApiResponse(description = "The simulation id", content = @Content(schema = @Schema(implementation = String.class))),
+                    @ApiResponse(responseCode = "404", description = "Simulation ID not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            }
+    )
+    public Response deleteSimulationBySimulationId(
+            @Parameter(description = "The id of the simulation", required = true)
+            @PathParam("simulationId") String simulationId) {
+        EssimSimulation simulation = mongo.getSimulation(simulationId);
+        if (simulation == null) {
+            ErrorStatus error = new ErrorStatus();
+            error.setStatus(Status.ERROR);
+            error.setDescription("SimulationID " + simulationId + " not found!");
+            return Response.status(Response.Status.NOT_FOUND).entity(error).build();
+        } else {
+            String influxURL = simulation.getInfluxURL();
+            String database = simulation.getScenarioID();
+            InfluxDBService influx = InfluxConnectionProvider.getInfluxDBService(influxURL);
+            influx.deleteEntriesWithTag(database, "simulationRun", simulationId);
+
+            return Response.ok(simulationId).build();
+        }
+
+    }
+
 
     @GET
     @Path("/{simulationId}/kpi")
