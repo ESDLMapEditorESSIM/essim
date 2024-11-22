@@ -37,18 +37,12 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
     private long profileStart = 0;
 
     @Override
-    public void initProfile(Date from, Date to, Duration step) {
-        if (from == null && to == null && step == null) {
+    public void initProfile(Date from, Date to, Duration aggregationPrecision) {
+        if (from == null && to == null && aggregationPrecision == null) {
             return;
         }
 
         synchronized (lock) {
-            int timeStep = (int) Converter.toEssimDuration(step).getSeconds();
-            if (timeStep != 0) {
-                setTimestep(timeStep);
-            }
-
-
             long seriesStart = EssimTime.localDateTimeToDate(EssimTime.dateFromGUI(getStartDateTime())).getTime() / 1000L;
             if ((from.getTime() - profileStart) % getTimestep() == 0) {
                 profileStart = seriesStart;

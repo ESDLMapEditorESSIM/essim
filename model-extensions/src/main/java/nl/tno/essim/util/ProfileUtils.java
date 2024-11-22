@@ -8,7 +8,6 @@ import org.eclipse.emf.common.util.EList;
 
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ProfileUtils {
     public static GenericProfile getEnergyProfile(Port port) {
@@ -25,14 +24,12 @@ public class ProfileUtils {
     }
 
     public static List<Double> readProfile(GenericProfile profile, Port port, Horizon horizon) {
-        if (profile instanceof ProfileReference) {
-            profile = ((ProfileReference) profile).getReference();
+        List<Double> values = readProfile(profile, horizon);
+        EnergyAsset energyAsset = port.getEnergyasset();
+        if (values == null) {
+            return null;
         }
-        if (profile != null) {
-            Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
-            Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
-
-            EnergyAsset energyAsset = port.getEnergyasset();
+        if (isPercentageProfile(profile)) {
             double ratedPower = 1.0;
             if (energyAsset instanceof Producer) {
                 Producer producer = (Producer) energyAsset;
@@ -44,16 +41,11 @@ public class ProfileUtils {
                 AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
                 ratedPower = conversion.getPower();
             }
-            if (!isPercentageProfile(profile)) {
-                ratedPower = 1.0;
-            }
             final double power = ratedPower;
+            return values.stream().map(d -> d * power).toList();
 
-            EList<ProfileElement> profileElements = profile.getProfile(from, to,
-                    Converter.toESDLDuration(horizon.getPeriod()));
-            return profileElements.stream().mapToDouble(s -> s.getValue() * power).boxed().collect(Collectors.toList());
         }
-        return null;
+        return values;
     }
 
     public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
@@ -65,16 +57,26 @@ public class ProfileUtils {
             Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
             EList<ProfileElement> profileElements = profile.getProfile(from, to, Converter.toESDLDuration(horizon.getPeriod()));
-            if (ProfileUtils.isEnergyProfile(profile)) {
-                for (ProfileElement profileElement : profileElements) {
-                    var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
-                    var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();
-                    double fraction = (partEnd.getTime() - partStart.getTime()) / (double) (profileElement.getTo().getTime() - profileElement.getFrom().getTime());
-                    profileElement.setValue(profileElement.getValue() * fraction);
-                }
+            double totalDurationInMillis = 0;
+            double totalValue = 0;
+            double weightedSum = 0;
+            for (ProfileElement profileElement : profileElements) {
+                var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
+                var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();
+                // Calculate fraction
+                long elementDuration = DateRangeUtils.getDurationInMillis(partEnd, partStart);
+                double fraction =
+                        (double) elementDuration / DateRangeUtils.getDurationInMillis(profileElement.getTo(), profileElement.getFrom());
+                totalValue += profileElement.getValue() * fraction;
+                weightedSum += profileElement.getValue() * elementDuration;
+                totalDurationInMillis += elementDuration;
+
             }
-            // TODO aggregate here!
-            return profileElements.stream().mapToDouble(s -> s.getValue()).boxed().collect(Collectors.toList());
+            // For energy profiles, we sum the parts (upsampling). For all other profiles (for example power) we calculated a weighted average
+            if (isEnergyProfile(profile)) {
+                return List.of(totalValue);
+            }
+            return List.of(weightedSum / totalDurationInMillis);
         }
         return null;
     }
@@ -84,7 +86,8 @@ public class ProfileUtils {
         GenericProfile updatedProfile;
 
         if (profiles.isEmpty()) {
-            GenericProfile profile = EssimESDLFactory.eINSTANCE.createTimeSeriesProfile();
+            TimeSeriesProfile profile = EssimESDLFactory.eINSTANCE.createTimeSeriesProfile();
+            profile.setTimestep((int) timestamp.getSimulationStepLength().getSeconds());
             updatedProfile = writeProfile(profile, timestamp, value);
         } else {
             GenericProfile profile = profiles.get(0);
@@ -101,7 +104,6 @@ public class ProfileUtils {
         ProfileElement element = EssimESDLFactory.eINSTANCE.createProfileElement();
         element.setValue(value);
         element.setFrom(EssimTime.localDateTimeToDate(timestamp.getTime()));
-
         profileElementList.add(element);
         profile.setProfile(profileElementList);
         profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
@@ -255,4 +257,5 @@ public class ProfileUtils {
 
         // Compare the ranges
         return (from1.before(to2) || from1.equals(to2)) && (from2.before(to1) || from2.equals(to1));
-    }}
+    }
+}

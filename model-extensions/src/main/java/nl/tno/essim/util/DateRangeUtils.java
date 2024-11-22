@@ -30,4 +30,15 @@ public class DateRangeUtils {
         // Compare the ranges
         return (from1.isBefore(to2) || from1.equals(to2)) && (from2.isBefore(to1) || from2.equals(to1));
     }
+
+    /**
+     * Returns the duration between two dates in milliseconds.
+     *
+     * @param from The start date.
+     * @param to The end date.
+     * @return The duration in milliseconds.
+     */
+    public static long getDurationInMillis(Date from, Date to) {
+        return to.getTime() - from.getTime();
+    }
 }
