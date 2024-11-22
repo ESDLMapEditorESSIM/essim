@@ -93,9 +93,9 @@ public class CoolingDemandNode extends Node {
 		}
 		if (convProfile != null) {
 			if (ProfileUtils.isPowerProfile(convProfile)) {
-				energyOutput = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(convProfile, now));
+                energyOutput = timeStep * ProfileUtils.readProfile(convProfile, now);
 			} else if (ProfileUtils.isEnergyProfile(convProfile)) {
-				energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(convProfile, now));
+                energyOutput = ProfileUtils.readProfile(convProfile, now);
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {
@@ -103,13 +103,13 @@ public class CoolingDemandNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalCostProfile, now));
+                Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-				Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(costProfile, now));
+                Double aggregateCost = ProfileUtils.readProfile(costProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}

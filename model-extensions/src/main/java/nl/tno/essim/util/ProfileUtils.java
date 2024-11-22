@@ -23,12 +23,9 @@ public class ProfileUtils {
         return energyProfile;
     }
 
-    public static List<Double> readProfile(GenericProfile profile, Port port, Horizon horizon) {
-        List<Double> values = readProfile(profile, horizon);
+    public static double readProfile(GenericProfile profile, Port port, Horizon horizon) {
+        double values = readProfile(profile, horizon);
         EnergyAsset energyAsset = port.getEnergyasset();
-        if (values == null) {
-            return null;
-        }
         if (isPercentageProfile(profile)) {
             double ratedPower = 1.0;
             if (energyAsset instanceof Producer) {
@@ -42,13 +39,13 @@ public class ProfileUtils {
                 ratedPower = conversion.getPower();
             }
             final double power = ratedPower;
-            return values.stream().map(d -> d * power).toList();
+            return values * power;
 
         }
         return values;
     }
 
-    public static List<Double> readProfile(GenericProfile profile, Horizon horizon) {
+    public static double readProfile(GenericProfile profile, Horizon horizon) {
         if (profile instanceof ProfileReference) {
             profile = ((ProfileReference) profile).getReference();
         }
@@ -74,11 +71,11 @@ public class ProfileUtils {
             }
             // For energy profiles, we sum the parts (upsampling). For all other profiles (for example power) we calculated a weighted average
             if (isEnergyProfile(profile)) {
-                return List.of(totalValue);
+                return totalValue;
             }
-            return List.of(weightedSum / totalDurationInMillis);
+            return weightedSum / totalDurationInMillis;
         }
-        return null;
+        return Double.NaN;
     }
 
     public static void writeProfile(Port port, EssimTime timestamp, double value) {
@@ -109,46 +106,6 @@ public class ProfileUtils {
         profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
 
         return profile;
-    }
-
-    public static Double aggregateCost(List<Double> costProfile) {
-        return averageOrNothing(costProfile);
-    }
-
-    public static Double sum(List<Double> energyProfile) {
-        return sumOrNothing(energyProfile);
-    }
-
-    public static Double aggregateEnergy(List<Double> energyProfile) {
-        return sumOrNothing(energyProfile);
-    }
-
-    public static Double aggregateGas(List<Double> gasProfile) {
-        return sumOrNothing(gasProfile);
-    }
-
-    public static Double aggregatePower(List<Double> energyProfile) {
-        return averageOrNothing(energyProfile);
-    }
-
-    public static Double aggregateSoC(List<Double> socProfile) {
-        return averageOrNothing(socProfile);
-    }
-
-    private static Double sumOrNothing(List<Double> profile) {
-        if (profile == null || profile.isEmpty()) {
-            return Double.NaN;
-        } else {
-            return profile.stream().mapToDouble(fn -> fn.doubleValue()).sum();
-        }
-    }
-
-    private static Double averageOrNothing(List<Double> profile) {
-        if (profile == null || profile.isEmpty()) {
-            return Double.NaN;
-        } else {
-            return profile.stream().mapToDouble(fn -> fn.doubleValue()).average().orElse(0.0);
-        }
     }
 
     public static boolean isPowerProfile(GenericProfile profile) {

@@ -159,7 +159,7 @@ public class HybridHeatPumpNode extends Node {
 				double totalPossibleThermalOutput = maxElecPowerThermal + maxGasPowerThermal;
 				double energyOutput = timeStep * totalPossibleThermalOutput;
 				if (marginalCostProfile != null) {
-					Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalCostProfile, now));
+                    Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
 					if (Double.isNaN(aggregateCost)) {
 						aggregateCost = getDefaultMarginalCost();
 					}
@@ -175,7 +175,7 @@ public class HybridHeatPumpNode extends Node {
 				// At least one of the input ports was already solved, so read connected port
 				// and make an inflexible production curve
 				GenericProfile energyOutputProfile = ProfileUtils.getEnergyProfile(connectedPort);
-				double energyOutput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(energyOutputProfile, now));
+                double energyOutput = ProfileUtils.readProfile(energyOutputProfile, now);
 				makeInflexibleProductionFunction(energyOutput);
 
 			} else if (controlStrategy instanceof DrivenByProfile) {
@@ -192,9 +192,9 @@ public class HybridHeatPumpNode extends Node {
 					double energyOutput = 0.0;
 					if (drivingProfile != null) {
 						if (ProfileUtils.isPowerProfile(drivingProfile)) {
-							profileValue = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(drivingProfile, now));
+                            profileValue = timeStep * ProfileUtils.readProfile(drivingProfile, now);
 						} else if (ProfileUtils.isEnergyProfile(drivingProfile)) {
-							profileValue = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(drivingProfile, now));
+                            profileValue = ProfileUtils.readProfile(drivingProfile, now);
 						} else {
 							throw new IllegalStateException("Profile in the DrivenByProfile control strategy of HHP "
 									+ hhpName + " is neither Power nor Energy!");
@@ -224,7 +224,7 @@ public class HybridHeatPumpNode extends Node {
 				// Heat network was already solved at this point, so read connected port and
 				// make an inflexible consumption curve
 				GenericProfile energyInputProfile = ProfileUtils.getEnergyProfile(connectedPort);
-				double energyInput = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(energyInputProfile, now));
+                double energyInput = ProfileUtils.readProfile(energyInputProfile, now);
 				makeInflexibleConsumptionFunction(energyInput);
 
 			} else if (controlStrategy instanceof DrivenBySupply) {
@@ -235,7 +235,7 @@ public class HybridHeatPumpNode extends Node {
 				if (connectedPort.equals(eInPort)) {
 					energyInput = maxElecPowerThermal / cop;
 					if (elecCostProfile != null) {
-						carrierCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(elecCostProfile, now));
+                        carrierCost = ProfileUtils.readProfile(elecCostProfile, now);
 						if (Double.isNaN(carrierCost)) {
 							carrierCost = getDefaultMarginalCost();
 						}
@@ -243,7 +243,7 @@ public class HybridHeatPumpNode extends Node {
 				} else if (connectedPort.equals(gInPort)) {
 					energyInput = maxGasPowerThermal / efficiency;
 					if (gasCostProfile != null) {
-						carrierCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(gasCostProfile, now));
+                        carrierCost = ProfileUtils.readProfile(gasCostProfile, now);
 						if (Double.isNaN(carrierCost)) {
 							carrierCost = getDefaultMarginalCost();
 						}
@@ -253,7 +253,7 @@ public class HybridHeatPumpNode extends Node {
 							+ " cannot be a consumer in this network -> " + networkId + "!");
 				}
 				if (marginalCostProfile != null) {
-					Double aggregateCost = ProfileUtils.aggregateCost(ProfileUtils.readProfile(marginalCostProfile, now));
+                    Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
 					if(Double.isNaN(aggregateCost)) {
 						aggregateCost = getDefaultMarginalCost();
 					}
@@ -274,9 +274,9 @@ public class HybridHeatPumpNode extends Node {
 				double profileValue = 0.0;
 				if (drivingProfile != null) {
 					if (ProfileUtils.isPowerProfile(drivingProfile)) {
-						profileValue = timeStep * ProfileUtils.aggregatePower(ProfileUtils.readProfile(drivingProfile, now));
+                        profileValue = timeStep * ProfileUtils.readProfile(drivingProfile, now);
 					} else if (ProfileUtils.isEnergyProfile(drivingProfile)) {
-						profileValue = ProfileUtils.aggregateEnergy(ProfileUtils.readProfile(drivingProfile, now));
+                        profileValue = ProfileUtils.readProfile(drivingProfile, now);
 					} else {
 						throw new IllegalStateException("Profile in the DrivenByProfile control strategy of HHP "
 								+ hhpName + " is neither Power nor Energy!");
