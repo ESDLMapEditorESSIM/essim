@@ -147,6 +147,21 @@ public class SimulationService {
     }
 
     @GET
+    @Path("/list")
+    @Produces("application/json")
+    @Operation(
+            summary = "Retrieve simulation list",
+            description = "Fetches a list of all simulation IDs stored in the system.",
+            responses = {
+                    @ApiResponse(description = "A list of all simulation IDs", content = @Content(array = @ArraySchema(schema = @Schema(implementation = String.class))))
+            }
+    )
+    public Response getSimulationList() {
+        List<String> simulations = mongo.getSimulationIdList();
+        return Response.ok(simulations).build();
+    }
+
+    @GET
     @Path("/status")
     @Produces("text/plain")
     @Operation(
@@ -256,8 +271,10 @@ public class SimulationService {
             String database = simulation.getScenarioID();
             InfluxDBService influx = InfluxConnectionProvider.getInfluxDBService(influxURL);
             influx.deleteEntriesWithTag(database, "simulationRun", simulationId);
+            mongo.deleteSimulation(simulationId);
+            ErrorStatus status = new ErrorStatus(Status.OK, simulationId);
 
-            return Response.ok(simulationId).build();
+            return Response.ok(status).build();
         }
 
     }

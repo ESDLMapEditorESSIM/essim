@@ -13,7 +13,10 @@ public enum Status {
   COMPLETE("COMPLETE"),
 
   @JsonProperty("ERROR")
-  ERROR("ERROR");
+  ERROR("ERROR"),
+
+  @JsonProperty("OK")
+  OK("OK");
 
   private String name;
 

@@ -205,4 +205,30 @@ public class MongoBackend implements IMongoBackend {
         UpdateResult updateResult = essimCollection.updateOne(filter, set, options);
         log.debug("Result: {}", updateResult);
     }
+
+    @Override
+    public void deleteSimulation(String simulationId) {
+        log.debug("Attempting to delete simulation with ID: {}", simulationId);
+        essimCollection.deleteOne(Filters.eq("_id", new ObjectId(simulationId)));
+        log.debug("Deleted simulation with ID: {}", simulationId);
+    }
+
+    @Override
+    /**
+     * Provides a list containing all the ids of the EssimSimulation objects in the database.
+     *
+     * @return A list of simulation ids.
+     */
+    public List<String> getSimulationIdList() {
+        List<String> idList = new ArrayList<>();
+        try (MongoCursor<EssimSimulation> cursor = essimCollection.find().iterator()) {
+            while (cursor.hasNext()) {
+                EssimSimulation simulation = cursor.next();
+                idList.add(simulation.getId().toHexString());
+            }
+        } catch (MongoException e) {
+            log.error("Could not retrieve simulation ids", e);
+        }
+        return idList;
+    }
 }
