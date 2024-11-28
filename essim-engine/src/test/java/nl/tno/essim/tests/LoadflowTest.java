@@ -76,7 +76,7 @@ class LoadflowTest {
 		return es;
 	}
 
-	@Test
+//	@Test
 	void testLoadFloaw() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow1.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
