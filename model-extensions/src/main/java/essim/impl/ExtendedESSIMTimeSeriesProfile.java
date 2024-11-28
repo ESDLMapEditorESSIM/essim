@@ -2,12 +2,12 @@
  * This work is based on original code developed and copyrighted by TNO 2020.
  * Subsequent contributions are licensed to you by the developers of such code and are
  * made available to the Project under one or several contributor license agreements.
- *
+ * <p>
  * This work is licensed to you under the Apache License, Version 2.0.
  * You may obtain a copy of the license at
- * 
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Contributors:
  * TNO         - Initial implementation
  * Manager:
@@ -20,7 +20,6 @@ import esdl.EsdlFactory;
 import esdl.ProfileElement;
 import esdl.ProfileTypeEnum;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.BasicEList;
@@ -29,7 +28,6 @@ import org.eclipse.emf.common.util.EList;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,35 +35,27 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
 
     private final Object lock = new Object();
     private long profileStart = 0;
-    private long stepSize = 0;
-
 
     @Override
-    public void initProfile(Date from, Date to, Duration step) {
-        if (from == null && to == null && step == null) {
+    public void initProfile(Date from, Date to, Duration aggregationPrecision) {
+        if (from == null && to == null && aggregationPrecision == null) {
             return;
         }
 
-        EssimDuration simStep = Converter.toEssimDuration(step);
         synchronized (lock) {
-            stepSize = simStep.getSeconds();
-
             long seriesStart = EssimTime.localDateTimeToDate(EssimTime.dateFromGUI(getStartDateTime())).getTime() / 1000L;
-            if (stepSize == getTimestep() && (from.getTime() - profileStart) % stepSize == 0) {
+            if ((from.getTime() - profileStart) % getTimestep() == 0) {
                 profileStart = seriesStart;
-                if (getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
-                    values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileQuantityAndUnit())).collect(Collectors.toCollection(BasicEList::new));
-                } else {
-                    values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileType())).collect(Collectors.toCollection(BasicEList::new));
-                }
+                Object unitType = getProfileType().equals(ProfileTypeEnum.UNDEFINED) ? getProfileQuantityAndUnit() : getProfileType();
+                values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, unitType)).collect(Collectors.toCollection(BasicEList::new));
             } else {
                 profileStart = from.getTime();
-                int stepCount = (int) (1 + (to.getTime() / 1000l - profileStart) / stepSize);
+                int stepCount = (int) (1 + (to.getTime() / 1000l - profileStart) / getTimestep());
                 values = new BasicEList<>(stepCount);
                 long startTime = profileStart;
                 ArrayList<Double> data = new ArrayList<>(getValues());
                 for (int i = 0; i < stepCount; i++) {
-                    values.add(getValueAt(startTime, stepSize, seriesStart, getTimestep(), data));
+                    values.add(getValueAt(startTime, getTimestep(), seriesStart, getTimestep(), data));
                 }
             }
         }
@@ -94,36 +84,30 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
      * @see esdl.impl.GenericProfileImpl#getProfile(java.util.Date, java.util.Date,
      * esdl.Duration)
      */
-
     /**
      * Returns the data in this TimeSeriesProfile
      */
     @Override
     public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
-
-
         EList<ProfileElement> profilePointList = ECollections.newBasicEList();
         synchronized (lock) {
-            int fromIndex;
-            int toIndex;
-            if (stepSize == 0) {
-                fromIndex = 0;
+            int fromIndex = (int) ((from.getTime() / 1000L - profileStart) / getTimestep());
+            long relTo = to.getTime() / 1000L - profileStart;
+            int toIndex = (int) (relTo / getTimestep());
+            if (relTo % getTimestep() != 0) {
+                toIndex++;
+            }
+
+            if (toIndex > values.size()) {
                 toIndex = values.size();
-            } else {
-                fromIndex = (int) ((from.getTime() / 1000L - profileStart) / stepSize);
-                toIndex = (int) ((to.getTime() / 1000L - profileStart) / stepSize);
-                if (toIndex > values.size()) {
-                    toIndex = values.size();
-                }
-                if (fromIndex < 0) {
-                    fromIndex = 0;
-                }
+            }
+            if (fromIndex < 0) {
+                fromIndex = 0;
             }
             for (int i = fromIndex; i < toIndex; i++) {
                 ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
-                profileElement.setFrom(new Date((profileStart + i * stepSize) * 1000L));
-//                profileElement.setTo(new Date((profileStart + (i + 1) * stepSize) * 1000L));
-                profileElement.setTo(null);
+                profileElement.setFrom(new Date((profileStart + (long) i * getTimestep()) * 1000L));
+                profileElement.setTo(new Date((profileStart + (long) (i + 1) * getTimestep()) * 1000L));
                 profileElement.setValue(values.get(i));
                 profilePointList.add(profileElement);
             }
@@ -141,27 +125,35 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
     public boolean setProfile(EList<ProfileElement> profileElementList) {
         for (ProfileElement profileElement : profileElementList) {
             synchronized (lock) {
-                long elementSize = 0;
+                long elementStartSeconds = profileElement.getFrom().getTime() / 1000L;
+                if (values == null || values.isEmpty()) {
+                    values = new BasicEList<>();
+                    profileStart = elementStartSeconds;
+                }
                 if (profileElement.getTo() != null) {
-                    elementSize = (profileElement.getTo().getTime() - profileElement.getFrom().getTime()) / 1000L;
-                    if (stepSize != 0 && elementSize != stepSize) {
+                    long elementSize = (profileElement.getTo().getTime() - profileElement.getFrom().getTime()) / 1000L;
+                    if (getTimestep() == 0) {
+                        setTimestep((int) elementSize);
+                    } else if (elementSize != getTimestep()) {
                         throw new IllegalArgumentException("Cannot add an element to a TimeSeriesProfile with a different step size");
                     }
                 }
-                if (values == null || values.isEmpty()) {
-                    values = new BasicEList<>();
-                    profileStart = profileElement.getFrom().getTime() / 1000L;
-                    stepSize = elementSize;
+                if (getTimestep() == 0) {
+                    setTimestep(TIMESTEP_EDEFAULT);
                 }
-                if (stepSize == 0 && values.size() == 1) {
-                    // We will determine the step size based on the distance between the first two data points
-                    stepSize = profileElement.getFrom().getTime() / 1000L - profileStart;
+                if (elementStartSeconds < profileStart) {
+                    throw new IllegalArgumentException("Cannot add an element before the start of the profile");
                 }
-                int index = stepSize == 0 ? values.size() : (int) ((profileElement.getFrom().getTime() / 1000L - profileStart) / stepSize);
-                if (index < values.size()) {
-                    values.set(index, profileElement.getValue());
+                // timestep != 0 -> we need to add/replace an element
+                if ((elementStartSeconds - profileStart) % getTimestep() != 0) {
+                    throw new IllegalArgumentException("Cannot add an element to a TimeSeriesProfile with a different step size");
+                }
+                int elementIndex = (int) ((elementStartSeconds - profileStart) / getTimestep());
+                if (elementIndex < values.size()) {
+                    values.set(elementIndex, profileElement.getValue());
                 } else {
-                    while (index > values.size()) {
+                    // Fill until the element
+                    while (elementIndex > values.size()) {
                         values.add(0.0);
                     }
                     values.add(profileElement.getValue());
@@ -173,12 +165,12 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
 
     @Override
     public String toString() {
-		return this.getClass().getSimpleName() + "(" + 
-				"name=" + this.getName() + ", " +
-				"id=" + this.getId() + ", " + 
-				"startDateTime=" + this.getStartDateTime() + ", " + 
-				"timeStep=" + this.getTimestep() + 
-				")"
-				;
+        return this.getClass().getSimpleName() + "(" +
+                "name=" + this.getName() + ", " +
+                "id=" + this.getId() + ", " +
+                "startDateTime=" + this.getStartDateTime() + ", " +
+                "timeStep=" + this.getTimestep() +
+                ")"
+                ;
     }
 }

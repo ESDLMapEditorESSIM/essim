@@ -15,11 +15,12 @@
  */
 package nl.tno.essim.rest;
 
-import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.servers.Server;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.ApplicationPath;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.rest.util.MongoInject;
 import nl.tno.essim.rest.util.MongoInjectResolver;
@@ -32,14 +33,10 @@ import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 
-import javax.annotation.security.DenyAll;
-import javax.inject.Singleton;
-import javax.ws.rs.ApplicationPath;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Slf4j
-@DenyAll
 @ApplicationPath("/essim")
 @OpenAPIDefinition(
         servers = @Server(
@@ -58,7 +55,7 @@ public class EssimJerseyApplication extends ResourceConfig {
         // Configure
         packages(
                 SimulationService.class.getPackageName(),
-                OpenApiResource.class.getPackageName(),
+//                OpenApiResource.class.getPackageName(),
                 MongoInjectResolver.class.getPackageName()
         );
         register(new AbstractBinder() {

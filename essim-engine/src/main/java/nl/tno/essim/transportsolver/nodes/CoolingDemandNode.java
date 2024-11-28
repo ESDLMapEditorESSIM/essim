@@ -31,13 +31,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
-import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -82,7 +82,7 @@ public class CoolingDemandNode extends Node {
 		double energyOutput = Double.NaN;
 		GenericProfile convProfile = null;
 		if (profilePort != null) {
-			convProfile = Commons.getEnergyProfile(profilePort);
+			convProfile = ProfileUtils.getEnergyProfile(profilePort);
 		}
 
 		// Checks if an asset is operational (accounts for Commissioning and
@@ -92,10 +92,10 @@ public class CoolingDemandNode extends Node {
 			return;
 		}
 		if (convProfile != null) {
-			if (Commons.isPowerProfile(convProfile)) {
-				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(convProfile, now));
-			} else if (Commons.isEnergyProfile(convProfile)) {
-				energyOutput = Commons.aggregateEnergy(Commons.readProfile(convProfile, now));
+			if (ProfileUtils.isPowerProfile(convProfile)) {
+                energyOutput = timeStep * ProfileUtils.readProfile(convProfile, now);
+			} else if (ProfileUtils.isEnergyProfile(convProfile)) {
+                energyOutput = ProfileUtils.readProfile(convProfile, now);
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {
@@ -103,13 +103,13 @@ public class CoolingDemandNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+                Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+                Double aggregateCost = ProfileUtils.readProfile(costProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}

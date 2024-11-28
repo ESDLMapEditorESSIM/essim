@@ -188,7 +188,7 @@ public class ESSimEngine implements IStatusProvider {
             }
         } catch (Exception e) {
             simulationManager.shutdown();
-            throw new IllegalArgumentException("Error in Observation Manager init: " + e.getMessage());
+            throw new IllegalArgumentException("Error in Observation Manager init", e);
         }
 
         // Publish Simulation Description

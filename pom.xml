@@ -23,7 +23,7 @@
     </organization>
 
     <properties>
-        <revision>24.9</revision> <!-- use this to set the version of all the modules -->
+        <revision>24.11</revision> <!-- use this to set the version of all the modules -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
         <emf.version>2.29.0</emf.version>
@@ -31,15 +31,16 @@
         <esdl.version>2.24.1</esdl.version>
         <junit.jupiter.version>5.10.1</junit.jupiter.version>
         <base.package.name>nl.tno.essim</base.package.name>
-        <jackson.version>2.17.0</jackson.version>
+        <jackson.version>2.18.1</jackson.version>
         <protobuf.version>3.25.3</protobuf.version>
         <log4j.version>2.24.0</log4j.version>
-        <swagger.version>2.2.21</swagger.version>
+        <swagger.version>2.2.23</swagger.version>
         <swagger-ui.version>5.17.2</swagger-ui.version>
         <powsybl-dependencies.version>2024.2.0</powsybl-dependencies.version>
         <openloadflow.version>1.11.0</openloadflow.version>
         <slf4j.version>2.0.16</slf4j.version>
-        <jersey.version>2.42</jersey.version>
+        <jetty.version>11.0.24</jetty.version>
+        <jersey.version>3.0.16</jersey.version>
     </properties>
 
     <repositories>
