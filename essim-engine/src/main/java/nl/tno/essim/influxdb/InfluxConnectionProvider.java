@@ -1,6 +1,7 @@
 package nl.tno.essim.influxdb;
 
-import org.influxdb.InfluxDBFactory;
+import okhttp3.OkHttpClient;
+import org.influxdb.impl.InfluxDBImpl;
 
 import java.time.Instant;
 import java.util.Map;
@@ -48,7 +49,12 @@ public class InfluxConnectionProvider {
     }
 
     private static ConnectionEntry createConnectionEntry(String url) {
-        InfluxDBService connection = new InfluxDBService(InfluxDBFactory.connect(url));
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder()
+                .connectTimeout(1, TimeUnit.MINUTES)
+                .readTimeout(1, TimeUnit.MINUTES)
+                .writeTimeout(1, TimeUnit.MINUTES)
+                .retryOnConnectionFailure(true);
+        InfluxDBService connection = new InfluxDBService(new InfluxDBImpl(url, null, null, clientBuilder));
         return new ConnectionEntry(connection);
     }
 

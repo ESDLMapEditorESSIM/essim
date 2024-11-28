@@ -42,6 +42,7 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
     //    private InfluxDB influxDbClient;
     private String database;
     private String influxURL;
+    private InfluxDBService influx;
 
     public InfluxDBObservationConsumer(String url) {
         this.influxURL = url;
@@ -61,10 +62,11 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
     @Override
     public void init(String database) {
         this.database = database;
-        InfluxDBService influx = InfluxConnectionProvider.getInfluxDBService(influxURL);
-        influx.getInfluxDB().enableBatch(10000, 10, TimeUnit.SECONDS, simpleThreadFactory).enableGzip();
+        influx = InfluxConnectionProvider.getInfluxDBService(influxURL);
+        if (!influx.getInfluxDB().isBatchEnabled()) {
+            influx.getInfluxDB().enableBatch(10000, 10, TimeUnit.SECONDS, simpleThreadFactory).enableGzip();
+        }
         influx.createDatabase(database);
-
     }
 
     @Override
@@ -85,13 +87,13 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
         pointBuilder.time(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).toEpochSecond(),
                 TimeUnit.SECONDS);
 
-        InfluxConnectionProvider.getInfluxDBService(influxURL).getInfluxDB().write(pointBuilder.build());
+        influx.getInfluxDB().write(pointBuilder.build());
     }
 
     @Override
     public void cleanup() {
         // flush the content to the database. Don't close the connection, it can be reused or will be closed automatically
-        InfluxDB influxDB = InfluxConnectionProvider.getInfluxDBService(influxURL).getInfluxDB();
+        InfluxDB influxDB = influx.getInfluxDB();
         influxDB.flush();
         influxDB.disableBatch();
     }
@@ -125,6 +127,6 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
             }
         }
 
-        InfluxConnectionProvider.getInfluxDBService(influxURL).getInfluxDB().write(batchBuilder.build());
+        influx.getInfluxDB().write(batchBuilder.build());
     }
 }
