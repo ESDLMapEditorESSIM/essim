@@ -30,7 +30,6 @@ public class ESSimMain {
     private static final String HTTP_SERVER_SCHEME = "HTTP_SERVER_SCHEME";
     private static final String HTTP_SERVER_HOSTNAME = "HTTP_SERVER_HOSTNAME";
     private static final String HTTP_SERVER_PORT = "HTTP_SERVER_PORT";
-    private static final String HTTP_SERVER_PATH = "HTTP_SERVER_PATH";
     private static final String MONGODB_HOST = "MONGODB_HOST";
     private static final String MONGODB_PORT = "MONGODB_PORT";
 
@@ -61,7 +60,7 @@ public class ESSimMain {
         try {
             KPIManager.getInstance();
             httpServer = new EssimHttpServer(System.getenv(HTTP_SERVER_SCHEME), System.getenv(HTTP_SERVER_HOSTNAME),
-                    Integer.parseInt(System.getenv(HTTP_SERVER_PORT)), System.getenv(HTTP_SERVER_PATH));
+                    Integer.parseInt(System.getenv(HTTP_SERVER_PORT)));
         } catch (Exception e) {
             log.error("Could not start HTTP server", e);
             System.exit(1);
