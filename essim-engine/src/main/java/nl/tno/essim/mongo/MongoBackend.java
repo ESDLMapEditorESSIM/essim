@@ -133,7 +133,7 @@ public class MongoBackend implements IMongoBackend {
             simulationData.setEsdlContents("");
         }
         simulationData.getAdditionalProperties().clear();
-        essimCollection.replaceOne(Filters.eq("_id", new ObjectId(simulationId)), simulationData);
+        essimCollection.replaceOne(getIdFilter(simulationId), simulationData);
         simulationData.setEsdlContents(esdl);
     }
 
@@ -149,8 +149,7 @@ public class MongoBackend implements IMongoBackend {
         statusObj.put("state", type);
         statusObj.put("description", status);
         Bson update = Updates.set("status", statusObj);
-        new ObjectId(simulationId);
-        essimCollection.updateOne(Filters.eq("_id", new ObjectId(simulationId)), update);
+        essimCollection.updateOne(getIdFilter(simulationId), update);
     }
 
     @Override
@@ -172,7 +171,7 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public EssimSimulation getSimulation(String simulationId) {
-        try (MongoCursor<EssimSimulation> simIt = essimCollection.find(Filters.eq("_id", new ObjectId(simulationId))).iterator()) {
+        try (MongoCursor<EssimSimulation> simIt = essimCollection.find(getIdFilter(simulationId)).iterator()) {
             return simIt.hasNext() ? simIt.next() : null;
         }
     }
@@ -184,7 +183,7 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public String getMetaInfo(String key) {
-        Document valueObj = essimMetaCollection.find(Filters.eq("_id", key)).first();
+        Document valueObj = essimMetaCollection.find(getIdFilter(key)).first();
         if (valueObj == null) {
             return null;
         }
@@ -200,7 +199,7 @@ public class MongoBackend implements IMongoBackend {
     public void updateKPIForSimulation(String simulationId, String kpiId, String result, String status) {
         UpdateOptions options = new UpdateOptions()
                 .arrayFilters(List.of(Filters.eq("ele.id", kpiId)));
-        Bson filter = Filters.eq("_id", new ObjectId(simulationId));
+        Bson filter = getIdFilter(simulationId);
         Bson set = Updates.combine(Updates.set("kpiModule.modules.$[ele].result", result), Updates.set("kpiModule.modules.$[ele].status", status));
         UpdateResult updateResult = essimCollection.updateOne(filter, set, options);
         log.debug("Result: {}", updateResult);
@@ -209,26 +208,24 @@ public class MongoBackend implements IMongoBackend {
     @Override
     public void deleteSimulation(String simulationId) {
         log.debug("Attempting to delete simulation with ID: {}", simulationId);
-        essimCollection.deleteOne(Filters.eq("_id", new ObjectId(simulationId)));
+        essimCollection.deleteOne(getIdFilter(simulationId));
         log.debug("Deleted simulation with ID: {}", simulationId);
     }
 
     @Override
-    /**
-     * Provides a list containing all the ids of the EssimSimulation objects in the database.
-     *
-     * @return A list of simulation ids.
-     */
     public List<String> getSimulationIdList() {
         List<String> idList = new ArrayList<>();
-        try (MongoCursor<EssimSimulation> cursor = essimCollection.find().iterator()) {
-            while (cursor.hasNext()) {
-                EssimSimulation simulation = cursor.next();
-                idList.add(simulation.getId().toHexString());
+        try {
+            for (Document doc : essimCollection.withDocumentClass(Document.class).find()) {
+                idList.add(doc.getObjectId("_id").toHexString());
             }
         } catch (MongoException e) {
-            log.error("Could not retrieve simulation ids", e);
+            log.error("Could not get mongo simulation IDs", e);
         }
         return idList;
+    }
+
+    private Bson getIdFilter(String id) {
+        return Filters.eq("_id", new ObjectId(id));
     }
 }

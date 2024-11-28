@@ -34,4 +34,7 @@ public interface IMongoBackend {
 
     void updateKPIForSimulation(String simulationId, String kpiId, String result, String status);
 
+    void deleteSimulation(String simulationId);
+
+    List<String> getSimulationIdList();
 }

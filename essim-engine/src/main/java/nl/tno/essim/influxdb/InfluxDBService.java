@@ -1,15 +1,18 @@
 package nl.tno.essim.influxdb;
 
+import lombok.Getter;
 import org.influxdb.InfluxDB;
 import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 
 public class InfluxDBService {
 
+    @Getter
     private final InfluxDB influxDB;
 
     public InfluxDBService(InfluxDB influxDB) {
         this.influxDB = influxDB;
+        influxDB.enableGzip();
     }
 
 
@@ -44,5 +47,17 @@ public class InfluxDBService {
      */
     public void close() {
         influxDB.close();
+    }
+
+    /**
+     * Create the database if it does not already exist.
+     *
+     * @param database the name of the database to be checked and created if needed
+     */
+    public void createDatabase(String database) {
+        String createDatabaseQuery = String.format("CREATE DATABASE \"%s\"", database);
+        Query query = new Query(createDatabaseQuery, null);
+        influxDB.query(query);
+        influxDB.setDatabase(database);
     }
 }
