@@ -83,49 +83,51 @@ public class SimulationService {
             }
         }
 
-        String simId = null;
-        try {
-            if (mongo != null) {
-                SimulationStatus status = new SimulationStatus();
-                status.setState(Status.CREATED);
-                status.setDescription("");
-                simulation.setStatus(status);
-                simId = mongo.addSimulation(simulation);
+        if (mongo != null) {
+            SimulationStatus status = new SimulationStatus();
+            status.setState(Status.CREATED);
+            status.setDescription("");
+            simulation.setStatus(status);
+            String simId = mongo.addSimulation(simulation);
 
-                log.debug("Simulation ID : {}", simId);
+            log.debug("Simulation ID : {}", simId);
 
-                Date now = new Date();
-                simulation.setSimRunDate(now);
-                ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, decodedContents, mongo);
-                String grafanaDashboard = engine.createGrafanaDashboard();
-                if (grafanaDashboard != null) {
-                    simulation.setDashboardURL(grafanaDashboard);
-                } else {
-                    simulation.setDashboardURL("*headless simulation*");
+
+            String finalDecodedContents = decodedContents;
+            Thread thread = new Thread(() -> {
+                try {
+                    Date now = new Date();
+                    simulation.setSimRunDate(now);
+                    ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, finalDecodedContents, mongo);
+                    String grafanaDashboard = engine.createGrafanaDashboard();
+                    if (grafanaDashboard != null) {
+                        simulation.setDashboardURL(grafanaDashboard);
+                    } else {
+                        simulation.setDashboardURL("*headless simulation*");
+                    }
+                    mongo.updateSimulationData(simId, simulation);
+                    mongo.getStatusMap().put(simId, engine);
+                    engine.startSimulation();
+                } catch (Exception e) {
+                    StringWriter sw = new StringWriter();
+                    e.printStackTrace(new PrintWriter(sw));
+                    log.error(e.getMessage(), e);
+                    error.setDescription("Internal error: " + sw);
+                    mongo.updateSimulationStatus(simId, Status.ERROR, sw.toString());
+                    mongo.updateStatus("Ready");
                 }
-                mongo.updateSimulationData(simId, simulation);
 
-                Thread thread = new Thread(engine::startSimulation, simId);
-                thread.setUncaughtExceptionHandler(new EssimExceptionHandler(mongo));
-                thread.start();
+            }, simId);
+            thread.setUncaughtExceptionHandler(new EssimExceptionHandler(mongo));
+            thread.start();
 
-                mongo.getStatusMap().put(simId, engine);
+            CreatedStatus created = new CreatedStatus();
+            created.setStatus(Status.CREATED);
+            created.setId(simId);
 
-                CreatedStatus created = new CreatedStatus();
-                created.setStatus(Status.CREATED);
-                created.setId(simId);
-
-                return Response.status(Response.Status.CREATED).entity(created).build();
-            } else {
-                error.setDescription("MongoDB internal error!");
-            }
-        } catch (Exception e) {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter(sw));
-            log.error(e.getMessage(), e);
-            error.setDescription("Internal error: " + sw.toString());
-            mongo.updateSimulationStatus(simId, Status.ERROR, sw.toString());
-            mongo.updateStatus("Ready");
+            return Response.status(Response.Status.CREATED).entity(created).build();
+        } else {
+            error.setDescription("MongoDB internal error!");
         }
 
         return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
