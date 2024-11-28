@@ -31,13 +31,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
-import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -80,7 +80,7 @@ public class ConsumerNode extends Node {
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
 		updateMarketInfo(marketInfo);
 		double energyOutput = Double.NaN;
-		GenericProfile consumerProfile = Commons.getEnergyProfile(inputPort);
+		GenericProfile consumerProfile = ProfileUtils.getEnergyProfile(inputPort);
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
@@ -89,12 +89,12 @@ public class ConsumerNode extends Node {
 			return;
 		}
 		if (consumerProfile != null) {
-			if (Commons.isPowerProfile(consumerProfile)) {
-				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(consumerProfile, now));
-			} else if (Commons.isEnergyProfile(consumerProfile)) {
-				energyOutput = Commons.aggregateEnergy(Commons.readProfile(consumerProfile, now));
-			} else if (Commons.isPercentageProfile(consumerProfile)) {
-				energyOutput = timeStep * Commons.aggregatePower(Commons.readProfile(consumerProfile, inputPort, now));
+			if (ProfileUtils.isPowerProfile(consumerProfile)) {
+                energyOutput = timeStep * ProfileUtils.readProfile(consumerProfile, now);
+			} else if (ProfileUtils.isEnergyProfile(consumerProfile)) {
+                energyOutput = ProfileUtils.readProfile(consumerProfile, now);
+			} else if (ProfileUtils.isPercentageProfile(consumerProfile)) {
+                energyOutput = timeStep * ProfileUtils.readProfile(consumerProfile, inputPort, now);
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {
@@ -102,13 +102,13 @@ public class ConsumerNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(marginalCostProfile, now));
+                Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-				Double aggregateCost = Commons.aggregateCost(Commons.readProfile(costProfile, now));
+                Double aggregateCost = ProfileUtils.readProfile(costProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}

@@ -37,26 +37,17 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
     private long profileStart = 0;
 
     @Override
-    public void initProfile(Date from, Date to, Duration step) {
-        if (from == null && to == null && step == null) {
+    public void initProfile(Date from, Date to, Duration aggregationPrecision) {
+        if (from == null && to == null && aggregationPrecision == null) {
             return;
         }
 
         synchronized (lock) {
-            int timeStep = (int) Converter.toEssimDuration(step).getSeconds();
-            if (timeStep != 0) {
-                setTimestep(timeStep);
-            }
-
-
             long seriesStart = EssimTime.localDateTimeToDate(EssimTime.dateFromGUI(getStartDateTime())).getTime() / 1000L;
             if ((from.getTime() - profileStart) % getTimestep() == 0) {
                 profileStart = seriesStart;
-                if (getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
-                    values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileQuantityAndUnit())).collect(Collectors.toCollection(BasicEList::new));
-                } else {
-                    values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, getProfileType())).collect(Collectors.toCollection(BasicEList::new));
-                }
+                Object unitType = getProfileType().equals(ProfileTypeEnum.UNDEFINED) ? getProfileQuantityAndUnit() : getProfileType();
+                values = getValues().stream().map(d -> Converter.toStandardizedUnits(d, unitType)).collect(Collectors.toCollection(BasicEList::new));
             } else {
                 profileStart = from.getTime();
                 int stepCount = (int) (1 + (to.getTime() / 1000l - profileStart) / getTimestep());
@@ -93,7 +84,6 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
      * @see esdl.impl.GenericProfileImpl#getProfile(java.util.Date, java.util.Date,
      * esdl.Duration)
      */
-
     /**
      * Returns the data in this TimeSeriesProfile
      */
@@ -101,26 +91,23 @@ public class ExtendedESSIMTimeSeriesProfile extends ESSIMTimeSeriesProfileImpl {
     public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
         EList<ProfileElement> profilePointList = ECollections.newBasicEList();
         synchronized (lock) {
-            int fromIndex;
-            int toIndex;
-            if (getTimestep() == 0) {
-                fromIndex = 0;
+            int fromIndex = (int) ((from.getTime() / 1000L - profileStart) / getTimestep());
+            long relTo = to.getTime() / 1000L - profileStart;
+            int toIndex = (int) (relTo / getTimestep());
+            if (relTo % getTimestep() != 0) {
+                toIndex++;
+            }
+
+            if (toIndex > values.size()) {
                 toIndex = values.size();
-            } else {
-                fromIndex = (int) ((from.getTime() / 1000L - profileStart) / getTimestep());
-                toIndex = (int) ((to.getTime() / 1000L - profileStart) / getTimestep());
-                if (toIndex > values.size()) {
-                    toIndex = values.size();
-                }
-                if (fromIndex < 0) {
-                    fromIndex = 0;
-                }
+            }
+            if (fromIndex < 0) {
+                fromIndex = 0;
             }
             for (int i = fromIndex; i < toIndex; i++) {
                 ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
-                profileElement.setFrom(new Date((profileStart + i * getTimestep()) * 1000L));
-//                profileElement.setTo(new Date((profileStart + (i + 1) * stepSize) * 1000L));
-                profileElement.setTo(null);
+                profileElement.setFrom(new Date((profileStart + (long) i * getTimestep()) * 1000L));
+                profileElement.setTo(new Date((profileStart + (long) (i + 1) * getTimestep()) * 1000L));
                 profileElement.setValue(values.get(i));
                 profilePointList.add(profileElement);
             }

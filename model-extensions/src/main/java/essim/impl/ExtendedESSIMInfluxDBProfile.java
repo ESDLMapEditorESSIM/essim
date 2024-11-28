@@ -146,7 +146,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         LocalDateTime startTime = EssimTime.dateToLocalDateTime(from);
         LocalDateTime endTime = EssimTime.dateToLocalDateTime(to);
 
-        EList<ProfileElement> eList = dataCache.get(startTime, endTime, aggregationPrecision, dataProcessor);
+        EList<ProfileElement> eList = dataCache.get(startTime, endTime, dataProcessor);
         return eList;
     }
 
@@ -193,8 +193,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
                         }
                         for (QueryResult.Series series : result.getSeries()) {
                             log.debug("Query returned {} values for {}", series.getValues().size(), profileCacheKey);
-                            dataCache = new TimeSeriesDataCache(field, series.getValues(),
-                                    annualChange);
+                            dataCache = new TimeSeriesDataCache(field, series.getValues(), annualChange);
                         }
                     }
                     ProfileCache.getInstance().cache(profileCacheKey, dataCache);

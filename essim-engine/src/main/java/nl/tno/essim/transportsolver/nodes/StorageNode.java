@@ -33,7 +33,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.BidFunction;
-import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
@@ -41,6 +40,7 @@ import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -81,15 +81,15 @@ public class StorageNode extends Node {
 		if (storage.getProfile() != null) {
 			double energy = 0.0;
 			GenericProfile storageProfile = storage.getProfile();
-			if (Commons.isPowerProfile(storageProfile)) {
-				energy = timeStep * Commons.aggregatePower(Commons.readProfile(storageProfile, now));
-			} else if (Commons.isEnergyProfile(storageProfile)) {
-				energy = Commons.aggregateEnergy(Commons.readProfile(storageProfile, now));
-			} else if (Commons.isSoCProfile(storageProfile)) {
+			if (ProfileUtils.isPowerProfile(storageProfile)) {
+                energy = timeStep * ProfileUtils.readProfile(storageProfile, now);
+			} else if (ProfileUtils.isEnergyProfile(storageProfile)) {
+                energy = ProfileUtils.readProfile(storageProfile, now);
+			} else if (ProfileUtils.isSoCProfile(storageProfile)) {
 				LocalDateTime startTime = now.getStartTime().minus(timeStep, ChronoUnit.SECONDS);
 				Horizon last = new Horizon(startTime, timeStepinDT);
-				double currentSoC = Commons.aggregateSoC(Commons.readProfile(storageProfile, last));
-				double newSoC = Commons.aggregateSoC(Commons.readProfile(storageProfile, now));
+                double currentSoC = ProfileUtils.readProfile(storageProfile, last);
+                double newSoC = ProfileUtils.readProfile(storageProfile, now);
 				energy = ((newSoC - currentSoC) * capacity);
 			}
 
@@ -116,11 +116,11 @@ public class StorageNode extends Node {
 					StorageStrategy storageStrategy = (StorageStrategy) controlStrategy;
 					GenericProfile marginalChargeCosts = storageStrategy.getMarginalChargeCosts();
 					if (marginalChargeCosts != null) {
-						mcCharge = Commons.aggregateCost(Commons.readProfile(marginalChargeCosts, now));
+                        mcCharge = ProfileUtils.readProfile(marginalChargeCosts, now);
 					}
 					GenericProfile marginalDischargeCosts = storageStrategy.getMarginalDischargeCosts();
 					if (marginalDischargeCosts != null) {
-						mcDischarge = Commons.aggregateCost(Commons.readProfile(marginalDischargeCosts, now));
+                        mcDischarge = ProfileUtils.readProfile(marginalDischargeCosts, now);
 					}
 				}
 			}
