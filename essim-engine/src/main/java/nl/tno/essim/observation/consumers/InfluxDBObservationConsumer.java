@@ -16,8 +16,19 @@
 
 package nl.tno.essim.observation.consumers;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.BidFunction;
+import nl.tno.essim.influxdb.InfluxConnectionProvider;
+import nl.tno.essim.influxdb.InfluxDBService;
+import nl.tno.essim.observation.IObservation;
+import nl.tno.essim.observation.IObservationConsumer;
+import nl.tno.essim.observation.IObservationProvider;
+import nl.tno.essim.time.EssimTime;
+import org.influxdb.InfluxDB;
+import org.influxdb.dto.BatchPoints;
+import org.influxdb.dto.Point;
+import org.influxdb.dto.Point.Builder;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -25,29 +36,16 @@ import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.influxdb.InfluxDB;
-import org.influxdb.InfluxDBFactory;
-import org.influxdb.dto.BatchPoints;
-import org.influxdb.dto.Point;
-import org.influxdb.dto.Point.Builder;
-
-import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.commons.BidFunction;
-import nl.tno.essim.observation.IObservation;
-import nl.tno.essim.observation.IObservationConsumer;
-import nl.tno.essim.observation.IObservationProvider;
-import nl.tno.essim.time.EssimTime;
-import okhttp3.OkHttpClient;
-
 @Slf4j
 public class InfluxDBObservationConsumer implements IObservationConsumer {
 
-    private InfluxDB influxDbClient;
+    //    private InfluxDB influxDbClient;
     private String database;
-    private String url;
+    private String influxURL;
+    private InfluxDBService influx;
 
     public InfluxDBObservationConsumer(String url) {
-        this.url = url;
+        this.influxURL = url;
     }
 
     private ThreadFactory simpleThreadFactory = new ThreadFactory() {
@@ -64,26 +62,11 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
     @Override
     public void init(String database) {
         this.database = database;
-
-        if (influxDbClient == null) {
-            OkHttpClient.Builder client = new OkHttpClient.Builder().connectTimeout(1, TimeUnit.MINUTES)
-                    .readTimeout(1, TimeUnit.MINUTES).writeTimeout(1, TimeUnit.MINUTES).retryOnConnectionFailure(true);
-            influxDbClient = InfluxDBFactory.connect(url, client)
-                    .enableBatch(10000, 10, TimeUnit.SECONDS, simpleThreadFactory).enableGzip().setDatabase(database);
+        influx = InfluxConnectionProvider.getInfluxDBService(influxURL);
+        if (!influx.getInfluxDB().isBatchEnabled()) {
+            influx.getInfluxDB().enableBatch(10000, 10, TimeUnit.SECONDS, simpleThreadFactory).enableGzip();
         }
-
-        try {
-            URL influx = new URL(url);
-            HttpURLConnection urlConn = (HttpURLConnection) influx.openConnection();
-            urlConn.setConnectTimeout(1000);
-            urlConn.connect();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Connecting to InfluxDB @ " + url + " timed out. Please check URL!");
-        }
-
-        if (!influxDbClient.databaseExists(database)) {
-            influxDbClient.createDatabase(database);
-        }
+        influx.createDatabase(database);
     }
 
     @Override
@@ -104,14 +87,15 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
         pointBuilder.time(observation.getObservedAt().atZone(EssimTime.defaultTimeZone).toEpochSecond(),
                 TimeUnit.SECONDS);
 
-        influxDbClient.write(pointBuilder.build());
+        influx.getInfluxDB().write(pointBuilder.build());
     }
 
     @Override
     public void cleanup() {
-        influxDbClient.flush();
-        influxDbClient.disableBatch();
-        influxDbClient.close();
+        // flush the content to the database. Don't close the connection, it can be reused or will be closed automatically
+        InfluxDB influxDB = influx.getInfluxDB();
+        influxDB.flush();
+        influxDB.disableBatch();
     }
 
     @SuppressWarnings("unchecked")
@@ -143,6 +127,6 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
             }
         }
 
-        influxDbClient.write(batchBuilder.build());
+        influx.getInfluxDB().write(batchBuilder.build());
     }
 }

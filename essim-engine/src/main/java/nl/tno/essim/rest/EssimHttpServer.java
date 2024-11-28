@@ -27,15 +27,17 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.URI;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Slf4j
 public class EssimHttpServer extends ContextHandler {
 
-    public EssimHttpServer(String scheme, String host, int port, String path) throws Exception {
+    public EssimHttpServer(String scheme, String host, int port) throws Exception {
         // direct java.util.logging to slf4j (Jersey/Grizzly)
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
-//        Logger.getGlobal().setLevel(Level.ALL);
+        Logger.getGlobal().setLevel(Level.FINE);
 
         ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.SESSIONS);
         servletContext.setContextPath("/");
@@ -75,7 +77,7 @@ public class EssimHttpServer extends ContextHandler {
 
         server.start();
         log.info("ESSIM OpenAPI endpoint available at {}://{}:{}/openapi/", scheme, host, port);
-        URI publishURI = URI.create(String.format("%s://%s:%d/%s", scheme, host, port, path));
+        URI publishURI = URI.create(String.format("%s://%s:%d/essim", scheme, host, port));
         log.info("ESSIM @ {}", publishURI);
         server.join();
     }

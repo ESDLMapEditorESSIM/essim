@@ -30,11 +30,14 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.IStatusProvider;
+import nl.tno.essim.model.CompressionType;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.SimulationStatus;
 import nl.tno.essim.model.Status;
+import nl.tno.essim.utils.ConfigurableGzipOutputStream;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;
 import org.bson.Document;
@@ -43,9 +46,13 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.mongojack.JacksonCodecRegistry;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 @Slf4j
 public class MongoBackend implements IMongoBackend {
@@ -115,25 +122,64 @@ public class MongoBackend implements IMongoBackend {
     @Override
     public String addSimulation(EssimSimulation simulation) {
         String esdl = simulation.getEsdlContents();
-        // Ugly temporary hack: remove ESDL content if it is too big
-        if (simulation.getEsdlContents().length() > 16777216) {
-            simulation.setEsdlContents("");
-        }
+        compressESDLIfNeeded(simulation);
         InsertOneResult insertOneResult = essimCollection.insertOne(simulation);
         String hexId = insertOneResult.getInsertedId().asObjectId().getValue().toHexString();
         simulation.setEsdlContents(esdl);
         return hexId;
     }
 
+    @SneakyThrows
+    private static void compressESDLIfNeeded(EssimSimulation simulation) {
+        String esdl = simulation.getEsdlContents();
+        if (esdl.length() > 16777216) {
+            // ESDL content is too big; we will compress it
+            simulation.setEsdlContents("");
+            byte[] decoded = Base64.getDecoder().decode(esdl);
+            ByteArrayOutputStream compressed = new ByteArrayOutputStream();
+            ConfigurableGzipOutputStream gzipOutputStream = new ConfigurableGzipOutputStream(compressed);
+            gzipOutputStream.setLevel(9);
+            gzipOutputStream.write(decoded);
+            gzipOutputStream.close();
+            String esdlCompressedEncoded = Base64.getEncoder().encodeToString(compressed.toByteArray());
+            simulation.getAdditionalProperties().put("esdlCompressed", esdlCompressedEncoded);
+            simulation.getAdditionalProperties().put("esdlCompression", CompressionType.GZIP.toString());
+        }
+    }
+
+    @SneakyThrows
+    private static void decompressESDLIfNeeded(EssimSimulation simulation) {
+        String esdlCompression = (String) simulation.getAdditionalProperties().get("esdlCompression");
+        if (esdlCompression != null) {
+            CompressionType compressionType = CompressionType.valueOf(esdlCompression);
+            switch (compressionType) {
+                case GZIP -> {
+                    String esdlCompressedEncoded = (String) simulation.getAdditionalProperties().get("esdlCompressed");
+                    byte[] compressed = Base64.getDecoder().decode(esdlCompressedEncoded);
+                    ByteArrayInputStream compressedInputStream = new ByteArrayInputStream(compressed);
+                    GZIPInputStream gzipInputStream = new GZIPInputStream(compressedInputStream);
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    gzipInputStream.transferTo(outputStream);
+                    String esdl = Base64.getEncoder().encodeToString(outputStream.toByteArray());
+                    simulation.setEsdlContents(esdl);
+                }
+                case NONE -> {
+                    simulation.setEsdlContents((String) simulation.getAdditionalProperties().get("esdlCompressed"));
+                }
+                default -> {
+                    log.error("Unsupported compression type: {}", esdlCompression);
+                }
+            }
+
+        }
+    }
+
     @Override
     public void updateSimulationData(String simulationId, EssimSimulation simulationData) {
         String esdl = simulationData.getEsdlContents();
-        // Ugly temporary hack: remove ESDL content if it is too big
-        if (simulationData.getEsdlContents().length() > 16777216) {
-            simulationData.setEsdlContents("");
-        }
         simulationData.getAdditionalProperties().clear();
-        essimCollection.replaceOne(Filters.eq("_id", new ObjectId(simulationId)), simulationData);
+        compressESDLIfNeeded(simulationData);
+        essimCollection.replaceOne(getIdFilter(simulationId), simulationData);
         simulationData.setEsdlContents(esdl);
     }
 
@@ -149,8 +195,7 @@ public class MongoBackend implements IMongoBackend {
         statusObj.put("state", type);
         statusObj.put("description", status);
         Bson update = Updates.set("status", statusObj);
-        new ObjectId(simulationId);
-        essimCollection.updateOne(Filters.eq("_id", new ObjectId(simulationId)), update);
+        essimCollection.updateOne(getIdFilter(simulationId), update);
     }
 
     @Override
@@ -160,6 +205,7 @@ public class MongoBackend implements IMongoBackend {
             for (EssimSimulation record : essimCollection.find()) {
                 simInstance.add(record);
                 if (record != null) {
+                    decompressESDLIfNeeded(record);
                     record.getAdditionalProperties().clear();
                 }
             }
@@ -172,8 +218,13 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public EssimSimulation getSimulation(String simulationId) {
-        try (MongoCursor<EssimSimulation> simIt = essimCollection.find(Filters.eq("_id", new ObjectId(simulationId))).iterator()) {
-            return simIt.hasNext() ? simIt.next() : null;
+        try (MongoCursor<EssimSimulation> simIt = essimCollection.find(getIdFilter(simulationId)).iterator()) {
+            var sim = simIt.hasNext() ? simIt.next() : null;
+            if (sim != null) {
+                decompressESDLIfNeeded(sim);
+                sim.getAdditionalProperties().clear();
+            }
+            return sim;
         }
     }
 
@@ -200,9 +251,33 @@ public class MongoBackend implements IMongoBackend {
     public void updateKPIForSimulation(String simulationId, String kpiId, String result, String status) {
         UpdateOptions options = new UpdateOptions()
                 .arrayFilters(List.of(Filters.eq("ele.id", kpiId)));
-        Bson filter = Filters.eq("_id", new ObjectId(simulationId));
+        Bson filter = getIdFilter(simulationId);
         Bson set = Updates.combine(Updates.set("kpiModule.modules.$[ele].result", result), Updates.set("kpiModule.modules.$[ele].status", status));
         UpdateResult updateResult = essimCollection.updateOne(filter, set, options);
         log.debug("Result: {}", updateResult);
+    }
+
+    @Override
+    public void deleteSimulation(String simulationId) {
+        log.debug("Attempting to delete simulation with ID: {}", simulationId);
+        essimCollection.deleteOne(getIdFilter(simulationId));
+        log.debug("Deleted simulation with ID: {}", simulationId);
+    }
+
+    @Override
+    public List<String> getSimulationIdList() {
+        List<String> idList = new ArrayList<>();
+        try {
+            for (Document doc : essimCollection.withDocumentClass(Document.class).find()) {
+                idList.add(doc.getObjectId("_id").toHexString());
+            }
+        } catch (MongoException e) {
+            log.error("Could not get mongo simulation IDs", e);
+        }
+        return idList;
+    }
+
+    private Bson getIdFilter(String id) {
+        return Filters.eq("_id", new ObjectId(id));
     }
 }

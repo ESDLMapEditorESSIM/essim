@@ -96,4 +96,13 @@ public class MongoBackendStub implements IMongoBackend {
 
 	}
 
+	@Override
+	public void deleteSimulation(String simulationId) {
+	}
+
+	@Override
+	public List<String> getSimulationIdList() {
+		return List.of();
+	}
+
 }

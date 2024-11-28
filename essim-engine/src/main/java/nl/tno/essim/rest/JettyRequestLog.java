@@ -9,21 +9,13 @@ import org.eclipse.jetty.server.Response;
 public class JettyRequestLog extends CustomRequestLog {
     @Override
     public void log(Request request, Response response) {
-        if (log.isTraceEnabled()) {
-            log.trace("{} {} {} from {} --> {} {}",
-                    request.getMethod(),
-                    request.getOriginalURI(),
-                    request.getContentType(),
-                    request.getRemoteInetSocketAddress(),
-                    response.getStatus(),
-                    response.getContentType());
-        } else {
-            log.debug("{} {} from {} --> {}",
-                    request.getMethod(),
-                    request.getOriginalURI(),
-                    request.getRemoteInetSocketAddress(),
-                    response.getStatus());
-        }
         super.log(request, response);
+        log.debug("{} {} {} from {} --> {} ({})",
+                request.getMethod(),
+                request.getOriginalURI(),
+                request.getContentType() == null ? "" : "(" + request.getContentType() + ")",
+                request.getRemoteInetSocketAddress(),
+                response.getStatus(),
+                response.getContentType());
     }
 }

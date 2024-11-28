@@ -1,6 +1,7 @@
 package nl.tno.essim.model;
 
 import com.fasterxml.jackson.annotation.*;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import java.util.Map;
     "status",
     "description"
 })
+@RequiredArgsConstructor
 public class ErrorStatus {
   @JsonProperty("status")
   private Status status;
@@ -47,5 +49,10 @@ public class ErrorStatus {
   @JsonAnySetter
   public void setAdditionalProperties(String key, Object value) {
     this.additionalProperties.put(key, value);
+  }
+
+  public ErrorStatus(Status status, String description) {
+    this.status = status;
+    this.description = description;
   }
 }
