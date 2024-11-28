@@ -183,7 +183,7 @@ public class MongoBackend implements IMongoBackend {
 
     @Override
     public String getMetaInfo(String key) {
-        Document valueObj = essimMetaCollection.find(getIdFilter(key)).first();
+        Document valueObj = essimMetaCollection.find(Filters.eq("_id", key)).first();
         if (valueObj == null) {
             return null;
         }
