@@ -2,6 +2,8 @@ package nl.tno.essim.model;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Date;
 import java.util.List;
@@ -123,6 +125,11 @@ public class EssimSimulation {
 
   @JsonProperty("market")
   private Market market;
+
+  @Getter
+  @Setter
+  @JsonProperty("powsyblLoadFlow")
+  private boolean powsyblLoadFlow;
 
   @JsonIgnore
   private Map<String, Object> additionalProperties = new ExcludingMap();

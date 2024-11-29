@@ -73,7 +73,7 @@ public class ESSimEngine implements IStatusProvider {
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
-    private final EssimLoadFlowController loadFlowController;
+    private EssimLoadFlowController loadFlowController;
     private List<EnergyAsset> energyAssets;
     @Getter
     private String simulationId;
@@ -146,7 +146,9 @@ public class ESSimEngine implements IStatusProvider {
             simulationStepLength = parseTimeStep(timeStep);
         }
 
-        loadFlowController = new EssimLoadFlowController(simulationId);
+        if (simulation.isPowsyblLoadFlow()) {
+            loadFlowController = new EssimLoadFlowController(simulationId);
+        }
 
 
         Market market = simulation.getMarket();
@@ -233,7 +235,9 @@ public class ESSimEngine implements IStatusProvider {
             Carriers carriers = esInformation.getCarriers();
             if (carriers != null) {
                 // Here we have all the information to build the powsybl network
-                loadFlowController.createNetwork(carriers.getCarrier().stream().filter(c -> c instanceof ElectricityCommodity).toList(), energyAssets);
+                if (loadFlowController != null) {
+                    loadFlowController.createNetwork(carriers.getCarrier().stream().filter(c -> c instanceof ElectricityCommodity).toList(), energyAssets);
+                }
 
                 TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
                 if (transportSolveOrder.isEmpty()) {
