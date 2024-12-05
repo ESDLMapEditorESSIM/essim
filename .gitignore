@@ -5,3 +5,4 @@ essim-engine/credentials.json
 version.txt
 **/*.iml
 **/target
+*.xiidm

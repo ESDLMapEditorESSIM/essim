@@ -4,30 +4,19 @@ import esdl.Asset;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
 import esdl.Port;
-import esdl.impl.AbstractBasicConversionImpl;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.transportsolver.nodes.Node;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.resource.Resource;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import tech.tablesaw.api.Table;
-import tech.tablesaw.columns.Column;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,8 +32,9 @@ class LoadflowTest {
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulation sim = new EssimSimulation();
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 1, 0, 0, 0)));
-		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 12, 31, 0, 0, 0)));
+		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 2, 0, 0, 0)));
 		sim.setScenarioID(LoadflowTest.class.getSimpleName());
+		sim.setPowsyblLoadFlow(true);
 		if (System.getenv("INFLUX_URL") != null) {
 			sim.setInfluxURL(System.getenv("INFLUX_URL"));
 		}
@@ -76,9 +66,9 @@ class LoadflowTest {
 		return es;
 	}
 
-//	@Test
-	void testLoadFloaw() throws Exception {
-		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow1.esdl").readAllBytes(), StandardCharsets.UTF_8);
+	@Test
+	void testLoadFlow() throws Exception {
+		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow0.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 

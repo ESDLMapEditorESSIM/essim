@@ -6,6 +6,7 @@ import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.serde.XMLExporter;
 import com.powsybl.loadflow.LoadFlow;
+import com.powsybl.loadflow.LoadFlowParameters;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
@@ -35,6 +36,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
     private final Map<Carrier, VoltageLevel> voltageLevelMap = new HashMap<>();
     private final Network network;
     private final String networkName;
+    private final AtomicInteger simulationRunCounter = new AtomicInteger();
 
     public EssimLoadFlowController(String networkName) {
         network = Network.create(networkName, "code");
@@ -314,6 +316,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setTargetP(0)
                 .setTargetQ(0)
                 .add();
+        log.trace("Asset {} is implemented as a storage: {}", storage.getClass().getInterfaces()[0].getSimpleName(), battery.toString());
         return battery;
     }
 
@@ -330,6 +333,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setP0(0)
                 .setQ0(0)
                 .add();
+        log.trace("Asset {} is implemented as a load: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), load.toString());
         return load;
     }
 
@@ -337,6 +341,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
         if (producer.getPort().size() > 1) {
             throw new IllegalStateException("Producers with multiple ports not supported in loadflow");
         }
+
         String busId = getBusId(producer.getPort().get(0).getId());
         Generator generator = voltageLevel.newGenerator()
                 .setId(producer.getId())
@@ -350,6 +355,10 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setVoltageRegulatorOn(true)
                 .setTargetV(voltageLevel.getNominalV())
                 .add();
+        generator.newMinMaxReactiveLimits()
+                .setMinQ(-9999.99)
+                .setMaxQ(9999.99);
+        log.trace("Asset {} is implemented as a generator: {}", producer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
         return generator;
     }
 
@@ -387,6 +396,13 @@ public class EssimLoadFlowController implements IObservationProcessor {
     }
 
     public void run() {
-        LoadFlow.run(network);
+        final String variantId = "loadflowVariant-" + simulationRunCounter.incrementAndGet();
+        network.getVariantManager().cloneVariant(VariantManagerConstants.INITIAL_VARIANT_ID, variantId);
+        network.getVariantManager().setWorkingVariant(variantId);
+
+        LoadFlowParameters loadflowParameters = LoadFlowParameters.load();
+
+        LoadFlow.run(network, loadflowParameters);
+
     }
 }
