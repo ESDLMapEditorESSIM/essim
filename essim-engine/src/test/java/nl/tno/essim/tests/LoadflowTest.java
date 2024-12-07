@@ -68,7 +68,7 @@ class LoadflowTest {
 
 	@Test
 	void testLoadFlow() throws Exception {
-		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow0.esdl").readAllBytes(), StandardCharsets.UTF_8);
+		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow-1.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
 

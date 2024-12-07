@@ -242,6 +242,20 @@
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-open-loadflow</artifactId>
         </dependency>
+        <!-- single line diagram -->
+        <dependency>
+            <groupId>com.powsybl</groupId>
+            <artifactId>powsybl-single-line-diagram-core</artifactId>
+            <version>4.5.1</version>
+        </dependency>
+
+        <!-- network area diagram -->
+        <dependency>
+            <groupId>com.powsybl</groupId>
+            <artifactId>powsybl-network-area-diagram</artifactId>
+            <version>4.5.1</version>
+        </dependency>
+
     </dependencies>
 
 

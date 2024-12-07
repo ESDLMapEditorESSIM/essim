@@ -7,10 +7,14 @@ import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.serde.XMLExporter;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
+import com.powsybl.math.matrix.DenseMatrixFactory;
+import com.powsybl.nad.NetworkAreaDiagram;
+import com.powsybl.openloadflow.OpenLoadFlowParameters;
+import com.powsybl.openloadflow.OpenLoadFlowProvider;
+import com.powsybl.openloadflow.network.SlackBusSelectionMode;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
-import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProcessor;
 import nl.tno.essim.observation.IObservationProvider;
 import org.eclipse.emf.common.util.BasicEList;
@@ -41,28 +45,6 @@ public class EssimLoadFlowController implements IObservationProcessor {
     public EssimLoadFlowController(String networkName) {
         network = Network.create(networkName, "code");
         this.networkName = networkName;
-        new IObservationConsumer() {
-
-            @Override
-            public void init(String scenarioName) {
-
-            }
-
-            @Override
-            public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
-
-            }
-
-            @Override
-            public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-
-            }
-
-            @Override
-            public void cleanup() {
-
-            }
-        };
     }
 
     public void createNetwork(List<Carrier> carriers, List<EnergyAsset> assetList) {
@@ -89,7 +71,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
         carriers.forEach(carrier -> {
             VoltageLevel voltageLevel = substation.newVoltageLevel()
                     .setId(carrier.getId())
-                    .setNominalV(((ElectricityCommodity) carrier).getVoltage())
+                    .setNominalV(((ElectricityCommodity) carrier).getVoltage() / 1000.0)
                     .setTopologyKind(TopologyKind.BUS_BREAKER)
                     .setName(carrier.getName())
                     .add();
@@ -99,7 +81,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
         // Now we create the network per carrier
         carriers.forEach(carrier -> {
             List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(carrier)).toList().isEmpty()).toList();
-            createVoltageLevelPerCarrier(carrier, connectedAssets);
+            createNetworkPerCarrier(carrier, connectedAssets);
         });
 
         // Then we create the transformers connecting the carriers
@@ -140,9 +122,11 @@ public class EssimLoadFlowController implements IObservationProcessor {
         });
         Exporter ex = new XMLExporter();
         ex.export(network, new Properties(), DataSource.fromPath(Paths.get("."), "essim-network-" + networkName + ".xml"));
+        NetworkAreaDiagram.draw(network, Paths.get("essim-network-" + networkName + "-diagram.svg"));
+
     }
 
-    private void createVoltageLevelPerCarrier(Carrier carrier, List<EnergyAsset> connectedAssets) {
+    private void createNetworkPerCarrier(Carrier carrier, List<EnergyAsset> connectedAssets) {
         VoltageLevel voltageLevel = voltageLevelMap.get(carrier);
         AtomicInteger busCounter = new AtomicInteger();
         /*
@@ -284,6 +268,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
                         .setConnectableBus(busId)
                         .setId(conversion.getId())
                         .setName(conversion.getName())
+                        .setP0(0)
+                        .setQ0(0)
                         .add());
             } else if (port instanceof OutPort) {
                 result.set(voltageLevel.newGenerator()
@@ -293,6 +279,9 @@ public class EssimLoadFlowController implements IObservationProcessor {
                         .setConnectableBus(busId)
                         // Do we need to convert based on port???
                         .setMaxP(conversion.getPower())
+                        .setMinP(0)
+                        .setTargetP(0)
+                        .setTargetQ(0)
                         .add());
             } else {
                 throw new IllegalStateException("Port type " + port + " is not supported in loadflow");
@@ -311,7 +300,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setConnectableBus(busId)
                 .setId(storage.getId())
                 .setName(storage.getName())
-                .setMaxP(storage.getMaxChargeRate())
+                .setMaxP(storage.getMaxChargeRate()/1000)
                 .setMinP(0)
                 .setTargetP(0)
                 .setTargetQ(0)
@@ -348,6 +337,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setName(producer.getName() + "-" + producer.getName())
                 .setMaxP(Math.abs(producer.getPower()))
                 .setMinP(0)
+                .setMaxP(producer.getPower()/1000)
                 .setTargetP(0)
                 .setTargetQ(0)
                 .setBus(busId)
@@ -380,17 +370,18 @@ public class EssimLoadFlowController implements IObservationProcessor {
     @Override
     public void process(IObservationProvider source, IObservation observation) {
         String assetId = (String) observation.getTags().get("assetId");
-        Double power = Math.abs((Double) observation.getValues().get("allocationPower"));
+//        Double power = Math.abs((Double) observation.getValues().get("allocationPower"));
+        Double power = (Double) observation.getValues().get("allocationPower");
         Object o = translationMap.get(assetId);
         if (o == null) {
             return;
         }
         if (o instanceof Load) {
-            ((Load) o).setP0(power);
+            ((Load) o).setP0(power/1000);
         } else if (o instanceof Generator) {
-            ((Generator) o).setTargetP(power);
+            ((Generator) o).setTargetP(power/1000);
         } else if (o instanceof Battery) {
-            ((Battery) o).setTargetP(power);
+            ((Battery) o).setTargetP(power/1000);
         }
 
     }
@@ -399,10 +390,16 @@ public class EssimLoadFlowController implements IObservationProcessor {
         final String variantId = "loadflowVariant-" + simulationRunCounter.incrementAndGet();
         network.getVariantManager().cloneVariant(VariantManagerConstants.INITIAL_VARIANT_ID, variantId);
         network.getVariantManager().setWorkingVariant(variantId);
+        LoadFlowParameters parameters = new LoadFlowParameters()
+                .setDc(true).setUseReactiveLimits(false)
+                .setDistributedSlack(false);
+        OpenLoadFlowParameters parametersExt = OpenLoadFlowParameters.create(parameters)
+                .setSlackBusSelectionMode(SlackBusSelectionMode.FIRST);
+        OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
+        LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 
-        LoadFlowParameters loadflowParameters = LoadFlowParameters.load();
 
-        LoadFlow.run(network, loadflowParameters);
+        loadFlowRunner.run(network, parameters);
 
     }
 }
