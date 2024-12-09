@@ -133,8 +133,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
             Iterator<Port> iterator = cable.getPort().iterator();
             Port port1 = iterator.next();
             Port port2 = iterator.next();
-            String busId1 = getBusId(getConnectedPortId(port1));
-            String busId2 = getBusId(getConnectedPortId(port2));
+            String busId1 = getConnectedBusId(port1);
+            String busId2 = getConnectedBusId(port2);
             String cableTypeName = cable.getAssetType();
             if (cableTypeName == null || cableTypeName.isEmpty()) {
                 cableTypeName = "243-AL1/39-ST1A 20.0";
@@ -157,11 +157,21 @@ public class EssimLoadFlowController implements IObservationProcessor {
 
     }
 
+    void addConnectedPortsToSet(Set<Port> portSet) {
+        Set<Port> connected = portSet.stream().flatMap(p -> getConnectedPorts(p).stream()).collect(Collectors.toSet());
+        connected.addAll(portSet.stream().filter(p -> isSubstationInternalConnection(p.getEnergyasset())).flatMap(p -> p.getEnergyasset().getPort().stream()).toList());
+        int prevSize = portSet.size();
+        portSet.addAll(connected);
+        if (portSet.size() > prevSize) {
+            addConnectedPortsToSet(portSet);
+        }
+    }
+
     List<Port> getSortedSubstationPortList(Port port) {
-        EList<Port> ports = getConnectedPorts(port);
-        ports.addAll(ports.stream().filter(p -> isSubstationInternalConnection(p.getEnergyasset())).flatMap(p -> getConnectedPorts(p).stream()).toList());
-        ports.add(port);
-        return ports.stream().distinct().sorted(Comparator.comparing(Port::getId)).toList();
+        Set<Port> portSet = new HashSet<>();
+        portSet.add(port);
+        addConnectedPortsToSet(portSet);
+        return portSet.stream().sorted(Comparator.comparing(Port::getId)).toList();
     }
 
     boolean isSubstationInternalConnection(EnergyAsset asset) {
@@ -204,35 +214,10 @@ public class EssimLoadFlowController implements IObservationProcessor {
         return ports;
     }
 
-    /**
-     * Retrieves the ID of the port connected to the specified port. The specified port
-     * can either be an instance of InPort or OutPort. If the specified port is connected
-     * to more than one port, an IllegalStateException is thrown.
-     *
-     * @param port the port for which the connected port ID should be retrieved. It must be
-     *             either an instance of InPort or OutPort.
-     * @return the ID of the port connected to the specified port.
-     * @throws IllegalStateException if the specified port is connected to more than one port
-     *                               or if the port type is unsupported.
-     */
-    private String getConnectedPortId(Port port) {
-        String portId = null;
-        if (port instanceof InPort) {
-            EList<OutPort> connectedTo = ((InPort) port).getConnectedTo();
-            if (connectedTo.size() != 1) {
-                throw new IllegalStateException("Inport " + port.getName() + " connected to " + connectedTo.size() + " outports");
-            }
-            portId = connectedTo.get(0).getId();
-        } else if (port instanceof OutPort) {
-            EList<InPort> connectedTo = ((OutPort) port).getConnectedTo();
-            if (connectedTo.size() != 1) {
-                throw new IllegalStateException("Outport " + port.getName() + " connected to " + connectedTo.size() + " inports");
-            }
-            portId = connectedTo.get(0).getId();
-        } else {
-            throw new IllegalStateException("Port type " + port.getClass().getSimpleName() + " is not supported in loadflow");
-        }
-        return portId;
+    private String getConnectedBusId(Port port) {
+        List<Port> substationPortList = getSortedSubstationPortList(port);
+        String id = substationPortList.getFirst().getId();
+        return busIdMap.get(id);
     }
 
 
@@ -271,7 +256,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
     private Bus getBus(ElectricityCommodity carrier, EnergyAsset asset) {
         Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
         if (firstPortForCarrier.isEmpty()) {
-            throw new IllegalStateException(String.format("Asset %s is not connected with carrier %s", asset.getName(), carrier.getName()));
+            throw new IllegalStateException(String.format("Asset %s is not connected to carrier %s", asset.getName(), carrier.getName()));
         }
         List<Port> substationPortList = getSortedSubstationPortList(firstPortForCarrier.get());
         String id = substationPortList.getFirst().getId();
@@ -289,7 +274,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
     private VoltageLevel getVoltageLevel(ElectricityCommodity carrier, EnergyAsset asset) {
         Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
         if (firstPortForCarrier.isEmpty()) {
-            throw new IllegalStateException(String.format("Asset %s is not connected with carrier %s", asset.getName(), carrier.getName()));
+            throw new IllegalStateException(String.format("Asset %s is not connected to carrier %s", asset.getName(), carrier.getName()));
         }
         return getVoltageLevel(firstPortForCarrier.get());
     }

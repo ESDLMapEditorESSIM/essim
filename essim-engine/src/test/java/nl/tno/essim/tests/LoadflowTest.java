@@ -4,6 +4,7 @@ import esdl.Asset;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
 import esdl.Port;
+import essim.ESSIMSingleValueProfile;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.Market;
@@ -27,23 +28,15 @@ class LoadflowTest {
 	private static AtomicInteger counter = new AtomicInteger(1);
 
 
-	static EnergySystem runTest(String esdl, Market market,
-			InMemoryObservationConsumer inMemoryObservationConsumer) throws Exception {
+	static EnergySystem runTest(EssimSimulation sim, InMemoryObservationConsumer inMemoryObservationConsumer) throws Exception {
 		IMongoBackend mongo = new MongoBackendStub();
-		EssimSimulation sim = new EssimSimulation();
-		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
-		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
-		sim.setScenarioID(LoadflowTest.class.getSimpleName());
 		sim.setPowsyblLoadFlow(true);
 		if (System.getenv("INFLUX_URL") != null) {
 			sim.setInfluxURL(System.getenv("INFLUX_URL"));
 		}
-		if (market != null) {
-			sim.setMarket(market);
-		}
 
 		String simId = mongo.addSimulation(sim);
-		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
+		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, sim.getEsdlContents(), mongo);
 		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
@@ -67,12 +60,34 @@ class LoadflowTest {
 	}
 
 	@Test
-	void testLoadFlow() throws Exception {
+	void testLoadFlow1() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow-1.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		EnergySystem energySystem = runTest(esdl, null, inMemoryObservationConsumer);
+		EssimSimulation sim = new EssimSimulation();
+		sim.setEsdlContents(esdl);
+		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
+		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
+		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "--1");
 
-		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
-		System.out.println("Resulting ESDL: \n" + resultESDL);
+		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
+
+//		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+//		System.out.println("Resulting ESDL: \n" + resultESDL);
+	}
+
+	@Test
+	void testLoadFlow2() throws Exception {
+		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow0.esdl").readAllBytes(), StandardCharsets.UTF_8);
+		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
+		EssimSimulation sim = new EssimSimulation();
+		sim.setEsdlContents(esdl);
+		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 1, 0, 0, 0)));
+		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 2, 0, 0, 0)));
+		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "-0");
+
+		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
+
+//		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+//		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
 }
