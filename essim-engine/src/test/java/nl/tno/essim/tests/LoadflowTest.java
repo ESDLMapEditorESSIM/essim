@@ -31,8 +31,8 @@ class LoadflowTest {
 			InMemoryObservationConsumer inMemoryObservationConsumer) throws Exception {
 		IMongoBackend mongo = new MongoBackendStub();
 		EssimSimulation sim = new EssimSimulation();
-		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 1, 0, 0, 0)));
-		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 2, 0, 0, 0)));
+		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
+		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
 		sim.setScenarioID(LoadflowTest.class.getSimpleName());
 		sim.setPowsyblLoadFlow(true);
 		if (System.getenv("INFLUX_URL") != null) {
