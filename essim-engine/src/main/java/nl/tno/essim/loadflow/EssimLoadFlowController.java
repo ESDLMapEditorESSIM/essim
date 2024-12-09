@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class EssimLoadFlowController implements IObservationProcessor {
@@ -36,7 +37,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
      * The busMap maps ESDL port ids to powsybl bus ids. When creating a bus, the id of the first port that will be connected
      * to it will be the bus id.
      */
-    private final Map<String, String> busMap = new HashMap<>();
+    private final Map<String, String> busIdMap = new HashMap<>();
+    private final Map<String, Bus> busMap = new HashMap<>();
     private final Map<String, VoltageLevel> voltageLevelMap = new HashMap<>();
     private final Network network;
     private final String networkName;
@@ -60,23 +62,6 @@ public class EssimLoadFlowController implements IObservationProcessor {
          * - A line for each line
          * - A voltagelevel per carrier
          */
-
-        /*
-         * - First create a voltagelevel per carrier
-         * - Then iterate through the assets connected to the carrier to create loads/batteries/generators
-         * - Then iterate through the lines to connect the assets
-         */
-//        Substation substation = network.newSubstation().setId(network.getId() + "-substation").add();
-//
-//        carriers.forEach(carrier -> {
-//            VoltageLevel voltageLevel = substation.newVoltageLevel()
-//                    .setId(carrier.getId())
-//                    .setNominalV(((ElectricityCommodity) carrier).getVoltage() / 1000.0)
-//                    .setTopologyKind(TopologyKind.BUS_BREAKER)
-//                    .setName(carrier.getName())
-//                    .add();
-//            voltageLevelMap.put(carrier, voltageLevel);
-//        });
 
         // Now we create the network per carrier
         carriers.forEach(carrier -> {
@@ -132,43 +117,6 @@ public class EssimLoadFlowController implements IObservationProcessor {
     }
 
     private void createNetworkPerCarrier(Carrier carrier, List<EnergyAsset> connectedAssets) {
-//        VoltageLevel voltageLevel = voltageLevelMap.get(carrier);
-        AtomicInteger busCounter = new AtomicInteger();
-        /*
-         * We need to first create a port-bus-id mapping, where we map all the connected ports to a bus id
-         * So we first create a bus for the explicit busses from the ESDL, and for the EConnections
-         */
-        connectedAssets.stream().filter(a -> a instanceof Bus || a instanceof EConnection).forEach(bus -> {
-            AtomicReference<String> busId = new AtomicReference<>();
-            bus.getPort().forEach(port -> {
-                if (busId.get() == null) {
-                    busId.set(port.getId());
-//                    createBus(voltageLevel, busId.get());
-                    busCounter.incrementAndGet();
-                }
-                busMap.put(port.getId(), busId.get());
-            });
-        });
-        /*
-         * Now we create busses for implicit connections
-         */
-        connectedAssets.forEach(asset -> {
-            asset.getPort().forEach(port -> {
-                String portId = port.getId();
-                if (!busMap.containsKey(portId) && port.getCarrier().equals(carrier)) {
-//                    createBus(voltageLevel, portId);
-                    busCounter.incrementAndGet();
-                    busMap.put(portId, portId);
-                    getConnectedPorts(port).forEach(p -> {
-                        busMap.put(p.getId(), portId);
-                    });
-                }
-            });
-        });
-
-        log.info("{} bus ids created", busCounter.get());
-        // TODO the busses still need to be created!
-
         // Create the network elements for the connected assets
         createAssets(connectedAssets, (ElectricityCommodity) carrier);
 
@@ -268,23 +216,23 @@ public class EssimLoadFlowController implements IObservationProcessor {
      *                               or if the port type is unsupported.
      */
     private String getConnectedPortId(Port port) {
-        String busId = null;
+        String portId = null;
         if (port instanceof InPort) {
             EList<OutPort> connectedTo = ((InPort) port).getConnectedTo();
             if (connectedTo.size() != 1) {
                 throw new IllegalStateException("Inport " + port.getName() + " connected to " + connectedTo.size() + " outports");
             }
-            busId = connectedTo.get(0).getId();
+            portId = connectedTo.get(0).getId();
         } else if (port instanceof OutPort) {
             EList<InPort> connectedTo = ((OutPort) port).getConnectedTo();
             if (connectedTo.size() != 1) {
                 throw new IllegalStateException("Outport " + port.getName() + " connected to " + connectedTo.size() + " inports");
             }
-            busId = connectedTo.get(0).getId();
+            portId = connectedTo.get(0).getId();
         } else {
             throw new IllegalStateException("Port type " + port.getClass().getSimpleName() + " is not supported in loadflow");
         }
-        return busId;
+        return portId;
     }
 
 
@@ -294,42 +242,56 @@ public class EssimLoadFlowController implements IObservationProcessor {
         AtomicInteger storageCounter = new AtomicInteger();
         AtomicInteger conversionCounter = new AtomicInteger();
         assetList.stream().filter(a -> a instanceof Producer).forEach(producer -> {
-            Optional<Port> firstPortForCarrier = getFirstPortForCarrier(producer, carrier);
-            if (!firstPortForCarrier.isPresent()) {
-                throw new IllegalStateException(String.format("Producer %s is not connected with carrier %s", producer.getName(), carrier.getName()));
-            }
-            VoltageLevel voltageLevel = getVoltageLevel(firstPortForCarrier.get());
-            translationMap.put(producer.getId(), createProducer(voltageLevel, (Producer) producer));
+            VoltageLevel voltageLevel = getVoltageLevel(carrier, producer);
+            Bus bus = getBus(carrier, producer);
+            translationMap.put(producer.getId(), createProducer(voltageLevel, bus.getId(), (Producer) producer));
             producerCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof Consumer).forEach(consumer -> {
-            Optional<Port> firstPortForCarrier = getFirstPortForCarrier(consumer, carrier);
-            if (!firstPortForCarrier.isPresent()) {
-                throw new IllegalStateException(String.format("Consumer %s is not connected with carrier %s", consumer.getName(), carrier.getName()));
-            }
-            VoltageLevel voltageLevel = getVoltageLevel(firstPortForCarrier.get());
-            translationMap.put(consumer.getId(), createConsumer(voltageLevel, consumer));
+            VoltageLevel voltageLevel = getVoltageLevel(carrier, consumer);
+            Bus bus = getBus(carrier, consumer);
+            translationMap.put(consumer.getId(), createConsumer(voltageLevel, bus.getId(), consumer));
             consumerCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof Storage).forEach(storage -> {
-            Optional<Port> firstPortForCarrier = getFirstPortForCarrier(storage, carrier);
-            if (!firstPortForCarrier.isPresent()) {
-                throw new IllegalStateException(String.format("Storage %s is not connected with carrier %s",storage.getName(), carrier.getName()));
-            }
-            VoltageLevel voltageLevel = getVoltageLevel(firstPortForCarrier.get());
-            translationMap.put(storage.getId(), createStorage(voltageLevel, (Storage) storage));
+            VoltageLevel voltageLevel = getVoltageLevel(carrier, storage);
+            Bus bus = getBus(carrier, storage);
+            translationMap.put(storage.getId(), createStorage(voltageLevel, bus.getId(), (Storage) storage));
             storageCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof AbstractBasicConversion).forEach(conversion -> {
-            Optional<Port> firstPortForCarrier = getFirstPortForCarrier(conversion, carrier);
-            if (!firstPortForCarrier.isPresent()) {
-                throw new IllegalStateException(String.format("Conversion %s is not connected with carrier %s", conversion.getName(), carrier.getName()));
-            }
-            VoltageLevel voltageLevel = getVoltageLevel(firstPortForCarrier.get());
-            translationMap.put(conversion.getId(), createConversion(voltageLevel, carrier, (AbstractBasicConversion) conversion));
+            VoltageLevel voltageLevel = getVoltageLevel(carrier, conversion);
+            Bus bus = getBus(carrier, conversion);
+            translationMap.put(conversion.getId(), createConversion(voltageLevel, carrier, bus.getId(), (AbstractBasicConversion) conversion));
             conversionCounter.incrementAndGet();
         });
         log.debug("Created {} producers, {} consumers, {} storages and {} conversions", producerCounter.get(), consumerCounter.get(), storageCounter.get(), conversionCounter.get());
+    }
+
+    private Bus getBus(ElectricityCommodity carrier, EnergyAsset asset) {
+        Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
+        if (firstPortForCarrier.isEmpty()) {
+            throw new IllegalStateException(String.format("Asset %s is not connected with carrier %s", asset.getName(), carrier.getName()));
+        }
+        List<Port> substationPortList = getSortedSubstationPortList(firstPortForCarrier.get());
+        String id = substationPortList.getFirst().getId();
+        VoltageLevel voltageLevel = getVoltageLevel(firstPortForCarrier.get());
+        String busId = "bus-" + id;
+        Bus bus = busMap.get(busId);
+        if (bus == null) {
+            bus = voltageLevel.getBusBreakerView().newBus().setId(busId).setName(busId).add();
+            busMap.put(busId, bus);
+            busIdMap.putAll(substationPortList.stream().collect(Collectors.toMap(Port::getId, p -> busId)));
+        }
+        return bus;
+    }
+
+    private VoltageLevel getVoltageLevel(ElectricityCommodity carrier, EnergyAsset asset) {
+        Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
+        if (firstPortForCarrier.isEmpty()) {
+            throw new IllegalStateException(String.format("Asset %s is not connected with carrier %s", asset.getName(), carrier.getName()));
+        }
+        return getVoltageLevel(firstPortForCarrier.get());
     }
 
     private VoltageLevel getVoltageLevel(Port port) {
@@ -338,16 +300,15 @@ public class EssimLoadFlowController implements IObservationProcessor {
         VoltageLevel voltageLevel = voltageLevelMap.get(voltageLevelId);
         if (voltageLevel == null) {
             Substation substation = network.newSubstation().setId("substation-" + id).add();
-            voltageLevel = substation.newVoltageLevel().setId(voltageLevelId).setNominalV(((ElectricityCommodity) port.getCarrier()).getVoltage() / 1000).add();
+            voltageLevel = substation.newVoltageLevel().setId(voltageLevelId).setNominalV(((ElectricityCommodity) port.getCarrier()).getVoltage() / 1000).setTopologyKind(TopologyKind.BUS_BREAKER).add();
             voltageLevelMap.put(voltageLevelId, voltageLevel);
         }
         return voltageLevel;
     }
 
-    private Object createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, AbstractBasicConversion conversion) {
+    private Object createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, String busId, AbstractBasicConversion conversion) {
         AtomicReference<Object> result = new AtomicReference<>();
         conversion.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).findFirst().ifPresent(port -> {
-            String busId = getBusId(port.getId());
             if (port instanceof InPort) {
                 result.set(voltageLevel.newLoad()
                         .setBus(busId)
@@ -376,11 +337,10 @@ public class EssimLoadFlowController implements IObservationProcessor {
         return result.get();
     }
 
-    private Battery createStorage(VoltageLevel voltageLevel, Storage storage) {
+    private Battery createStorage(VoltageLevel voltageLevel, String busId, Storage storage) {
         if (storage.getPort().size() > 1) {
             throw new IllegalStateException("Batteries with multiple ports not supported in loadflow");
         }
-        String busId = getBusId(storage.getPort().get(0).getId());
         Battery battery = voltageLevel.newBattery()
                 .setBus(busId)
                 .setConnectableBus(busId)
@@ -395,11 +355,10 @@ public class EssimLoadFlowController implements IObservationProcessor {
         return battery;
     }
 
-    private Load createConsumer(VoltageLevel voltageLevel, EnergyAsset consumer) {
+    private Load createConsumer(VoltageLevel voltageLevel, String busId, EnergyAsset consumer) {
         if (consumer.getPort().size() > 1) {
             throw new IllegalStateException("Consumers with multiple ports not supported in loadflow");
         }
-        String busId = getBusId(consumer.getPort().get(0).getId());
         Load load = voltageLevel.newLoad()
                 .setBus(busId)
                 .setConnectableBus(busId)
@@ -412,12 +371,11 @@ public class EssimLoadFlowController implements IObservationProcessor {
         return load;
     }
 
-    private Generator createProducer(VoltageLevel voltageLevel, Producer producer) {
+    private Generator createProducer(VoltageLevel voltageLevel, String busId, Producer producer) {
         if (producer.getPort().size() > 1) {
             throw new IllegalStateException("Producers with multiple ports not supported in loadflow");
         }
 
-        String busId = getBusId(producer.getPort().get(0).getId());
         Generator generator = voltageLevel.newGenerator()
                 .setId(producer.getId())
                 .setName(producer.getName() + "-" + producer.getName())
@@ -439,19 +397,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
     }
 
     String getBusId(String portId) {
-        String prevId;
-        String busId = portId;
-        do {
-            prevId = busId;
-            busId = busMap.get(prevId);
-        } while (busId != null && !busId.equals(prevId));
-        return busId;
+        return busIdMap.get(portId);
     }
-
-    private Bus createBus(VoltageLevel voltageLevel, String portId) {
-        return voltageLevel.getBusBreakerView().newBus().setId(portId).setName(portId).add();
-    }
-
 
     @Override
     public void process(IObservationProvider source, IObservation observation) {
