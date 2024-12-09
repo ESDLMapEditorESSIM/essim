@@ -4,6 +4,7 @@ import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.iidm.network.Battery;
 import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.*;
+import com.powsybl.iidm.network.Line;
 import com.powsybl.iidm.serde.XMLExporter;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
@@ -460,6 +461,29 @@ public class EssimLoadFlowController implements Simulatable {
     public void step(EssimTime timestamp) {
         status = SimulationStatus.STARTED;
         run();
+        // TODO make observations using the visitor
+        final TopologyVisitor visitor = new DefaultTopologyVisitor() {
+            @Override
+            public void visitGenerator(Generator generator) {
+
+                log.info("Generator: {} [{} MW]", generator.getNameOrId(), generator.getTerminal().getP());
+            }
+
+            @Override
+            public void visitLoad(Load load) {
+                log.info("Load: {} [{} MW]", load.getNameOrId(), load.getTerminal().getP());
+            }
+
+            @Override
+            public void visitLine(Line line, TwoSides side) {
+                line.getTerminal(side).getP();
+                super.visitLine(line, side);
+            }
+        };
+        for (VoltageLevel voltageLevel : network.getVoltageLevels()) {
+            voltageLevel.visitEquipments(visitor);
+        }
+
     }
 
     @Override

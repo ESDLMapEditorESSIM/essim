@@ -35,6 +35,7 @@ import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
+import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
@@ -168,9 +169,10 @@ public class ESSimEngine implements IStatusProvider {
 
         if (simulation.isPowsyblLoadFlow()) {
             loadFlowController = new EssimLoadFlowController(simulationId);
-            simulationManager.addObservationConsumer(loadFlowController.getObservationProcessor());
+            IObservationConsumer observationProcessor = loadFlowController.getObservationProcessor();
+            observationManager.registerConsumer(observationProcessor);
+            simulationManager.addObservationConsumer(observationProcessor);
             simulationManager.addOtherSimulatable(loadFlowController);
-//            simulationManager.setLoadFlowController(loadFlowController);
         }
 
         try {
