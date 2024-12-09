@@ -16,6 +16,19 @@
 
 package nl.tno.essim.managers;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.ISimulationManager;
+import nl.tno.essim.commons.IStatusProvider;
+import nl.tno.essim.commons.Simulatable;
+import nl.tno.essim.model.Status;
+import nl.tno.essim.mongo.IMongoBackend;
+import nl.tno.essim.mso.MSOClient;
+import nl.tno.essim.observation.IObservationConsumer;
+import nl.tno.essim.time.EssimDuration;
+import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.transportsolver.TransportSolver;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -24,27 +37,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.commons.ISimulationManager;
-import nl.tno.essim.commons.IStatusProvider;
-import nl.tno.essim.commons.Simulatable;
-import nl.tno.essim.loadflow.EssimLoadFlowController;
-import nl.tno.essim.model.Status;
-import nl.tno.essim.mongo.IMongoBackend;
-import nl.tno.essim.mso.MSOClient;
-import nl.tno.essim.observation.IObservationConsumer;
-import nl.tno.essim.time.EssimDuration;
-import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.transportsolver.TransportSolver;
 
 @Slf4j
 public class SimulationManager implements ISimulationManager, IStatusProvider {
@@ -71,9 +65,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private MSOClient msoClient;
 	private CountDownLatch msoBarrier;
 	private long modelDeployTimeout;
-	@Getter
-	@Setter
-	private EssimLoadFlowController loadFlowController;
 
 	private static long getTimeout() {
 		String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
@@ -259,9 +250,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				}));
 			}
 			barrier.await();
-		}
-		if (loadFlowController != null) {
-			loadFlowController.run();
 		}
 	}
 

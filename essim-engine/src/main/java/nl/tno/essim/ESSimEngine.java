@@ -146,11 +146,6 @@ public class ESSimEngine implements IStatusProvider {
             simulationStepLength = parseTimeStep(timeStep);
         }
 
-        if (simulation.isPowsyblLoadFlow()) {
-            loadFlowController = new EssimLoadFlowController(simulationId);
-        }
-
-
         Market market = simulation.getMarket();
         // Set default min/max market prices if not defined by the input
         if (market == null) {
@@ -167,9 +162,16 @@ public class ESSimEngine implements IStatusProvider {
         // Initialise SimulationManager
         simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
                 simulationStepLength, mongo);
-        simulationManager.setLoadFlowController(loadFlowController);
 
         observationManager = new ObservationManager(simulationId);
+
+
+        if (simulation.isPowsyblLoadFlow()) {
+            loadFlowController = new EssimLoadFlowController(simulationId);
+            simulationManager.addObservationConsumer(loadFlowController.getObservationProcessor());
+            simulationManager.addOtherSimulatable(loadFlowController);
+//            simulationManager.setLoadFlowController(loadFlowController);
+        }
 
         try {
             // Register all ObservationConsumers - Eg: InfluxDB
@@ -231,40 +233,39 @@ public class ESSimEngine implements IStatusProvider {
         findAllEnergyAssets(mainArea, energyAssets);
 
         EnergySystemInformation esInformation = energySystem.getEnergySystemInformation();
-        if (esInformation != null) {
-            Carriers carriers = esInformation.getCarriers();
-            if (carriers != null) {
-                // Here we have all the information to build the powsybl network
-                if (loadFlowController != null) {
-                    loadFlowController.createNetwork(carriers.getCarrier().stream().filter(c -> c instanceof ElectricityCommodity).toList(), energyAssets);
-                }
-
-                TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
-                if (transportSolveOrder.isEmpty()) {
-                    throw new IllegalStateException("Conflicting Control Strategies found!!");
-                }
-
-                log.debug("Going with this parallelised order:");
-
-                // Add to simulation manager the transport solvers in the order we determined.
-                for (int k : transportSolveOrder.keySet()) {
-                    List<TransportSolver> solvers = transportSolveOrder.get(k);
-                    log.debug(" - {}: {}", k, solvers.toString());
-                    for (TransportSolver solver : solvers) {
-                        solver.setSimulationManager(simulationManager);
-                        solver.setObservationManager(observationManager);
-                    }
-                    simulationManager.addSolvers(solvers);
-                }
-                EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
-                emissionManager.setObservationManager(observationManager);
-                simulationManager.addOtherSimulatable(emissionManager);
-            } else {
-                throw new IllegalArgumentException("No Carrier Information specified!");
-            }
-        } else {
+        if (esInformation == null) {
             throw new IllegalArgumentException("No Energy System Information specified! Cannot read carrier information.");
         }
+        Carriers carriers = esInformation.getCarriers();
+        if (carriers == null) {
+            throw new IllegalArgumentException("No Carrier Information specified!");
+
+        }
+        // Here we have all the information to build the powsybl network
+        if (loadFlowController != null) {
+            loadFlowController.createNetwork(carriers.getCarrier().stream().filter(c -> c instanceof ElectricityCommodity).toList(), energyAssets);
+        }
+
+        TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
+        if (transportSolveOrder.isEmpty()) {
+            throw new IllegalStateException("Conflicting Control Strategies found!!");
+        }
+
+        log.debug("Going with this parallelised order:");
+
+        // Add to simulation manager the transport solvers in the order we determined.
+        for (int k : transportSolveOrder.keySet()) {
+            List<TransportSolver> solvers = transportSolveOrder.get(k);
+            log.debug(" - {}: {}", k, solvers.toString());
+            for (TransportSolver solver : solvers) {
+                solver.setSimulationManager(simulationManager);
+                solver.setObservationManager(observationManager);
+            }
+            simulationManager.addSolvers(solvers);
+        }
+        EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
+        emissionManager.setObservationManager(observationManager);
+        simulationManager.addOtherSimulatable(emissionManager);
         int numAssets = 0;
         for (TransportSolver solver : solversList) {
             numAssets += solver.getProcessedList().size();
@@ -316,7 +317,6 @@ public class ESSimEngine implements IStatusProvider {
                         + (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
                 TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
                         energyAssetRoles, esdlString, this.market);
-                solver.setObservationProcessor(loadFlowController);
                 solver.setSimulationManager(simulationManager);
                 for (EnergyAsset filteredAsset : filteredAssets) {
                     solver.addToNetwork(filteredAsset);

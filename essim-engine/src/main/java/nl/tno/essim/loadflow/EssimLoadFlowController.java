@@ -13,10 +13,13 @@ import com.powsybl.openloadflow.OpenLoadFlowParameters;
 import com.powsybl.openloadflow.OpenLoadFlowProvider;
 import com.powsybl.openloadflow.network.SlackBusSelectionMode;
 import esdl.*;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.observation.IObservation;
-import nl.tno.essim.observation.IObservationProcessor;
-import nl.tno.essim.observation.IObservationProvider;
+import nl.tno.essim.commons.ISimulationManager;
+import nl.tno.essim.commons.Simulatable;
+import nl.tno.essim.commons.SimulationStatus;
+import nl.tno.essim.observation.*;
+import nl.tno.essim.time.EssimTime;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 
@@ -27,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class EssimLoadFlowController implements IObservationProcessor {
+public class EssimLoadFlowController implements Simulatable {
     /*
      * The translationMap maps ESDL assets ids to powsybl elements like generators and loads
      */
@@ -43,6 +46,35 @@ public class EssimLoadFlowController implements IObservationProcessor {
     private final Network network;
     private final String networkName;
     private final AtomicInteger simulationRunCounter = new AtomicInteger();
+    @Getter
+    private final ObservationProcessor observationProcessor = new ObservationProcessor();
+    private IObservationManager observationManager;
+    SimulationStatus status = SimulationStatus.UNDEFINED;
+
+    class ObservationProcessor implements IObservationProcessor, IObservationConsumer {
+        @Override
+        public void process(IObservationProvider source, IObservation observation) {
+            assignPowerValues(observation);
+        }
+
+        @Override
+        public void init(String scenarioName) {
+        }
+
+        @Override
+        public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
+            assignPowerValues(observation);
+        }
+
+        @Override
+        public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
+            assignPowerValues(observation);
+        }
+
+        @Override
+        public void cleanup() {
+        }
+    }
 
     public EssimLoadFlowController(String networkName) {
         network = Network.create(networkName, "code");
@@ -385,10 +417,8 @@ public class EssimLoadFlowController implements IObservationProcessor {
         return busIdMap.get(portId);
     }
 
-    @Override
-    public void process(IObservationProvider source, IObservation observation) {
+    private void assignPowerValues(IObservation observation) {
         String assetId = (String) observation.getTags().get("assetId");
-//        Double power = Math.abs((Double) observation.getValues().get("allocationPower"));
         Double power = (Double) observation.getValues().get("allocationPower");
         Object o = translationMap.get(assetId);
         if (o == null) {
@@ -401,7 +431,6 @@ public class EssimLoadFlowController implements IObservationProcessor {
         } else if (o instanceof Battery) {
             ((Battery) o).setTargetP(power / 1000);
         }
-
     }
 
     public void run() {
@@ -412,7 +441,7 @@ public class EssimLoadFlowController implements IObservationProcessor {
                 .setDc(true).setUseReactiveLimits(false)
                 .setDistributedSlack(false);
         OpenLoadFlowParameters parametersExt = OpenLoadFlowParameters.create(parameters)
-                .setSlackBusSelectionMode(SlackBusSelectionMode.FIRST);
+                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED);
         OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
         LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 
@@ -421,5 +450,35 @@ public class EssimLoadFlowController implements IObservationProcessor {
 
     }
 
+
+    @Override
+    public void init(EssimTime timestamp) {
+        status = SimulationStatus.SETUP;
+    }
+
+    @Override
+    public void step(EssimTime timestamp) {
+        status = SimulationStatus.STARTED;
+        run();
+    }
+
+    @Override
+    public void stop() {
+        status = SimulationStatus.STOPPED;
+    }
+
+    @Override
+    public SimulationStatus getState() {
+        return status;
+    }
+
+    @Override
+    public void setSimulationManager(ISimulationManager manager) {
+    }
+
+    @Override
+    public void setObservationManager(IObservationManager manager) {
+        this.observationManager = manager;
+    }
 
 }
