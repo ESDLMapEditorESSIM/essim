@@ -32,25 +32,29 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class EssimLoadFlowController implements Simulatable, IObservationProvider {
-    /*
+    /**
      * The translationMap maps ESDL assets ids to powsybl elements like generators and loads
      */
     private final Map<String, Object> translationMap = new HashMap<>();
-    /*
+    /**
      * The reverse map is used to lookup ESDL assets based on powsybl ids
      */
     private final Map<String, EnergyAsset> reverseTranslationMap = new HashMap<>();
-    /*
+    /**
      * The carrier map is used to lookup which carrier a powsybl component belongs to
      */
     private final Map<String, Carrier> carrierMap = new HashMap<>();
-
-    /*
-     * The busMap maps ESDL port ids to powsybl bus ids. When creating a bus, the id of the first port that will be connected
-     * to it will be the bus id.
+    /**
+     * The busIdMap maps ESDL port ids to the id of the powsybl bus that the port is/will be connected to.
      */
     private final Map<String, String> busIdMap = new HashMap<>();
+    /**
+     * The busMap is used to keep track of the busses that have been created
+     */
     private final Map<String, Bus> busMap = new HashMap<>();
+    /**
+     * The voltageLevelMap is used to keep track of the created voltage levels
+     */
     private final Map<String, VoltageLevel> voltageLevelMap = new HashMap<>();
     private final Network network;
     private final String networkName;
@@ -269,6 +273,12 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         return ports;
     }
 
+    /**
+     * Retrieves the ID of the bus the given port is connected to.
+     *
+     * @param port the port for which the connected bus ID is needed
+     * @return the connected bus ID as a string
+     */
     private String getConnectedBusId(Port port) {
         List<Port> substationPortList = getSortedSubstationPortList(port);
         String id = substationPortList.getFirst().getId();
@@ -311,6 +321,16 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         log.debug("Created {} producers, {} consumers, {} storages and {} conversions", producerCounter.get(), consumerCounter.get(), storageCounter.get(), conversionCounter.get());
     }
 
+    /**
+     * Retrieves or creates a Bus object to which the port of a specific energy asset, connected to the given
+     * electricity carrier, should be connected. If no bus exists for the given asset and carrier, a new bus is
+     * created and configured using the relevant substation port and voltage level information.
+     *
+     * @param carrier the electricity commodity used to identify the carrier associated with the energy asset
+     * @param asset the energy asset whose associated bus is being retrieved or created
+     * @return the Bus object to which the port of the specified asset, connected to the given carrier, should connect
+     * @throws IllegalStateException if the specified energy asset is not connected to the given carrier
+     */
     private Bus getBus(ElectricityCommodity carrier, EnergyAsset asset) {
         Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
         if (firstPortForCarrier.isEmpty()) {
