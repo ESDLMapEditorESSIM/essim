@@ -94,17 +94,25 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     }
 
     public void createNetwork(List<Carrier> carriers, List<EnergyAsset> assetList) {
-        /* We may need a substation, because many elements can only be created in a substation
+        /*
+         * We may need a substation, because many elements can only be created in a substation
          * Substations contain voltagelevels and transformers
          * Voltagelevels contain generators, loads and batteries. And buses and breakers (in busbreaker view getBusBreakerView().newBus())
          *                                                        OR nodes, but I don't understand nodes yet
          * Network contains substations and lines and voltage levels. And also subnetworks....
-         * So, for now we create:
-         * - a substation if we encounter a transformer
-         * - a bus for each device port
-         * - A generator/load/battery per device.
+         *
+         * So we group devices based on connections. If devices are connected to each other without an electricity cable
+         * between then, or they are connected to the same Bus or ElectricalConnection they will be grouped together in
+         * the same substation and voltage level. Grouping is done in getSortedSubStationPortList(). A bus will be created
+         * in the voltage level and it will get an ID based on this list. All the ports in the group will then be connected
+         * to this bus.
+         *
+         * Then we will create:
+         * - A generator for a produce
+         * - A load for a consumer
+         * - A Battery for a storage
+         * - A generator OR a load for a conversion, based of the type of conversion
          * - A line for each line
-         * - A voltagelevel per carrier
          */
 
         // Now we create the network per carrier
