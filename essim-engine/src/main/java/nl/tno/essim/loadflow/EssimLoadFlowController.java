@@ -65,12 +65,7 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     SimulationStatus status = SimulationStatus.UNDEFINED;
     private String scenarioName;
 
-    public class ObservationProcessor implements IObservationProcessor, IObservationConsumer {
-        @Override
-        public void process(IObservationProvider source, IObservation observation) {
-            assignPowerValues(observation);
-        }
-
+    public class ObservationProcessor implements IObservationConsumer {
         @Override
         public void init(String scenarioName) {
             EssimLoadFlowController.this.scenarioName = scenarioName;
@@ -556,7 +551,9 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     }
 
     private void publishObservation(EssimTime timestamp, EnergyAsset asset, double loadflowValue, Carrier carrier) {
-        Observation build = Observation.builder().observedAt(timestamp.getTime()).tag("assetId", asset.getId())
+        Observation build = Observation.builder()
+                .observedAt(timestamp.getTime())
+                .tag("assetId", asset.getId())
                 .tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
                 .tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName())
                 .tag("carrierId", carrier.getId())

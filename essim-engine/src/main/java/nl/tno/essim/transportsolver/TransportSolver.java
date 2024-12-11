@@ -32,7 +32,6 @@ import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
-import nl.tno.essim.observation.IObservationProcessor;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimDuration;
@@ -70,9 +69,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     @Getter
     private String networkDiag;
     private IObservationManager observationManager;
-    @Getter
-    @Setter
-    private IObservationProcessor observationProcessor;
     @Getter
     private Node tree;
     private LocalDateTime simulationStartTime;
@@ -454,13 +450,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         // Allocate devices and collect observations
         ArrayList<Observation> observations = new ArrayList<Observation>();
         tree.processAssignedEnergies(balancingPrice, observations, timestamp);
-        // Processor, because it can potentially modify the observations
-        if (observationProcessor != null) {
-            for (Observation observation : observations) {
-                observationProcessor.process(this, observation);
-            }
-        }
-
 
         // Publish observations
         if (observationManager != null) {
