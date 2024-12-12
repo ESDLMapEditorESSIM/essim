@@ -23,8 +23,11 @@ import nl.tno.essim.observation.*;
 import nl.tno.essim.time.EssimTime;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -112,9 +115,9 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
          * - A generator OR a load for a conversion, based of the type of conversion
          * - A line for each line
          */
+        log.info("Creating powsybl network {}", networkName);
         network = Network.create(networkName, "code");
         network.setMinimumAcceptableValidationLevel(ValidationLevel.STEADY_STATE_HYPOTHESIS);
-        log.info("Creating powsybl network {}", networkName);
 
         // Now we create the network per carrier
         carriers.forEach(carrier -> {
@@ -124,8 +127,6 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
 
         // Then we create the transformers connecting the carriers
         createTransformers(assetList);
-//        exportNetwork();
-
     }
 
     private void exportNetwork() {
@@ -501,37 +502,42 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         if (powerVal == null || o == null) {
             return;
         }
-        // Powsybl default unit is kW
+        // Set the initial variant so we can modify the power values
+        network.getVariantManager().setWorkingVariant(VariantManagerConstants.INITIAL_VARIANT_ID);
+        // Powsybl default unit is kW, so we divide by 1000
         double power = Math.abs(powerVal / 1000);
-        if (o instanceof Load) {
-            ((Load) o).setP0(power);
-            log.trace("Setting power for asset {} {} (powsybl {}) to {}", assetName, assetId, o.getClass().getSimpleName(), power);
-        } else if (o instanceof Generator) {
-            ((Generator) o).setTargetP(power);
-            log.trace("Setting power for asset {} {} (powsybl {}) to {}", assetName, assetId, o.getClass().getSimpleName(), power);
-        } else if (o instanceof Battery) {
-            ((Battery) o).setTargetP(power);
-            log.trace("Setting power for asset {} {} (powsybl {}) to {}", assetName, assetId, o.getClass().getSimpleName(), power);
+        if (o instanceof Load load) {
+            load.setP0(power).setQ0(0);
+        } else if (o instanceof Generator generator) {
+            generator.setTargetP(power);
+        } else if (o instanceof Battery battery) {
+            battery.setTargetP(power);
         }
     }
 
-    public void run() {
-        final String variantId = "loadflowVariant-" + simulationRunCounter.incrementAndGet();
-        network.getVariantManager().cloneVariant(VariantManagerConstants.INITIAL_VARIANT_ID, variantId);
-        network.getVariantManager().setWorkingVariant(variantId);
-//        LoadFlowParameters parameters = new LoadFlowParameters()
-//                .setDc(true).setUseReactiveLimits(false);
+    public void run(EssimTime timestamp) {
+        // Update the variant ID for the simulation
+        updateVariantId();
+        LocalDateTime time = timestamp.getTime();
+        ZoneId zoneId = ZoneId.systemDefault();
+        network.setCaseDate(time.atZone(zoneId));
         LoadFlowParameters parameters = new LoadFlowParameters()
                 .setUseReactiveLimits(false);
         OpenLoadFlowParameters.create(parameters)
                 .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED);
-//        OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
         OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider();
         LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 
         loadFlowRunner.run(network, parameters);
     }
 
+    @NotNull
+    private String updateVariantId() {
+        final String variantId = "loadflowVariant-" + simulationRunCounter.incrementAndGet();
+        network.getVariantManager().cloneVariant(VariantManagerConstants.INITIAL_VARIANT_ID, variantId);
+        network.getVariantManager().setWorkingVariant(variantId);
+        return variantId;
+    }
 
     @Override
     public void init(EssimTime timestamp) {
@@ -541,17 +547,17 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     @Override
     public void step(EssimTime timestamp) {
         status = SimulationStatus.STARTED;
-        run();
+        run(timestamp);
 
         final TopologyVisitor visitor = new DefaultTopologyVisitor() {
             @Override
             public void visitGenerator(Generator generator) {
-                publishObservation(timestamp, reverseTranslationMap.get(generator.getId()), generator.getTerminal().getP(), carrierMap.get(generator.getId()));
+                publishObservation(timestamp, reverseTranslationMap.get(generator.getId()), generator.getTerminal().getP() * 1000, generator.getTerminal().getQ(), carrierMap.get(generator.getId()));
             }
 
             @Override
             public void visitLoad(Load load) {
-                publishObservation(timestamp, reverseTranslationMap.get(load.getId()), load.getTerminal().getP(), carrierMap.get(load.getId()));
+                publishObservation(timestamp, reverseTranslationMap.get(load.getId()), load.getTerminal().getP() * 1000, load.getTerminal().getQ(), carrierMap.get(load.getId()));
             }
 
             @Override
@@ -559,19 +565,22 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
                 double p1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
                 double p2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double p = p1 > p2 ? p1 - p2 : p2 - p1;
-                publishObservation(timestamp, reverseTranslationMap.get(line.getId()), p, carrierMap.get(line.getId()));
+                double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
+                double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
+                double q = q1 > q2 ? q1 - q2 : q2 - q1;
+                publishObservation(timestamp, reverseTranslationMap.get(line.getId()), p * 1000, q, carrierMap.get(line.getId()));
                 super.visitLine(line, side);
             }
 
             @Override
             public void visitBattery(Battery battery) {
-                publishObservation(timestamp, reverseTranslationMap.get(battery.getId()), battery.getTerminal().getP(), carrierMap.get(battery.getId()));
+                publishObservation(timestamp, reverseTranslationMap.get(battery.getId()), battery.getTerminal().getP() * 1000, battery.getTerminal().getQ(), carrierMap.get(battery.getId()));
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
     }
 
-    private void publishObservation(EssimTime timestamp, EnergyAsset asset, double loadflowValue, Carrier carrier) {
+    private void publishObservation(EssimTime timestamp, EnergyAsset asset, double loadflowValue, double reactivePower, Carrier carrier) {
         Observation observation = Observation.builder()
                 .observedAt(timestamp.getTime())
                 .tag("assetId", asset.getId())
@@ -580,6 +589,7 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
                 .tag("carrierId", carrier.getId())
                 .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
                 .value("loadflowPower", loadflowValue)
+                .value("loadflowReactivePower", reactivePower)
                 .value("loadflowEnergy", loadflowValue * timestamp.getSimulationStepLength().getSeconds()).build();
         observationManager.publish(this, observation);
     }
