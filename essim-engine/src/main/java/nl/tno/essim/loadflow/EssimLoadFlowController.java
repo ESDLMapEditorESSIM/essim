@@ -544,6 +544,18 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         status = SimulationStatus.SETUP;
     }
 
+
+    private Observation.ObservationBuilder createObservationBuilder(EssimTime timestamp, EnergyAsset asset, Carrier carrier) {
+        Observation.ObservationBuilder observation = Observation.builder()
+                .observedAt(timestamp.getTime())
+                .tag("assetId", asset.getId())
+                .tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
+                .tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName())
+                .tag("carrierId", carrier.getId())
+                .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName());
+        return observation;
+    }
+
     @Override
     public void step(EssimTime timestamp) {
         status = SimulationStatus.STARTED;
@@ -552,46 +564,47 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         final TopologyVisitor visitor = new DefaultTopologyVisitor() {
             @Override
             public void visitGenerator(Generator generator) {
-                publishObservation(timestamp, reverseTranslationMap.get(generator.getId()), generator.getTerminal().getP() * 1000, generator.getTerminal().getQ(), carrierMap.get(generator.getId()));
+                publishObservation(generator.getId(), generator.getTerminal(), timestamp);
             }
 
             @Override
             public void visitLoad(Load load) {
-                publishObservation(timestamp, reverseTranslationMap.get(load.getId()), load.getTerminal().getP() * 1000, load.getTerminal().getQ(), carrierMap.get(load.getId()));
+                publishObservation(load.getId(), load.getTerminal(), timestamp);
+            }
+
+            @Override
+            public void visitBattery(Battery battery) {
+                publishObservation(battery.getId(), battery.getTerminal(), timestamp);
+
             }
 
             @Override
             public void visitLine(Line line, TwoSides side) {
+                Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(line.getId()), carrierMap.get(line.getId()));
                 double p1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
                 double p2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double p = p1 > p2 ? p1 - p2 : p2 - p1;
                 double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
                 double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double q = q1 > q2 ? q1 - q2 : q2 - q1;
-                publishObservation(timestamp, reverseTranslationMap.get(line.getId()), p * 1000, q, carrierMap.get(line.getId()));
+                Observation observation = builder.value("loadflowPower", p * 1000)
+                        .value("loadflowReactivePower", q * 1000)
+//                        .value("loadflowCurrent", line.getTerminal(side).getI())
+                        .build();
+                observationManager.publish(EssimLoadFlowController.this, observation);
                 super.visitLine(line, side);
-            }
-
-            @Override
-            public void visitBattery(Battery battery) {
-                publishObservation(timestamp, reverseTranslationMap.get(battery.getId()), battery.getTerminal().getP() * 1000, battery.getTerminal().getQ(), carrierMap.get(battery.getId()));
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
     }
 
-    private void publishObservation(EssimTime timestamp, EnergyAsset asset, double loadflowValue, double reactivePower, Carrier carrier) {
-        Observation observation = Observation.builder()
-                .observedAt(timestamp.getTime())
-                .tag("assetId", asset.getId())
-                .tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
-                .tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName())
-                .tag("carrierId", carrier.getId())
-                .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
-                .value("loadflowPower", loadflowValue)
-                .value("loadflowReactivePower", reactivePower)
-                .value("loadflowEnergy", loadflowValue * timestamp.getSimulationStepLength().getSeconds()).build();
-        observationManager.publish(this, observation);
+    private void publishObservation(String id, Terminal terminal, EssimTime timestamp) {
+        Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrierMap.get(id));
+        Observation observation = builder.value("loadflowPower", terminal.getP() * 1000)
+                .value("loadflowReactivePower", terminal.getQ() * 1000)
+//                .value("loadflowCurrent", terminal.getI())
+                .build();
+        observationManager.publish(EssimLoadFlowController.this, observation);
     }
 
     @Override
