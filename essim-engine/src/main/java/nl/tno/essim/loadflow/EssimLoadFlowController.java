@@ -8,11 +8,11 @@ import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.serde.XMLExporter;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
-import com.powsybl.math.matrix.DenseMatrixFactory;
 import com.powsybl.nad.NetworkAreaDiagram;
 import com.powsybl.openloadflow.OpenLoadFlowParameters;
 import com.powsybl.openloadflow.OpenLoadFlowProvider;
 import com.powsybl.openloadflow.network.SlackBusSelectionMode;
+import com.powsybl.sld.SingleLineDiagram;
 import esdl.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,7 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
      * The voltageLevelMap is used to keep track of the created voltage levels
      */
     private final Map<String, VoltageLevel> voltageLevelMap = new HashMap<>();
-    private final Network network;
+    private Network network;
     private final String networkName;
     private final AtomicInteger simulationRunCounter = new AtomicInteger();
     @Getter
@@ -83,12 +83,11 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
 
         @Override
         public void cleanup() {
+            exportNetwork();
         }
     }
 
     public EssimLoadFlowController(String networkName) {
-        network = Network.create(networkName, "code");
-        log.info("Creating powsybl network {}", networkName);
         this.networkName = networkName;
     }
 
@@ -113,6 +112,9 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
          * - A generator OR a load for a conversion, based of the type of conversion
          * - A line for each line
          */
+        network = Network.create(networkName, "code");
+        network.setMinimumAcceptableValidationLevel(ValidationLevel.STEADY_STATE_HYPOTHESIS);
+        log.info("Creating powsybl network {}", networkName);
 
         // Now we create the network per carrier
         carriers.forEach(carrier -> {
@@ -122,10 +124,16 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
 
         // Then we create the transformers connecting the carriers
         createTransformers(assetList);
-        Exporter ex = new XMLExporter();
-        ex.export(network, new Properties(), DataSource.fromPath(Paths.get("."), "essim-network-" + networkName + ".xml"));
-        NetworkAreaDiagram.draw(network, Paths.get("essim-network-" + networkName + "-diagram.svg"));
+//        exportNetwork();
 
+    }
+
+    private void exportNetwork() {
+        Exporter ex = new XMLExporter();
+        DataSource dataSource = Exporters.createDataSource(Paths.get("diagrams", "essim-network-" + networkName + ".xml"));
+        ex.export(network, new Properties(), dataSource);
+        NetworkAreaDiagram.draw(network, Paths.get("diagrams", "essim-network-" + networkName + "-diagram.svg"));
+        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
     private void createTransformers(List<EnergyAsset> assetList) {
@@ -196,6 +204,8 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / 1000.0;
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / 1000.0;
             Line line = network.newLine()
+                    .setBus1(busId1)
+                    .setBus2(busId2)
                     .setConnectableBus1(busId1)
                     .setConnectableBus2(busId2)
                     .setVoltageLevel1(getVoltageLevel(port1).getId())
@@ -322,7 +332,7 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
      * created and configured using the relevant substation port and voltage level information.
      *
      * @param carrier the electricity commodity used to identify the carrier associated with the energy asset
-     * @param asset the energy asset whose associated bus is being retrieved or created
+     * @param asset   the energy asset whose associated bus is being retrieved or created
      * @return the Bus object to which the port of the specified asset, connected to the given carrier, should connect
      * @throws IllegalStateException if the specified energy asset is not connected to the given carrier
      */
@@ -364,8 +374,12 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
 
     private VoltageLevel createVoltageLevel(Port port, String id, String voltageLevelId) {
         VoltageLevel voltageLevel;
-        Substation substation = network.newSubstation().setId("substation-" + id).add();
-        voltageLevel = substation.newVoltageLevel().setId(voltageLevelId).setNominalV(((ElectricityCommodity) port.getCarrier()).getVoltage() / 1000).setTopologyKind(TopologyKind.BUS_BREAKER).add();
+        Substation substation = network.newSubstation().setId("substation-" + id).setCountry(Country.NL).add();
+        voltageLevel = substation.newVoltageLevel()
+                .setId(voltageLevelId)
+                .setNominalV(((ElectricityCommodity) port.getCarrier()).getVoltage() / 1000)
+                .setTopologyKind(TopologyKind.BUS_BREAKER)
+                .add();
         voltageLevelMap.put(voltageLevelId, voltageLevel);
         return voltageLevel;
     }
@@ -480,18 +494,24 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     }
 
     private void assignPowerValues(IObservation observation) {
-        String assetId = (String) observation.getTags().get("assetId");
-        Double power = (Double) observation.getValues().get("allocationPower");
+        String assetId = observation.getTags().get("assetId");
+        String assetName = observation.getTags().get("assetName");
+        Double powerVal = (Double) observation.getValues().get("allocationPower");
         Object o = translationMap.get(assetId);
-        if (power == null || o == null) {
+        if (powerVal == null || o == null) {
             return;
         }
+        // Powsybl default unit is kW
+        double power = Math.abs(powerVal / 1000);
         if (o instanceof Load) {
-            ((Load) o).setP0(power / 1000);
+            ((Load) o).setP0(power);
+            log.trace("Setting power for asset {} {} (powsybl {}) to {}", assetName, assetId, o.getClass().getSimpleName(), power);
         } else if (o instanceof Generator) {
-            ((Generator) o).setTargetP(power / 1000);
+            ((Generator) o).setTargetP(power);
+            log.trace("Setting power for asset {} {} (powsybl {}) to {}", assetName, assetId, o.getClass().getSimpleName(), power);
         } else if (o instanceof Battery) {
-            ((Battery) o).setTargetP(power / 1000);
+            ((Battery) o).setTargetP(power);
+            log.trace("Setting power for asset {} {} (powsybl {}) to {}", assetName, assetId, o.getClass().getSimpleName(), power);
         }
     }
 
@@ -499,17 +519,17 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         final String variantId = "loadflowVariant-" + simulationRunCounter.incrementAndGet();
         network.getVariantManager().cloneVariant(VariantManagerConstants.INITIAL_VARIANT_ID, variantId);
         network.getVariantManager().setWorkingVariant(variantId);
+//        LoadFlowParameters parameters = new LoadFlowParameters()
+//                .setDc(true).setUseReactiveLimits(false);
         LoadFlowParameters parameters = new LoadFlowParameters()
-                .setDc(true).setUseReactiveLimits(false)
-                .setDistributedSlack(false);
-        OpenLoadFlowParameters parametersExt = OpenLoadFlowParameters.create(parameters)
+                .setUseReactiveLimits(false);
+        OpenLoadFlowParameters.create(parameters)
                 .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED);
-        OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
+//        OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
+        OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider();
         LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 
-
         loadFlowRunner.run(network, parameters);
-
     }
 
 
@@ -536,7 +556,10 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
 
             @Override
             public void visitLine(Line line, TwoSides side) {
-                publishObservation(timestamp, reverseTranslationMap.get(line.getId()), line.getTerminal(side).getP(), carrierMap.get(line.getId()));
+                double p1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
+                double p2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
+                double p = p1 > p2 ? p1 - p2 : p2 - p1;
+                publishObservation(timestamp, reverseTranslationMap.get(line.getId()), p, carrierMap.get(line.getId()));
                 super.visitLine(line, side);
             }
 
@@ -545,13 +568,11 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
                 publishObservation(timestamp, reverseTranslationMap.get(battery.getId()), battery.getTerminal().getP(), carrierMap.get(battery.getId()));
             }
         };
-        for (VoltageLevel voltageLevel : network.getVoltageLevels()) {
-            voltageLevel.visitEquipments(visitor);
-        }
+        voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
     }
 
     private void publishObservation(EssimTime timestamp, EnergyAsset asset, double loadflowValue, Carrier carrier) {
-        Observation build = Observation.builder()
+        Observation observation = Observation.builder()
                 .observedAt(timestamp.getTime())
                 .tag("assetId", asset.getId())
                 .tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
@@ -560,7 +581,7 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
                 .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
                 .value("loadflowPower", loadflowValue)
                 .value("loadflowEnergy", loadflowValue * timestamp.getSimulationStepLength().getSeconds()).build();
-        observationManager.publish(this, build);
+        observationManager.publish(this, observation);
     }
 
     @Override
