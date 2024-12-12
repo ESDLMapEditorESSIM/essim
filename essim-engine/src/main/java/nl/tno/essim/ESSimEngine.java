@@ -174,7 +174,7 @@ public class ESSimEngine implements IStatusProvider {
             simulationManager.addObservationConsumer(observationProcessor);
             simulationManager.addOtherSimulatable(loadFlowController);
             loadFlowController.setObservationManager(observationManager);
-            loadFlowController.getObservationProcessor().init(scenarioName);
+            observationProcessor.init(scenarioName);
         }
 
         try {
