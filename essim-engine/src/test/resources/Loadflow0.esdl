@@ -5,8 +5,8 @@
       <asset xsi:type="esdl:EVChargingStation" id="a1a602fe-ec9b-4807-9fb6-3a4e87941ae0" name="Laadplein busstation">
         <geometry xsi:type="esdl:Point" lat="51.446010237625224" lon="5.497713088989258"/>
         <port xsi:type="esdl:InPort" carrier="ca9149c7-2a72-43ec-a481-5c81d619b8b1" name="In" connectedTo="213606b5-6bb7-408e-8d86-f1c9243850ba" id="0c619f3d-03c0-493a-bf2b-4ee10aa0e29f">
-          <profile xsi:type="esdl:InfluxDBProfile" host="http://geis" port="8086" multiplier="8760.0" endDate="2016-01-01T00:00:00.000000+0100" field="E1B" database="energy_profiles" measurement="nedu_elektriciteit_2015-2018" id="6316db08-60e5-45d6-a8e2-09f6df3ded12" startDate="2015-01-01T00:00:00.000000+0100" filters="">
-            <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitReference" reference="eb07bccb-203f-407e-af98-e687656a221d"/>
+          <profile xsi:type="esdl:TimeSeriesProfile" name="E Demand profile" id="e9e2a3df-c23c-4bb7-ac86-7342157af729" startDateTime="2015-01-01T00:00:00.000000" values="12.0 0.0 1.0 2.0 3.0 5.0 7.0 12.0 3.0 0.0 1.0 0.0">
+            <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitReference" reference="12c481c0-f81e-49b6-9767-90457684d24a"/>
           </profile>
         </port>
       </asset>
