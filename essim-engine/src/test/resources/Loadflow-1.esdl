@@ -5,7 +5,7 @@
       <asset xsi:type="esdl:ElectricityDemand" id="1aa96ef7-0500-4316-850e-50f1bb43e9ca" name="ElectricityDemand_1aa9">
         <geometry xsi:type="esdl:Point" lat="52.17778719197867" lon="5.154926776885987" CRS="WGS84"/>
         <port xsi:type="esdl:InPort" carrier="69ce1f2e-26c9-4acc-b43c-1a21f5d855ac" name="In" connectedTo="9e12bac9-4de3-4e4f-8386-64c3b99231d4" id="af8acc7b-ff26-4910-a4ad-c9f431abb931">
-          <profile xsi:type="esdl:TimeSeriesProfile" name="E Demand profile" id="e9e2a3df-c23c-4bb7-ac86-7342157af729" startDateTime="2019-01-01T00:00:00.000000" values="12.0 0.0 1.0 2.0 3.0 5.0 7.0 12.0 3.0 0.0 1.0 0.0">
+          <profile xsi:type="esdl:TimeSeriesProfile" name="E Demand profile" id="e9e2a3df-c23c-4bb7-ac86-7342157af729" startDateTime="2019-01-01T00:00:00.000000" values="120.0 0.0 10.0 20.0 30.0 50.0 70.0 120.0 30.0 0.0 10.0 0.0">
             <profileQuantityAndUnit xsi:type="esdl:QuantityAndUnitReference" reference="e9405fc8-5e57-4df5-8584-4babee7cdf1a"/>
           </profile>
         </port>
