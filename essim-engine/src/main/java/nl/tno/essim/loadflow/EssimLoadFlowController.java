@@ -21,6 +21,7 @@ import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.commons.SimulationStatus;
 import nl.tno.essim.observation.*;
 import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.transportsolver.TransportSolver;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class EssimLoadFlowController implements Simulatable, IObservationProvider {
+public class EssimLoadFlowController implements Simulatable {
     /**
      * The translationMap maps ESDL assets ids to powsybl elements like generators and loads
      */
@@ -47,6 +48,10 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
      * The carrier map is used to lookup which carrier a powsybl component belongs to
      */
     private final Map<String, Carrier> carrierMap = new HashMap<>();
+    /**
+     * The carrier name map is used to lookup which observer name we should use per carrier
+     */
+    private final Map<String, TransportSolver> carrierSolverMap = new HashMap<>();
     /**
      * The busIdMap maps ESDL port ids to the id of the powsybl bus that the port is/will be connected to.
      */
@@ -94,7 +99,7 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         this.networkName = networkName;
     }
 
-    public void createNetwork(List<Carrier> carriers, List<EnergyAsset> assetList) {
+    public void createNetwork(List<TransportSolver> solvers, List<EnergyAsset> assetList) {
         /*
          * We may need a substation, because many elements can only be created in a substation
          * Substations contain voltagelevels and transformers
@@ -120,10 +125,11 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
         network.setMinimumAcceptableValidationLevel(ValidationLevel.STEADY_STATE_HYPOTHESIS);
 
         // Now we create the network per carrier
-        carriers.forEach(carrier -> {
-            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(carrier)).toList().isEmpty()).toList();
-            createNetworkPerCarrier(carrier, connectedAssets);
+        solvers.forEach(solver -> {
+            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(solver.getCarrier())).toList().isEmpty()).toList();
+            createNetworkPerCarrier(solver.getCarrier(), connectedAssets);
         });
+        solvers.forEach(solver -> carrierSolverMap.put(solver.getCarrier().getId(), solver));
 
         // Then we create the transformers connecting the carriers
         createTransformers(assetList);
@@ -580,7 +586,8 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
 
             @Override
             public void visitLine(Line line, TwoSides side) {
-                Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(line.getId()), carrierMap.get(line.getId()));
+                Carrier carrier = carrierMap.get(line.getId());
+                Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(line.getId()), carrier);
                 double p1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
                 double p2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double p = p1 > p2 ? p1 - p2 : p2 - p1;
@@ -589,9 +596,9 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
                 double q = q1 > q2 ? q1 - q2 : q2 - q1;
                 Observation observation = builder.value("loadflowPower", p * 1000)
                         .value("loadflowReactivePower", q * 1000)
-//                        .value("loadflowCurrent", line.getTerminal(side).getI())
+                        .value("loadflowCurrent", line.getTerminal(side).getI())
                         .build();
-                observationManager.publish(EssimLoadFlowController.this, observation);
+                observationManager.publish(carrierSolverMap.get(carrier.getId()), observation);
                 super.visitLine(line, side);
             }
         };
@@ -599,12 +606,13 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     }
 
     private void publishObservation(String id, Terminal terminal, EssimTime timestamp) {
-        Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrierMap.get(id));
+        Carrier carrier = carrierMap.get(id);
+        Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
         Observation observation = builder.value("loadflowPower", terminal.getP() * 1000)
                 .value("loadflowReactivePower", terminal.getQ() * 1000)
 //                .value("loadflowCurrent", terminal.getI())
                 .build();
-        observationManager.publish(EssimLoadFlowController.this, observation);
+        observationManager.publish(carrierSolverMap.get(carrier.getId()), observation);
     }
 
     @Override
@@ -625,15 +633,15 @@ public class EssimLoadFlowController implements Simulatable, IObservationProvide
     public void setObservationManager(IObservationManager manager) {
         this.observationManager = manager;
     }
-
-    @Override
-    public String getProviderName() {
-        return scenarioName;
-    }
-
-    @Override
-    public String getProviderType() {
-        return "loadflow";
-    }
+//
+//    @Override
+//    public String getProviderName() {
+//        return scenarioName;
+//    }
+//
+//    @Override
+//    public String getProviderType() {
+//        return "loadflow";
+//    }
 
 }

@@ -67,7 +67,7 @@ class LoadflowTest {
 		sim.setEsdlContents(esdl);
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 1, 0, 0, 0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2019, 1, 2, 0, 0, 0)));
-		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "1");
+		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "1a");
 
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
 
@@ -83,7 +83,7 @@ class LoadflowTest {
 		sim.setEsdlContents(esdl);
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 1, 0, 0, 0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 2, 0, 0, 0)));
-		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "2");
+		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "2a");
 
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
 

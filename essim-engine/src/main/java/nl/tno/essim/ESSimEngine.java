@@ -245,15 +245,16 @@ public class ESSimEngine implements IStatusProvider {
             throw new IllegalArgumentException("No Carrier Information specified!");
 
         }
-        // Here we have all the information to build the powsybl network
-        if (loadFlowController != null) {
-            loadFlowController.createNetwork(carriers.getCarrier().stream().filter(c -> c instanceof ElectricityCommodity).toList(), energyAssets);
-        }
-
         TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
         if (transportSolveOrder.isEmpty()) {
             throw new IllegalStateException("Conflicting Control Strategies found!!");
         }
+        // Here we have all the information to build the powsybl network
+        if (loadFlowController != null) {
+            List<TransportSolver> electricityTransportSolvers = transportSolveOrder.entrySet().stream().flatMap(entry -> entry.getValue().stream()).filter(solver -> solver.getCarrier() instanceof ElectricityCommodity).toList();
+            loadFlowController.createNetwork(electricityTransportSolvers, energyAssets);
+        }
+
 
         log.debug("Going with this parallelised order:");
 
