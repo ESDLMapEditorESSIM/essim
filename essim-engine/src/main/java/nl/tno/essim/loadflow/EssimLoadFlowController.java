@@ -563,7 +563,7 @@ public class EssimLoadFlowController implements Simulatable {
     }
 
     @Override
-    public void step(EssimTime timestamp) {
+    public ArrayList<Observation> step(EssimTime timestamp) {
         status = SimulationStatus.STARTED;
         run(timestamp);
 
@@ -603,6 +603,12 @@ public class EssimLoadFlowController implements Simulatable {
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
+        return null;
+    }
+
+    @Override
+    public void postStep(EssimTime timestamp, ArrayList<Observation> observations) {
+        // Nothing to do here for now
     }
 
     private void publishObservation(String id, Terminal terminal, EssimTime timestamp) {

@@ -386,17 +386,16 @@ public abstract class Node implements INode {
         return summedCurves;
     }
 
-    public void calculateAssignedEnergies(BigDecimal price) {
+    public void calculateAssignedEnergies(EssimTime timestamp, BigDecimal price) {
         energy = findDemandFromCurve(demandFunction, price).doubleValue();
         if (children != null) {
             for (Node child : children) {
-                child.calculateAssignedEnergies(price);
+                child.calculateAssignedEnergies(timestamp, price);
             }
         }
-
     }
 
-    public void processAssignedEnergies(BigDecimal price, List<Observation> observations, EssimTime timestamp) {
+    public void processAssignedEnergies(List<Observation> observations, EssimTime timestamp) {
 
         // print curve to stdout
         // log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(),
@@ -427,7 +426,7 @@ public abstract class Node implements INode {
         builder.tag("sector", sectorName);
 
         // Process Allocation for this node
-        processAllocation(timestamp, builder, price);
+        processAllocation(timestamp, builder);
 
         // Build observations
         observations.add(builder.build());
@@ -435,7 +434,7 @@ public abstract class Node implements INode {
         // Propagate
         if (children != null) {
             for (Node child : children) {
-                child.processAssignedEnergies(price, observations, timestamp);
+                child.processAssignedEnergies(observations, timestamp);
             }
         }
 
@@ -467,7 +466,7 @@ public abstract class Node implements INode {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
 
     }
 

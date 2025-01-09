@@ -23,7 +23,6 @@ import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
 import essim.ESSIMTimeSeriesProfile;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.*;
@@ -409,7 +408,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     }
 
     @Override
-    public void step(EssimTime timestamp) {
+    public ArrayList<Observation> step(EssimTime timestamp) {
 
         log.trace("{} received heartbeat : {}", getId(), timestamp.getTime());
 
@@ -445,36 +444,33 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         BigDecimal balancingPrice = summedFunction.findPriceFromCurve(BigDecimal.ZERO);
         BigDecimal imbalance = summedFunction.findDemandFromCurve(balancingPrice);
 
-        calculateLoadFlow(tree, balancingPrice);
+        tree.calculateAssignedEnergies(timestamp, balancingPrice);
 
-        // Allocate devices and collect observations
+
         ArrayList<Observation> observations = new ArrayList<Observation>();
-        tree.processAssignedEnergies(balancingPrice, observations, timestamp);
+
+        observations.add(Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
+                .tag("carrierId", carrier.getId())
+                .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
+                .value("imbalanceEnergy", imbalance.doubleValue()).value("matchingPrice", balancingPrice)
+                .value("imbalancePower", imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
+        // TODO loadflow should occur here
+        return observations;
+    }
+
+    @Override
+    public void postStep(EssimTime timestamp, ArrayList<Observation> observations) {
+        // Allocate devices and collect observations
+        tree.processAssignedEnergies(observations, timestamp);
 
         // Publish observations
         if (observationManager != null) {
-            observationManager.publish(this,
-                    Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
-                            .tag("carrierId", carrier.getId())
-                            .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
-                            .value("imbalanceEnergy", imbalance.doubleValue()).value("matchingPrice", balancingPrice)
-                            .value("imbalancePower", imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
-
             for (Observation observation : observations) {
                 observationManager.publish(this, observation);
             }
         }
 
         EmissionManager.getInstance(simulationId).organiseNetwork(getId());
-
-    }
-
-    private void calculateLoadFlow(Node tree, BigDecimal balancingPrice) {
-        tree.calculateAssignedEnergies(balancingPrice);
-//		LoadFlowParameters parameters = new LoadFlowParameters().setDc(true);
-//		OpenLoadFlowParameters parametersExt = OpenLoadFlowParameters.create(parameters).setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR);
-//		OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider(new DenseMatrixFactory());
-//		LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
     }
 
     @Override

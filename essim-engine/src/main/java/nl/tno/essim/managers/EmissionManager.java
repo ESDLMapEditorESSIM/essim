@@ -244,13 +244,13 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 	}
 
 	@Override
-	public synchronized void step(EssimTime timestamp) {
+	public synchronized ArrayList<Observation> step(EssimTime timestamp) {
 		if (!enable) {
-			return;
+			return null;
 		}
 
 		if (overallError) {
-			return;
+			return null;
 		}
 
 		remapProducers();
@@ -384,6 +384,11 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		}
 
 		initialise();
+		return null;
+	}
+
+	@Override
+	public void postStep(EssimTime timestamp, ArrayList<Observation> observations) {
 	}
 
 	@Override

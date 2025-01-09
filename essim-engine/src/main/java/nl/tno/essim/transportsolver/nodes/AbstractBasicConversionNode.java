@@ -33,7 +33,6 @@ import nl.tno.essim.time.Horizon;
 import nl.tno.essim.util.ProfileUtils;
 import org.eclipse.emf.common.util.EList;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -385,7 +384,7 @@ public class AbstractBasicConversionNode extends Node {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
         builder.tag("capability", "Conversion");
         if (getRole().equals(Role.PRODUCER)) {
             EmissionManager.getInstance(simulationId).addProducer(networkId, conversion, Math.abs(energy));

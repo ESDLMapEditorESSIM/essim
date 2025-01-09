@@ -1,11 +1,11 @@
 /**
- *  This work is based on original code developed and copyrighted by TNO 2020. 
+ *  This work is based on original code developed and copyrighted by TNO 2020.
  *  Subsequent contributions are licensed to you by the developers of such code and are
  *  made available to the Project under one or several contributor license agreements.
  *
  *  This work is licensed to you under the Apache License, Version 2.0.
  *  You may obtain a copy of the license at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Contributors:
@@ -17,11 +17,15 @@
 package nl.tno.essim.commons;
 
 import nl.tno.essim.observation.IObservationManager;
+import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimTime;
+
+import java.util.ArrayList;
 
 public interface Simulatable {
 	void init(EssimTime timestamp);
-	void step(EssimTime timestamp);
+	ArrayList<Observation> step(EssimTime timestamp);
+	void postStep(EssimTime timestamp, ArrayList<Observation> observations);
 	void stop();
 	SimulationStatus getState();
 	void setSimulationManager(ISimulationManager manager);

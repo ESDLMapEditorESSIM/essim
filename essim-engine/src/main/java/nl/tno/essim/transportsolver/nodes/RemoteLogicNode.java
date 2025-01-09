@@ -140,7 +140,8 @@ public class RemoteLogicNode extends Node {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
+    public void calculateAssignedEnergies(EssimTime timestamp, BigDecimal price) {
+        super.calculateAssignedEnergies(timestamp, price);
         ObjectNode message = ESSimEngine.getObjectMapper().createObjectNode().put("timeStamp", timestamp.getTime().toEpochSecond(ZoneOffset.UTC))
                 .put("price", price).put("carrierId", carrier.getId());
 
@@ -150,7 +151,11 @@ public class RemoteLogicNode extends Node {
         } catch (MqttException e) {
             e.printStackTrace();
         }
+    }
 
+
+        @Override
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
         if (role.equals(Role.CONSUMER)) {
             EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
         } else {

@@ -16,7 +16,6 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import esdl.Carrier;
@@ -50,7 +49,7 @@ public class TransportNode extends Node {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
         long timeStepInSeconds = timestamp.getSimulationStepLength().getSeconds();
         builder.tag("capability", "Transport");
         builder.value("capacity", capacity).value("allocationEnergy", directionFactor * energy).value("allocationPower",

@@ -31,7 +31,6 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.util.ProfileUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -143,7 +142,7 @@ public class ProducerNode extends Node {
     }
 
     @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
         builder.tag("capability", "Producer");
         if (producerType != null) {
             builder.tag("energyType", producerType.toString());

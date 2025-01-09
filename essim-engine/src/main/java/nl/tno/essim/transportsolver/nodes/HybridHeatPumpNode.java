@@ -16,7 +16,6 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 import esdl.Carrier;
@@ -318,7 +317,7 @@ public class HybridHeatPumpNode extends Node {
 	}
 
 	@Override
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
+	public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
 		builder.tag("capability", "Conversion");
 		timeStep = timestamp.getSimulationStepLength().getSeconds();
 
