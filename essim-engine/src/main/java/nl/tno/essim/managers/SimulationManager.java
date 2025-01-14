@@ -17,10 +17,12 @@
 package nl.tno.essim.managers;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.ISimulationManager;
 import nl.tno.essim.commons.IStatusProvider;
 import nl.tno.essim.commons.Simulatable;
+import nl.tno.essim.loadflow.EssimLoadFlowController;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
@@ -66,6 +68,9 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
     private MSOClient msoClient;
     private CountDownLatch msoBarrier;
     private long modelDeployTimeout;
+    @Getter
+    @Setter
+    private EssimLoadFlowController loadFlowController;
 
     private static long getTimeout() {
         String timeout = System.getenv("PROFILE_QUERY_TIMEOUT");
@@ -249,6 +254,9 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
             for (Simulatable simulatable : simulatablesOfSameType) {
                 simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
                     ArrayList<Observation> observations = simulatable.step(time);
+                    if (loadFlowController != null) {
+                        loadFlowController.step(time, observations);
+                    }
                     simulatable.postStep(time, observations);
                 }));
             }
@@ -288,7 +296,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
      * Wraps a runnable with support for a barrier/latch and exception handling
      *
      * @author werkmane
-     *
      */
     public class ExceptionRunnable implements Runnable {
         private Runnable runnable;

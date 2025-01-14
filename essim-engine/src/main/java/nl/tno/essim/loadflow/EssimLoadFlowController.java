@@ -14,12 +14,10 @@ import com.powsybl.openloadflow.OpenLoadFlowProvider;
 import com.powsybl.openloadflow.network.SlackBusSelectionMode;
 import com.powsybl.sld.SingleLineDiagram;
 import esdl.*;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.commons.ISimulationManager;
-import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.commons.SimulationStatus;
-import nl.tno.essim.observation.*;
+import nl.tno.essim.observation.IObservation;
+import nl.tno.essim.observation.Observation;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.eclipse.emf.common.util.BasicEList;
@@ -35,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class EssimLoadFlowController implements Simulatable {
+public class EssimLoadFlowController {
     /**
      * The translationMap maps ESDL assets ids to powsybl elements like generators and loads
      */
@@ -67,33 +65,7 @@ public class EssimLoadFlowController implements Simulatable {
     private Network network;
     private final String networkName;
     private final AtomicInteger simulationRunCounter = new AtomicInteger();
-    @Getter
-    private final ObservationProcessor observationProcessor = new ObservationProcessor();
-    private IObservationManager observationManager;
     SimulationStatus status = SimulationStatus.UNDEFINED;
-    private String scenarioName;
-
-    public class ObservationProcessor implements IObservationConsumer {
-        @Override
-        public void init(String scenarioName) {
-            EssimLoadFlowController.this.scenarioName = scenarioName;
-        }
-
-        @Override
-        public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
-            assignPowerValues(observation);
-        }
-
-        @Override
-        public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-            assignPowerValues(observation);
-        }
-
-        @Override
-        public void cleanup() {
-            exportNetwork();
-        }
-    }
 
     public EssimLoadFlowController(String networkName) {
         this.networkName = networkName;
@@ -545,12 +517,6 @@ public class EssimLoadFlowController implements Simulatable {
         return variantId;
     }
 
-    @Override
-    public void init(EssimTime timestamp) {
-        status = SimulationStatus.SETUP;
-    }
-
-
     private Observation.ObservationBuilder createObservationBuilder(EssimTime timestamp, EnergyAsset asset, Carrier carrier) {
         Observation.ObservationBuilder observation = Observation.builder()
                 .observedAt(timestamp.getTime())
@@ -562,25 +528,25 @@ public class EssimLoadFlowController implements Simulatable {
         return observation;
     }
 
-    @Override
-    public ArrayList<Observation> step(EssimTime timestamp) {
+    public ArrayList<Observation> step(EssimTime timestamp, ArrayList<Observation> observations) {
+        observations.forEach(this::assignPowerValues);
         status = SimulationStatus.STARTED;
         run(timestamp);
 
         final TopologyVisitor visitor = new DefaultTopologyVisitor() {
             @Override
             public void visitGenerator(Generator generator) {
-                publishObservation(generator.getId(), generator.getTerminal(), timestamp);
+                observations.add(publishObservation(generator.getId(), generator.getTerminal(), timestamp));
             }
 
             @Override
             public void visitLoad(Load load) {
-                publishObservation(load.getId(), load.getTerminal(), timestamp);
+                observations.add(publishObservation(load.getId(), load.getTerminal(), timestamp));
             }
 
             @Override
             public void visitBattery(Battery battery) {
-                publishObservation(battery.getId(), battery.getTerminal(), timestamp);
+                observations.add(publishObservation(battery.getId(), battery.getTerminal(), timestamp));
 
             }
 
@@ -598,7 +564,7 @@ public class EssimLoadFlowController implements Simulatable {
                         .value("loadflowReactivePower", q * 1000)
                         .value("loadflowCurrent", line.getTerminal(side).getI())
                         .build();
-                observationManager.publish(carrierSolverMap.get(carrier.getId()), observation);
+                observations.add(observation);
                 super.visitLine(line, side);
             }
         };
@@ -606,48 +572,13 @@ public class EssimLoadFlowController implements Simulatable {
         return null;
     }
 
-    @Override
-    public void postStep(EssimTime timestamp, ArrayList<Observation> observations) {
-        // Nothing to do here for now
-    }
-
-    private void publishObservation(String id, Terminal terminal, EssimTime timestamp) {
+    private Observation publishObservation(String id, Terminal terminal, EssimTime timestamp) {
         Carrier carrier = carrierMap.get(id);
         Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
         Observation observation = builder.value("loadflowPower", terminal.getP() * 1000)
                 .value("loadflowReactivePower", terminal.getQ() * 1000)
 //                .value("loadflowCurrent", terminal.getI())
                 .build();
-        observationManager.publish(carrierSolverMap.get(carrier.getId()), observation);
+        return observation;
     }
-
-    @Override
-    public void stop() {
-        status = SimulationStatus.STOPPED;
-    }
-
-    @Override
-    public SimulationStatus getState() {
-        return status;
-    }
-
-    @Override
-    public void setSimulationManager(ISimulationManager manager) {
-    }
-
-    @Override
-    public void setObservationManager(IObservationManager manager) {
-        this.observationManager = manager;
-    }
-//
-//    @Override
-//    public String getProviderName() {
-//        return scenarioName;
-//    }
-//
-//    @Override
-//    public String getProviderType() {
-//        return "loadflow";
-//    }
-
 }

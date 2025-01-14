@@ -155,7 +155,7 @@ public class RemoteLogicNode extends Node {
 
 
         @Override
-    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
+    public void processAllocation(EssimTime timestamp, ObservationBuilder observation) {
         if (role.equals(Role.CONSUMER)) {
             EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
         } else {

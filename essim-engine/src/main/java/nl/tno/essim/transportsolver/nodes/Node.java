@@ -36,6 +36,7 @@ import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -400,7 +401,35 @@ public abstract class Node implements INode {
         // print curve to stdout
         // log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(),
         // getAsset().getName(), demandFunction.toString(), price, energy);
+        for (int i = 0; i < observations.size(); i++) {
+            var o = observations.get(i);
+            if (o.getTags().containsKey("assetId") && o.getTags().get("assetId").equals(asset.getId()) && o.getObservedAt().isEqual(timestamp.getTime())) {
+                Double loadflowPower = (Double) o.getValues().get("loadflowPower");
+                if (loadflowPower != null) {
+                    double loadflowEnergy = loadflowPower * timestamp.getSimulationStepLength().getSeconds();
+                    // We see a difference larger than 1J as significant.
+                    if (Math.abs(loadflowEnergy - energy) > 1) {
+                        energy = loadflowEnergy;
+                    }
+                }
+                // Process Allocation for this node
+                ObservationBuilder builder = o.toBuilder();
+                processAllocation(timestamp, builder);
+                observations.set(i, builder.build());
+            }
+        }
 
+        // Propagate
+        if (children != null) {
+            for (Node child : children) {
+                child.processAssignedEnergies(observations, timestamp);
+            }
+        }
+
+    }
+
+    @NotNull
+    private Observation createObservation(EssimTime timestamp) {
         // Make observation
         ObservationBuilder builder = Observation.builder().observedAt(timestamp.getTime()).tag("assetId", asset.getId())
                 .tag("assetName", asset.getName() == null ? "UnnamedAsset" : asset.getName())
@@ -424,20 +453,7 @@ public abstract class Node implements INode {
             }
         }
         builder.tag("sector", sectorName);
-
-        // Process Allocation for this node
-        processAllocation(timestamp, builder);
-
-        // Build observations
-        observations.add(builder.build());
-
-        // Propagate
-        if (children != null) {
-            for (Node child : children) {
-                child.processAssignedEnergies(observations, timestamp);
-            }
-        }
-
+        return builder.build();
     }
 
     private BigDecimal findDemandFromCurve(BidFunction demandFunction, BigDecimal price) {
@@ -504,6 +520,15 @@ public abstract class Node implements INode {
 
         return isOperational;
 
+    }
+
+    public void addObservations(EssimTime timestamp, ArrayList<Observation> observations) {
+        observations.add(createObservation(timestamp));
+        if (children != null) {
+            for (Node child : children) {
+                child.addObservations(timestamp, observations);
+            }
+        }
     }
 
     public static class NodeBuilder {

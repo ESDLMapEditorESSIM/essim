@@ -444,17 +444,16 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         BigDecimal balancingPrice = summedFunction.findPriceFromCurve(BigDecimal.ZERO);
         BigDecimal imbalance = summedFunction.findDemandFromCurve(balancingPrice);
 
-        tree.calculateAssignedEnergies(timestamp, balancingPrice);
-
-
         ArrayList<Observation> observations = new ArrayList<Observation>();
+
+        tree.calculateAssignedEnergies(timestamp, balancingPrice);
+        tree.addObservations(timestamp, observations);
 
         observations.add(Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
                 .tag("carrierId", carrier.getId())
                 .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
                 .value("imbalanceEnergy", imbalance.doubleValue()).value("matchingPrice", balancingPrice)
                 .value("imbalancePower", imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
-        // TODO loadflow should occur here
         return observations;
     }
 

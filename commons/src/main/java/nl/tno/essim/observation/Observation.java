@@ -5,6 +5,7 @@
 package nl.tno.essim.observation;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Builder;
@@ -51,6 +52,13 @@ public class Observation implements IObservation {
 	@Override
 	public LocalDateTime getObservedAt() {
 		return observedAt;
+	}
+
+	public ObservationBuilder toBuilder() {
+		return builder()
+				.observedAt(this.observedAt)
+				.values(new HashMap<>(this.values))
+				.tags(new HashMap<>(this.tags));
 	}
 
 }

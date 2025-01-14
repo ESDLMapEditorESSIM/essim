@@ -169,12 +169,7 @@ public class ESSimEngine implements IStatusProvider {
 
         if (simulation.isPowsyblLoadFlow()) {
             loadFlowController = new EssimLoadFlowController(simulationId);
-            IObservationConsumer observationProcessor = loadFlowController.getObservationProcessor();
-            observationManager.registerConsumer(observationProcessor);
-            simulationManager.addObservationConsumer(observationProcessor);
-            simulationManager.addOtherSimulatable(loadFlowController);
-            loadFlowController.setObservationManager(observationManager);
-            observationProcessor.init(scenarioName);
+            simulationManager.setLoadFlowController(loadFlowController);
         }
 
         try {
