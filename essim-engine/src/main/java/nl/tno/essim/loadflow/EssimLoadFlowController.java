@@ -390,6 +390,7 @@ public class EssimLoadFlowController {
                         .setMinP(0)
                         .setTargetP(0)
                         .setTargetQ(0)
+                        .setVoltageRegulatorOn(false)
                         .add();
                 result.set(generator);
                 translationMap.put(conversion.getId(), generator);
