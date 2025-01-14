@@ -405,7 +405,8 @@ public abstract class Node implements INode {
             var o = observations.get(i);
             if (o.getTags().containsKey("assetId") && o.getTags().get("assetId").equals(asset.getId()) && o.getObservedAt().isEqual(timestamp.getTime())) {
                 Double loadflowPower = (Double) o.getValues().get("loadflowPower");
-                if (loadflowPower != null) {
+                // Only set the loadflow power if the device already had an allocation
+                if (loadflowPower != null && o.getValues().containsKey("allocationPower")) {
                     double loadflowEnergy = loadflowPower * timestamp.getSimulationStepLength().getSeconds();
                     // We see a difference larger than 1J as significant.
                     if (Math.abs(loadflowEnergy - energy) > 1) {
