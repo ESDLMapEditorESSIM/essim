@@ -386,7 +386,7 @@ public class EssimLoadFlowController {
                         .setBus(busId)
                         .setConnectableBus(busId)
                         // Do we need to convert based on port???
-                        .setMaxP(conversion.getPower())
+                        .setMaxP(conversion.getPower() / 1000)
                         .setMinP(0)
                         .setTargetP(0)
                         .setTargetQ(0)
@@ -450,7 +450,6 @@ public class EssimLoadFlowController {
         Generator generator = voltageLevel.newGenerator()
                 .setId("producer-" + producer.getId())
                 .setName(producer.getName() + "-" + producer.getName())
-                .setMaxP(Math.abs(producer.getPower()))
                 .setMinP(0)
                 .setMaxP(producer.getPower() / 1000)
                 .setTargetP(0)
