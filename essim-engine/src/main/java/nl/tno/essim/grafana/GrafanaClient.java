@@ -174,7 +174,7 @@ public class GrafanaClient {
 			tpSolverPanelLoadflowPowerString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL_LOADFLOW_POWER);
 			tpSolverJLoadPanelString = Commons.readFileIntoString(GRAFANA_JLOAD_PANEL);
 			tpSolverWLoadPanelString = Commons.readFileIntoString(GRAFANA_WLOAD_PANEL);
-			tpSolverWLossesPanelString = Commons.readFileIntoString(GRAFANA_WLOAD_PANEL);
+			tpSolverWLossesPanelString = Commons.readFileIntoString(GRAFANA_WLOSSES_PANEL);
 			tpSolverPLoadPanelString = Commons.readFileIntoString(GRAFANA_PLOAD_PANEL);
 		} catch (IOException e) {
 			return;

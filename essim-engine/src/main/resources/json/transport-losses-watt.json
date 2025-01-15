@@ -127,7 +127,7 @@
 	],
 	"timeFrom": null,
 	"timeShift": null,
-	"title": "$$$TRANSPORT-SOLVER-NAME$$$ Transport flows (in W)",
+	"title": "$$$TRANSPORT-SOLVER-NAME$$$ Transport losses (in W)",
 	"transparent": true,
 	"type": "timeseries"
 }
