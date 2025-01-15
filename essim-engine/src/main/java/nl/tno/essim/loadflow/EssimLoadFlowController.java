@@ -539,19 +539,19 @@ public class EssimLoadFlowController {
             @Override
             public void visitGenerator(Generator generator) {
                 Observation observation = createObservation(generator.getId(), generator.getTerminal(), timestamp);
-                observationMap.put(observation.getTags().get("assetId"), observation);
+                observationMap.put(getObservationKey(observation), observation);
             }
 
             @Override
             public void visitLoad(Load load) {
                 Observation observation = createObservation(load.getId(), load.getTerminal(), timestamp);
-                observationMap.put(observation.getTags().get("assetId"), observation);
+                observationMap.put(getObservationKey(observation), observation);
             }
 
             @Override
             public void visitBattery(Battery battery) {
                 Observation observation = createObservation(battery.getId(), battery.getTerminal(), timestamp);
-                observationMap.put(observation.getTags().get("assetId"), observation);
+                observationMap.put(getObservationKey(observation), observation);
             }
 
             @Override
@@ -568,7 +568,7 @@ public class EssimLoadFlowController {
                         .value("loadflowReactivePower", q * 1000)
                         .value("loadflowCurrent", line.getTerminal(side).getI())
                         .build();
-                observationMap.put(observation.getTags().get("assetId"), observation);
+                observationMap.put(getObservationKey(observation), observation);
                 super.visitLine(line, side);
             }
         };
@@ -577,13 +577,17 @@ public class EssimLoadFlowController {
         for (var i = 0; i < observations.size(); i++) {
             Observation observation = observations.get(i);
             Observation.ObservationBuilder builder = observation.toBuilder();
-            Observation lfObservation = observationMap.get(observation.getTags().get("assetId"));
+            Observation lfObservation = observationMap.get(getObservationKey(observation));
             if (lfObservation != null) {
                 builder.values(lfObservation.getValues());
             }
             observations.set(i, builder.build());
         }
         return observations;
+    }
+
+    private static String getObservationKey(Observation observation) {
+        return observation.getTags().get("assetId") + "-" + observation.getTags().get("carrierId");
     }
 
     private Observation createObservation(String id, Terminal terminal, EssimTime timestamp) {
