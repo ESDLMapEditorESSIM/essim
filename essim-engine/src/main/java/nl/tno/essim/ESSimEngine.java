@@ -428,7 +428,7 @@ public class ESSimEngine implements IStatusProvider {
         }
         GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
                 scenarioName, simulationId, simulationStartTime,
-                simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow, mongo);
+                simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow, loadFlowController != null, mongo);
         return grafanaClient.getDashboardUrl();
     }
 
