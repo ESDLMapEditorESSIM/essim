@@ -407,7 +407,7 @@ public class GrafanaClient {
 					i++;
 				}
 
-				if (grafanaLoadPanelWatt) {
+				if (grafanaLoadPanelWatt && haveLoadflow) {
 					ObjectNode wloadPanel = (ObjectNode) ESSimEngine.getObjectMapper().readTree(tpSolverWLossesPanelString);
 					wloadPanel.put("title", solverId + " Transport losses (in W)");
 					wloadPanel.put("datasource", databaseLabel);
