@@ -533,22 +533,25 @@ public class EssimLoadFlowController {
         observations.forEach(this::assignPowerValues);
         status = SimulationStatus.STARTED;
         run(timestamp);
+        HashMap<String, Observation> observationMap = new HashMap<>();
 
         final TopologyVisitor visitor = new DefaultTopologyVisitor() {
             @Override
             public void visitGenerator(Generator generator) {
-                observations.add(publishObservation(generator.getId(), generator.getTerminal(), timestamp));
+                Observation observation = createObservation(generator.getId(), generator.getTerminal(), timestamp);
+                observationMap.put(observation.getTags().get("assetId"), observation);
             }
 
             @Override
             public void visitLoad(Load load) {
-                observations.add(publishObservation(load.getId(), load.getTerminal(), timestamp));
+                Observation observation = createObservation(load.getId(), load.getTerminal(), timestamp);
+                observationMap.put(observation.getTags().get("assetId"), observation);
             }
 
             @Override
             public void visitBattery(Battery battery) {
-                observations.add(publishObservation(battery.getId(), battery.getTerminal(), timestamp));
-
+                Observation observation = createObservation(battery.getId(), battery.getTerminal(), timestamp);
+                observationMap.put(observation.getTags().get("assetId"), observation);
             }
 
             @Override
@@ -565,15 +568,25 @@ public class EssimLoadFlowController {
                         .value("loadflowReactivePower", q * 1000)
                         .value("loadflowCurrent", line.getTerminal(side).getI())
                         .build();
-                observations.add(observation);
+                observationMap.put(observation.getTags().get("assetId"), observation);
                 super.visitLine(line, side);
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
-        return null;
+
+        for (var i = 0; i < observations.size(); i++) {
+            Observation observation = observations.get(i);
+            Observation.ObservationBuilder builder = observation.toBuilder();
+            Observation lfObservation = observationMap.get(observation.getTags().get("assetId"));
+            if (lfObservation != null) {
+                builder.values(lfObservation.getValues());
+            }
+            observations.set(i, builder.build());
+        }
+        return observations;
     }
 
-    private Observation publishObservation(String id, Terminal terminal, EssimTime timestamp) {
+    private Observation createObservation(String id, Terminal terminal, EssimTime timestamp) {
         Carrier carrier = carrierMap.get(id);
         Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
         Observation observation = builder.value("loadflowPower", terminal.getP() * 1000)

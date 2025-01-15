@@ -255,7 +255,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
                 simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
                     ArrayList<Observation> observations = simulatable.step(time);
                     if (loadFlowController != null) {
-                        loadFlowController.step(time, observations);
+                        observations = loadFlowController.step(time, observations);
                     }
                     simulatable.postStep(time, observations);
                 }));
