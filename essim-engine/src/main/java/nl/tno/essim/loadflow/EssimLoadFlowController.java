@@ -110,12 +110,7 @@ public class EssimLoadFlowController {
         // Create the transformers connecting the carriers
         createTransformers(assetList);
         // Now we create the lines
-        solvers.forEach(solver -> {
-            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(solver.getCarrier())).toList().isEmpty()).toList();
-            Carrier carrier = solver.getCarrier();
-            // Create the cables
-            createLines(connectedAssets, network, carrier);
-        });
+        createLines(assetList, network);
         solvers.forEach(solver -> carrierSolverMap.put(solver.getCarrier().getId(), solver));
 
         exportNetwork();
@@ -171,15 +166,15 @@ public class EssimLoadFlowController {
         });
     }
 
-    private void createLines(List<EnergyAsset> connectedAssets, Network network, Carrier carrier) {
+    private void createLines(List<EnergyAsset> connectedAssets, Network network) {
         connectedAssets.stream().filter(a -> a instanceof ElectricityCable).forEach(cable -> {
             if (cable.getPort().size() != 2) {
                 throw new IllegalStateException("Electricity cable with " + cable.getPort().size() + " ports not allowed!");
             }
-            ((ElectricityCable) cable).getLength();
             Iterator<Port> iterator = cable.getPort().iterator();
             Port port1 = iterator.next();
             Port port2 = iterator.next();
+            Carrier carrier = port1.getCarrier();
             Port connected1 = getConnectedPorts(port1).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
             Port connected2 = getConnectedPorts(port2).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
             VoltageLevel voltageLevel1 = getVoltageLevel(getSubStation(connected1.getEnergyasset()), (ElectricityCommodity) connected1.getCarrier());
