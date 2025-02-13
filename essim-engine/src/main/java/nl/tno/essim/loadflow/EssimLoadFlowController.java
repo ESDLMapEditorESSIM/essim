@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class EssimLoadFlowController {
@@ -68,7 +69,7 @@ public class EssimLoadFlowController {
     private final Map<String, Substation> substationMap = new HashMap<>();
     private Network network;
     private final String networkName;
-    private final AtomicInteger simulationRunCounter = new AtomicInteger();
+    private final AtomicInteger simulationRunCounter = new AtomicInteger(1000);
     SimulationStatus status = SimulationStatus.UNDEFINED;
 
     public EssimLoadFlowController(String networkName) {
@@ -101,7 +102,7 @@ public class EssimLoadFlowController {
         network.setMinimumAcceptableValidationLevel(ValidationLevel.STEADY_STATE_HYPOTHESIS);
 
         // Now we create the assets per carrier
-        solvers.forEach(solver -> {
+        solvers.stream().filter(s -> s.getCarrier() instanceof ElectricityCommodity).forEach(solver -> {
             List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(solver.getCarrier())).toList().isEmpty()).toList();
             Carrier carrier = solver.getCarrier();
             // Create the network elements for the connected assets
@@ -114,6 +115,7 @@ public class EssimLoadFlowController {
         solvers.forEach(solver -> carrierSolverMap.put(solver.getCarrier().getId(), solver));
 
         exportNetwork();
+        network.getVariantManager().allowVariantMultiThreadAccess(true);
     }
 
     private void exportNetwork() {
@@ -121,7 +123,7 @@ public class EssimLoadFlowController {
         DataSource dataSource = Exporters.createDataSource(Paths.get("diagrams", "essim-network-" + networkName + ".xml"));
         ex.export(network, new Properties(), dataSource);
         NetworkAreaDiagram.draw(network, Paths.get("diagrams", "essim-network-" + networkName + "-diagram.svg"));
-        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
+//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
     private void createTransformers(List<EnergyAsset> assetList) {
@@ -321,28 +323,37 @@ public class EssimLoadFlowController {
         }
         Substation substation = substationMap.get(asset.getId());
         if (substation == null) {
-            HashSet<EnergyAsset> assets = new HashSet<>();
-            addConnectedAssets(asset, assets);
-            List<EnergyAsset> list = assets.stream().sorted(Comparator.comparing(EnergyAsset::getId)).toList();
+            List<EnergyAsset> list = getSubstationAssets(asset.getPort());
             String id = "substation-" + list.stream().map(a -> a.getName() == null || "".equals(a.getName()) ? a.getId().substring(0, 4) : a.getName()).collect(Collectors.joining("-"));
             Substation newSubstation = network.newSubstation().setId(id).setCountry(Country.NL).add();
-            substationMap.putAll(assets.stream().collect(Collectors.toMap(EnergyAsset::getId, a -> newSubstation)));
-            log.trace("Creating substation {} for assets: {}", id, assets.stream().map(EnergyAsset::getName).collect(Collectors.joining(", ")));
+            substationMap.putAll(list.stream().collect(Collectors.toMap(EnergyAsset::getId, a -> newSubstation)));
+            log.trace("Creating substation {} for assets: {}", id, list.stream().map(EnergyAsset::getName).collect(Collectors.joining(", ")));
 
             substation = newSubstation;
         }
         return substation;
     }
 
-    private void addConnectedAssets(EnergyAsset asset, HashSet<EnergyAsset> assets) {
-        assets.add(asset);
-        asset.getPort().stream().flatMap(p -> getConnectedPorts(p).stream()).map(Port::getEnergyasset)
-                .filter(a -> !(a instanceof ElectricityCable)).forEach(energyAsset -> {
-                    if (!assets.contains(energyAsset)) {
-                        assets.add(energyAsset);
-                        addConnectedAssets(energyAsset, assets);
-                    }
-                });
+    private List<EnergyAsset> getSubstationAssets(List<Port> ports) {
+        HashSet<Port> portSet = new HashSet<>();
+        addSubstationInternalPorts(ports, portSet);
+        return portSet.stream().map(Port::getEnergyasset).distinct().filter(a -> !(a instanceof ElectricityCable)).sorted(Comparator.comparing(EnergyAsset::getId)).toList();
+    }
+
+    private void addSubstationInternalPorts(List<Port> ports, HashSet<Port> portSet) {
+        portSet.addAll(ports);
+        Stream<Port> portStream = ports.stream().filter(p -> p.getCarrier() instanceof ElectricityCommodity).flatMap(p -> getConnectedPorts(p).stream());
+        portStream.forEach(p -> {
+            if (!portSet.contains(p)) {
+                EnergyAsset energyAsset = p.getEnergyasset();
+                if (energyAsset instanceof ElectricityCable) {
+                    addSubstationInternalPorts(List.of(p), portSet);
+                } else {
+                    addSubstationInternalPorts(energyAsset.getPort().stream().filter(p2 -> p2.getCarrier() instanceof ElectricityCommodity).collect(Collectors.toList()), portSet);
+                }
+            }
+        });
+
     }
 
     /**
@@ -360,19 +371,13 @@ public class EssimLoadFlowController {
         if (firstPortForCarrier.isEmpty()) {
             throw new IllegalStateException(String.format("Asset %s is not connected to carrier %s", asset.getName(), carrier.getName()));
         }
-        List<Port> busPortList = getSortedBusPortList(firstPortForCarrier.get());
-        String id = busPortList.getFirst().getId();
-//        VoltageLevel voltageLevel = getVoltageLevel(asset, firstPortForCarrier.get());
-        String busId = "bus-" + id + "-" + voltageLevel.getId();
-        return getBus(busId, voltageLevel, busPortList);
-    }
-
-    private Bus getBus(String busId, VoltageLevel voltageLevel, List<Port> busPortList) {
+        String ssString = voltageLevel.getSubstation().isEmpty() ? "network-" : voltageLevel.getSubstation().get().getId() + "-";
+        String busId = "bus-" + ssString + voltageLevel.getId();
         Bus bus = busMap.get(busId);
         if (bus == null) {
             bus = voltageLevel.getBusBreakerView().newBus().setId(busId).setName(busId).add();
+            log.trace("Creating bus with id {} in voltagelevel {}", busId, voltageLevel.getId());
             busMap.put(busId, bus);
-            busIdMap.putAll(busPortList.stream().collect(Collectors.toMap(p -> p.getId() + "-" + voltageLevel.getId(), p -> busId)));
         }
         return bus;
     }
@@ -522,10 +527,6 @@ public class EssimLoadFlowController {
         translationMap.put(producer.getId(), generator);
         reverseTranslationMap.put(generator.getId(), producer);
         return generator;
-    }
-
-    String getBusId(String portId) {
-        return busIdMap.get(portId);
     }
 
     private void assignPowerValues(IObservation observation) {
