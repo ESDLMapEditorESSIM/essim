@@ -8,11 +8,11 @@ import lombok.Builder;
 import lombok.Singular;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author werkmane
- *
  */
 @Builder
 public class Observation implements IObservation {
@@ -54,6 +54,9 @@ public class Observation implements IObservation {
 
     public static class ObservationBuilder {
         public ObservationBuilder value(ObservationField key, Object value) {
+            if (values == null) {
+                values = new HashMap<>();
+            }
             this.values.put(key.name(), value);
             return this;
         }
