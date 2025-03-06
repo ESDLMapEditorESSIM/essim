@@ -28,6 +28,7 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.util.ProfileUtils;
@@ -438,13 +439,13 @@ public class AbstractBasicConversionNode extends Node {
         if (carrierEnergyContent > Commons.eps) {
             double inputCarrierQuantity = Math.abs(inputEnergy) / carrierEnergyContent;
             double emission = inputCarrierQuantity * carrierEmission;
-            builder.value("emission", emission);
-            builder.value("fuelConsumption", inputCarrierQuantity);
+            builder.value(ObservationField.EMISSION, emission);
+            builder.value(ObservationField.FUEL_CONSUMPTION, inputCarrierQuantity);
 
             double currentInputCarrierCost = ProfileUtils.readProfile(cost, new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength()));
             if (!Double.isNaN(currentInputCarrierCost)) {
                 double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
-                builder.value("cost", inputCarrierCost);
+                builder.value(ObservationField.COST, inputCarrierCost);
             }
         }
     }

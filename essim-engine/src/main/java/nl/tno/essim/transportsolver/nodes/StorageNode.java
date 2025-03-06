@@ -37,6 +37,7 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -132,7 +133,7 @@ public class StorageNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder, BigDecimal price) {
 		builder.tag("capability", "Storage");
-		builder.value("soc", storage.getFillLevel());
+		builder.value(ObservationField.SOC, storage.getFillLevel());
 		if (energy > 0) {
 			EmissionManager.getInstance(simulationId).addConsumer(networkId, storage, Math.abs(energy));
 		} else {

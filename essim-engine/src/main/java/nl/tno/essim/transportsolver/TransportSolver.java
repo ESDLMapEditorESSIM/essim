@@ -32,6 +32,7 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
@@ -442,8 +443,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                     Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
                             .tag("carrierId", carrier.getId())
                             .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
-                            .value("imbalanceEnergy", results[0].doubleValue()).value("matchingPrice", results[1])
-                            .value("imbalancePower", results[0].divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
+                            .value(ObservationField.IMBALANCE_ENERGY, results[0].doubleValue()).value(ObservationField.MATCHING_PRICE, results[1])
+                            .value(ObservationField.IMBALANCE_POWER, results[0].divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
 
             for (Observation observation : observations) {
                 observationManager.publish(this, observation);

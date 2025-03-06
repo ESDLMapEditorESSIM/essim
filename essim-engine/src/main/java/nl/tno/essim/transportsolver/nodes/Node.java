@@ -34,6 +34,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -413,12 +414,12 @@ public abstract class Node implements INode {
                 .tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName()).tag("address", address)
                 .tag("carrierId", carrier.getId()).tag("role", role.name())
                 .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
-                .value("allocationEnergy", energy)
-                .value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
-                .value("marginalCost", demandFunction.getMarginalCost());
+                .value(ObservationField.ALLOCATION_ENERGY, energy)
+                .value(ObservationField.ALLOCATION_POWER, energy / timestamp.getSimulationStepLength().getSeconds())
+                .value(ObservationField.MARGINAL_COST, demandFunction.getMarginalCost());
 
         if (storeBidCurves) {
-            builder.value("bidcurve", this.demandFunction);
+            builder.value(ObservationField.BIDCURVE, this.demandFunction);
         }
 
         // Tag sector if defined

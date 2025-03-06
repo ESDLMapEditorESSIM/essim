@@ -39,6 +39,7 @@ import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KPIObservationConsumer;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -192,7 +193,7 @@ public class ESSimEngine implements IStatusProvider {
             observationManager.publish(generalObservationProvider,
                     Observation.builder()
                             .observedAt(simulationStartTime)
-                            .value("SimDescription", simulationDescription)
+                            .value(ObservationField.SIM_DESCRIPTION, simulationDescription)
                             .build());
         }
         ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
