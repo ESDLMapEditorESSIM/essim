@@ -121,4 +121,20 @@ class LoadflowTest {
 //		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
 //		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
+
+	@Test
+	void testLoadFlowWithTransformer2() throws Exception {
+		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow3.esdl").readAllBytes(), StandardCharsets.UTF_8);
+		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
+		EssimSimulation sim = new EssimSimulation();
+		sim.setEsdlContents(esdl);
+		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 1, 0, 0, 0)));
+		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 2, 0, 0, 0)));
+		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "-WT2");
+
+		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
+
+//		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+//		System.out.println("Resulting ESDL: \n" + resultESDL);
+	}
 }
