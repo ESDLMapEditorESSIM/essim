@@ -1,10 +1,10 @@
 package nl.tno.essim.loadflow;
 
 import com.powsybl.commons.datasource.DataSource;
+import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.network.Battery;
 import com.powsybl.iidm.network.Bus;
 import com.powsybl.iidm.network.Line;
-import com.powsybl.iidm.network.*;
 import com.powsybl.iidm.serde.XMLExporter;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
@@ -12,7 +12,6 @@ import com.powsybl.nad.NetworkAreaDiagram;
 import com.powsybl.openloadflow.OpenLoadFlowParameters;
 import com.powsybl.openloadflow.OpenLoadFlowProvider;
 import com.powsybl.openloadflow.network.SlackBusSelectionMode;
-import com.powsybl.sld.SingleLineDiagram;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.SimulationStatus;
@@ -28,6 +27,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -35,6 +35,9 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class EssimLoadFlowController {
+    private final static AtomicInteger threadCounter = new AtomicInteger(0);
+    private final static ThreadFactory threadFactory = r -> new Thread(r, EssimLoadFlowController.class.getSimpleName() + "-" + threadCounter.incrementAndGet());
+
     /**
      * The translationMap maps ESDL assets ids to powsybl elements like generators and loads
      */
@@ -67,6 +70,8 @@ public class EssimLoadFlowController {
      * The substationMap is used to map asset ids to the substations they belong to
      */
     private final Map<String, Substation> substationMap = new HashMap<>();
+
+    private final ExecutorService executor;
     private Network network;
     private final String networkName;
     private final AtomicInteger simulationRunCounter = new AtomicInteger(1000);
@@ -74,9 +79,20 @@ public class EssimLoadFlowController {
 
     public EssimLoadFlowController(String networkName) {
         this.networkName = networkName;
+        executor = Executors.newSingleThreadExecutor(threadFactory);
     }
 
     public void createNetwork(List<TransportSolver> solvers, List<EnergyAsset> assetList) {
+        Future<?> future = executor.submit(() -> createNetworkInternal(solvers, assetList));
+        try {
+            future.get();
+        } catch (InterruptedException e) {
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createNetworkInternal(List<TransportSolver> solvers, List<EnergyAsset> assetList) {
         /*
          * We may need a substation, because many elements can only be created in a substation
          * Substations contain voltagelevels and transformers
@@ -115,7 +131,6 @@ public class EssimLoadFlowController {
         solvers.forEach(solver -> carrierSolverMap.put(solver.getCarrier().getId(), solver));
 
         exportNetwork();
-        network.getVariantManager().allowVariantMultiThreadAccess(true);
     }
 
     private void exportNetwork() {
@@ -550,7 +565,7 @@ public class EssimLoadFlowController {
         }
     }
 
-    public void run(EssimTime timestamp) {
+    private void run(EssimTime timestamp) {
         // Update the variant ID for the simulation
         updateVariantId();
         LocalDateTime time = timestamp.getTime();
@@ -586,6 +601,21 @@ public class EssimLoadFlowController {
     }
 
     public ArrayList<Observation> step(EssimTime timestamp, ArrayList<Observation> observations) {
+        Future<ArrayList<Observation>> future = executor.submit(new Callable<ArrayList<Observation>>() {
+            @Override
+            public ArrayList<Observation> call() throws Exception {
+                return processObservations(timestamp, observations);
+            }
+        });
+        try {
+            return future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @NotNull
+    private ArrayList<Observation> processObservations(EssimTime timestamp, ArrayList<Observation> observations) {
         observations.forEach(this::assignPowerValues);
         status = SimulationStatus.STARTED;
         run(timestamp);
