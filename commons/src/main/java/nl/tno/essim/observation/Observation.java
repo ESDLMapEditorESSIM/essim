@@ -57,7 +57,7 @@ public class Observation implements IObservation {
             if (values == null) {
                 values = new HashMap<>();
             }
-            this.values.put(key.name(), value);
+            this.values.put(key.getKey(), value);
             return this;
         }
     }
