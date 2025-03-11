@@ -6,13 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
+import nl.tno.essim.observation.ObservationField;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class PostgresObservationConsumer implements IObservationConsumer {
@@ -20,9 +20,9 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     private final String username;
     private final String password;
     private Connection schemaConnection;
-    private HashMap<String, HashSet<String>> tables = new HashMap<>();
     private final static ObjectMapper objectMapper = new ObjectMapper();
     private String schemaName;
+    private HashSet<String> tables;
 
     public PostgresObservationConsumer(String jdbcUrl, String username, String password) {
         this.jdbcUrl = jdbcUrl;
@@ -53,21 +53,41 @@ public class PostgresObservationConsumer implements IObservationConsumer {
             this.schemaConnection = DriverManager.getConnection(schemaSpecificUrl, properties);
 
             log.debug("Connected to schema: {}", schemaName);
+            tables = collectTableNames();
+
         } catch (Exception e) {
             // Log and rethrow the exception for further handling
             throw new RuntimeException("Failed to initialize schema: " + schemaName, e);
         }
     }
 
+    public HashSet<String> collectTableNames() {
+        HashSet<String> tableNames = new HashSet<>();
+        String query = "SELECT table_name FROM information_schema.tables WHERE table_schema = ?";
+
+        try (PreparedStatement preparedStatement = schemaConnection.prepareStatement(query)) {
+
+            preparedStatement.setString(1, schemaName);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    tableNames.add(resultSet.getString("table_name"));
+                }
+            }
+
+        } catch (SQLException e) {
+            log.error("Error while collecting table names from schema: " + schemaName, e);
+        }
+
+        return tableNames;
+    }
 
     @Override
     public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
         String tableName = convertToValidPostgresColumnName(source.getProviderName());
-        if (!tables.containsKey(tableName)) {
+        if (!tables.contains(tableName)) {
             createTable(source, observation);
-        }
-        if (!tables.get(tableName).containsAll(observation.getValues().keySet())) {
-            alterTable(tableName, source, observation);
+            tables.add(tableName);
         }
         List<Map.Entry<String, Object>> list = observation.getValues().entrySet().stream().filter(entry -> !entry.getKey().equals("bidcurve")).sorted(Map.Entry.comparingByKey()).toList();
         String sql = String.format("INSERT INTO %s (time,tags,bidcurve,%s) VALUES (?,?::json,?::json%s)", tableName, String.join(",", list.stream().map(Map.Entry::getKey).toList()), ",?".repeat(list.size()));
@@ -127,17 +147,11 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     private void createTable(IObservationProvider source, IObservation observation) {
         String tableName = convertToValidPostgresColumnName(source.getProviderName());
         try (Statement statement = schemaConnection.createStatement()) {
-            StringBuilder columns = new StringBuilder();
-            @NotNull Set<Map.Entry<String, Object>> columnSet = new HashSet<>(observation.getValues().entrySet());
-            columnSet.forEach((e) -> {
-                if (!e.getKey().equals("bidcurve")) {
-                    columns.append(String.format(",%s %s", convertToValidPostgresColumnName(e.getKey()), getColumnType(e.getValue())));
-                }
-            });
+            StringBuilder columns = generateColumnDefinitions();
             String sql = String.format("CREATE TABLE IF NOT EXISTS %s.%s (id BIGSERIAL PRIMARY KEY NOT NULL,time TIMESTAMP,tags JSONB,bidcurve JSONB%s)", schemaName, tableName, columns);
-            log.trace("Executing SQL: {}", sql);
+            log.trace("Creating tables with statement: {}", sql);
             statement.executeUpdate(sql);
-            tables.put(tableName, new HashSet<>(columnSet.stream().map(Map.Entry::getKey).toList()));
+            tables.add(tableName);
             log.debug("Table created: {}", tableName);
         } catch (SQLException e) {
             log.warn("Failed to create table {}: {}", tableName, e.getMessage(), e);
@@ -145,34 +159,19 @@ public class PostgresObservationConsumer implements IObservationConsumer {
         }
     }
 
-    private void alterTable(String tableName, IObservationProvider source, IObservation observation) {
-        try (Statement statement = schemaConnection.createStatement()) {
-            StringBuilder columns = new StringBuilder();
-            @NotNull Set<Map.Entry<String, Object>> columnSet = observation.getValues().entrySet().stream().filter(k -> !k.getKey().equals("bidcurve")).collect(Collectors.toSet());
-            columnSet.forEach((e) -> {
-                if (!columns.isEmpty()) {
-                    columns.append(",");
-                }
-                columns.append(String.format("ADD COLUMN IF NOT EXISTS %s %s", convertToValidPostgresColumnName(e.getKey()), getColumnType(e.getValue())));
-            });
-            String sql = String.format("ALTER TABLE %s.%s %s", schemaName, tableName, columns);
-            log.trace("Executing SQL: {}", sql);
-            statement.executeUpdate(sql);
-            tables.get(tableName).addAll(columnSet.stream().map(Map.Entry::getKey).toList());
-            log.debug("Table altered: {}", tableName);
-        } catch (SQLException e) {
-            log.warn("Failed to create table {}: {}", tableName, e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
-
+    @NotNull
+    private static StringBuilder generateColumnDefinitions() {
+        StringBuilder columns = new StringBuilder();
+        Arrays.stream(ObservationField.values()).forEach(field -> {
+            if (!field.equals(ObservationField.BIDCURVE)) {
+                columns.append(String.format(",%s %s", convertToValidPostgresColumnName(field.getKey()), getColumnType(field.getObservationType())));
+            }
+        });
+        return columns;
     }
 
-    private static String getColumnType(Object o) {
-        if (o == null) {
-            throw new IllegalArgumentException("Object cannot be null");
-        }
-        Class<?> objClass = o.getClass();
-
+    @NotNull
+    private static String getColumnType(Class<?> objClass) {
         if (objClass == Integer.class) {
             return "INTEGER";
         } else if (objClass == Long.class) {
@@ -198,8 +197,10 @@ public class PostgresObservationConsumer implements IObservationConsumer {
 
     @Override
     public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-        if (!tables.containsKey(source.getProviderName())) {
+        String tableName = convertToValidPostgresColumnName(source.getProviderName());
+        if (!tables.contains(tableName)) {
             createTable(source, observation);
+            tables.add(tableName);
         }
         throw new UnsupportedOperationException("Not yet implemented");
     }
