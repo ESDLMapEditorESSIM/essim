@@ -1,7 +1,5 @@
 package nl.tno.essim.observation.consumers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
@@ -11,23 +9,34 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Slf4j
 public class PostgresObservationConsumer implements IObservationConsumer {
     private final String jdbcUrl;
     private final String username;
     private final String password;
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private Connection schemaConnection;
-    private final static ObjectMapper objectMapper = new ObjectMapper();
     private String schemaName;
-    private HashSet<String> tables;
+    private HashMap<String, PostgresTableCache> tables = new HashMap<>();
 
     public PostgresObservationConsumer(String jdbcUrl, String username, String password) {
         this.jdbcUrl = jdbcUrl;
         this.username = username;
         this.password = password;
+//        executor.scheduleAtFixedRate(() -> {
+//            for (PostgresTableCache tableCache : tables.values()) {
+//                if (tableCache.dirtyAndExpired()) {
+//                    tableCache.storeObservations(schemaConnection);
+//                }
+//            }
+//        }, 0, 200, java.util.concurrent.TimeUnit.MILLISECONDS);
+
     }
 
     @Override
@@ -61,8 +70,8 @@ public class PostgresObservationConsumer implements IObservationConsumer {
         }
     }
 
-    public HashSet<String> collectTableNames() {
-        HashSet<String> tableNames = new HashSet<>();
+    public HashMap<String, PostgresTableCache> collectTableNames() {
+        HashMap<String, PostgresTableCache> tableNames = new HashMap<>();
         String query = "SELECT table_name FROM information_schema.tables WHERE table_schema = ?";
 
         try (PreparedStatement preparedStatement = schemaConnection.prepareStatement(query)) {
@@ -71,12 +80,13 @@ public class PostgresObservationConsumer implements IObservationConsumer {
 
             try (ResultSet resultSet = preparedStatement.executeQuery()) {
                 while (resultSet.next()) {
-                    tableNames.add(resultSet.getString("table_name"));
+                    String tableName = resultSet.getString("table_name");
+                    tableNames.put(tableName, new PostgresTableCache(tableName, executor));
                 }
             }
 
         } catch (SQLException e) {
-            log.error("Error while collecting table names from schema: " + schemaName, e);
+            log.error("Error while collecting table names from schema: {}", schemaName, e);
         }
 
         return tableNames;
@@ -85,33 +95,14 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     @Override
     public void consume(String simulationRunName, IObservationProvider source, IObservation observation) {
         String tableName = convertToValidPostgresColumnName(source.getProviderName());
-        if (!tables.contains(tableName)) {
-            createTable(source, observation);
-            tables.add(tableName);
+        PostgresTableCache tableCache = tables.get(tableName);
+        if (tableCache == null) {
+            tableCache = createTable(source, observation);
         }
-        List<Map.Entry<String, Object>> list = observation.getValues().entrySet().stream().filter(entry -> !entry.getKey().equals("bidcurve")).sorted(Map.Entry.comparingByKey()).toList();
-        String sql = String.format("INSERT INTO %s (time,tags,bidcurve,%s) VALUES (?,?::json,?::json%s)", tableName, String.join(",", list.stream().map(Map.Entry::getKey).toList()), ",?".repeat(list.size()));
-        log.trace("Executing SQL: {}", sql);
-        try (PreparedStatement statement = schemaConnection.prepareStatement(sql)) {
-            AtomicInteger parameterIndex = new AtomicInteger(1);
-            statement.setTimestamp(parameterIndex.getAndIncrement(), Timestamp.from(observation.getObservedAt().atZone(nl.tno.essim.time.EssimTime.defaultTimeZone).toInstant()));
-            statement.setString(parameterIndex.getAndIncrement(), objectMapper.writeValueAsString(observation.getTags()));
-            statement.setString(parameterIndex.getAndIncrement(), observation.getValues().get("bidcurve") == null ? null : objectMapper.writeValueAsString(observation.getValues().get("bidcurve")));
-            list.forEach(entry -> {
-                try {
-                    setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), entry.getValue());
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            statement.executeUpdate();
-            log.trace("Inserted row into table: {}", tableName);
-        } catch (SQLException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        tableCache.addObservation(schemaConnection, observation);
     }
 
-    private void setPreparedStatementValue(PreparedStatement preparedStatement, int parameterIndex, Object value) throws SQLException {
+    static void setPreparedStatementValue(PreparedStatement preparedStatement, int parameterIndex, Object value) throws SQLException {
         if (value == null) {
             preparedStatement.setObject(parameterIndex, null);
             return;
@@ -144,15 +135,17 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     }
 
 
-    private void createTable(IObservationProvider source, IObservation observation) {
+    private PostgresTableCache createTable(IObservationProvider source, IObservation observation) {
         String tableName = convertToValidPostgresColumnName(source.getProviderName());
         try (Statement statement = schemaConnection.createStatement()) {
             StringBuilder columns = generateColumnDefinitions();
             String sql = String.format("CREATE TABLE IF NOT EXISTS %s.%s (id BIGSERIAL PRIMARY KEY NOT NULL,time TIMESTAMP,tags JSONB,bidcurve JSONB%s)", schemaName, tableName, columns);
-            log.trace("Creating tables with statement: {}", sql);
+            log.trace("Creating table with statement: {}", sql);
             statement.executeUpdate(sql);
-            tables.add(tableName);
+            PostgresTableCache tableCache = new PostgresTableCache(tableName, executor);
+            tables.put(tableName, tableCache);
             log.debug("Table created: {}", tableName);
+            return tableCache;
         } catch (SQLException e) {
             log.warn("Failed to create table {}: {}", tableName, e.getMessage(), e);
             throw new RuntimeException(e);
@@ -198,9 +191,9 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     @Override
     public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
         String tableName = convertToValidPostgresColumnName(source.getProviderName());
-        if (!tables.contains(tableName)) {
+        if (!tables.containsKey(tableName)) {
             createTable(source, observation);
-            tables.add(tableName);
+            tables.put(tableName, new PostgresTableCache(tableName, executor));
         }
         throw new UnsupportedOperationException("Not yet implemented");
     }
@@ -210,6 +203,11 @@ public class PostgresObservationConsumer implements IObservationConsumer {
         // Close the schema connection if it exists
         try {
             if (schemaConnection != null && !schemaConnection.isClosed()) {
+                for (PostgresTableCache tableCache : tables.values()) {
+                    if (tableCache.isDirty()) {
+                        tableCache.storeObservations(schemaConnection);
+                    }
+                }
                 schemaConnection.close();
                 System.out.println("Schema connection closed.");
             }
