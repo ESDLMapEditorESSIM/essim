@@ -12,16 +12,14 @@ import java.sql.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 @Slf4j
 public class PostgresObservationConsumer implements IObservationConsumer {
     private final String jdbcUrl;
     private final String username;
     private final String password;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), Executors.defaultThreadFactory());
     private Connection schemaConnection;
     private String schemaName;
     private HashMap<String, PostgresTableCache> tables = new HashMap<>();

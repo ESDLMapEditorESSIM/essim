@@ -96,6 +96,7 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
         InfluxDB influxDB = influx.getInfluxDB();
         influxDB.flush();
         influxDB.disableBatch();
+        log.debug("InfluxDB flush complete");
     }
 
     @SuppressWarnings("unchecked")

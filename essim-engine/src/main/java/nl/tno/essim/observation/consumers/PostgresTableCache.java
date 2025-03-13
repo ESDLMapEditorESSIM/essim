@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @AllArgsConstructor
@@ -25,17 +25,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class PostgresTableCache {
     private final static ObjectMapper objectMapper = new ObjectMapper();
-    public final static int BULK_INSERT_COUNT = 1000;
+    public final static int BULK_INSERT_COUNT = 2000;
     public final static int MAX_INSERT_DELAY = 200;
 
     private final String tableName;
-    private final ExecutorService executor;
+    private final ThreadPoolExecutor executor;
     private final ArrayList<IObservation> observations = new ArrayList<>(BULK_INSERT_COUNT);
     private long lastTimestamp = System.currentTimeMillis();
 
     public synchronized void addObservation(Connection schemaConnection, IObservation observation) {
         observations.add(observation);
-        if (observations.size() >= BULK_INSERT_COUNT || System.currentTimeMillis() - lastTimestamp >= MAX_INSERT_DELAY) {
+        if (observations.size() >= BULK_INSERT_COUNT || executor.getActiveCount() < executor.getMaximumPoolSize() || System.currentTimeMillis() - lastTimestamp >= MAX_INSERT_DELAY) {
             storeObservations(schemaConnection);
         }
         lastTimestamp = System.currentTimeMillis();
