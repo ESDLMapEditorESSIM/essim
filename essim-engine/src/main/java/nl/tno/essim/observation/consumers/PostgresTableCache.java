@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class PostgresTableCache {
     private final static ObjectMapper objectMapper = new ObjectMapper();
-    public final static int BULK_INSERT_COUNT = 100;
-    public final static int MAX_INSERT_DELAY = 1000;
+    public final static int BULK_INSERT_COUNT = 1000;
+    public final static int MAX_INSERT_DELAY = 200;
 
     private final String tableName;
     private final ExecutorService executor;
@@ -33,7 +33,7 @@ public class PostgresTableCache {
 
     public synchronized void addObservation(Connection schemaConnection, IObservation observation) {
         observations.add(observation);
-        if (observations.size() >= BULK_INSERT_COUNT) {
+        if (observations.size() >= BULK_INSERT_COUNT || System.currentTimeMillis() - lastTimestamp >= MAX_INSERT_DELAY) {
             storeObservations(schemaConnection);
         }
         lastTimestamp = System.currentTimeMillis();
@@ -61,36 +61,31 @@ public class PostgresTableCache {
         @Override
         public Object call() throws Exception {
             long start = System.currentTimeMillis();
-            StringBuilder sqlBuilder = new StringBuilder("INSERT INTO %s (time,tags,bidcurve,%s) VALUES ");
-            boolean first = true;
-            for (IObservation observation : observations) {
-                if (!first) {
-                    sqlBuilder.append(",");
-                }
-                first = false;
-                List<Map.Entry<String, Object>> list = observation.getValues().entrySet().stream().filter(entry -> !entry.getKey().equals("bidcurve")).sorted(Map.Entry.comparingByKey()).toList();
-                sqlBuilder.append(String.format("(?,?::json,?::json%s)", tableName, String.join(",", list.stream().map(Map.Entry::getKey).toList()), ",?".repeat(list.size())));
-//            log.trace("Executing SQL: {}", sql);
-            }
-            try (PreparedStatement statement = connection.prepareStatement(sqlBuilder.toString())) {
-                AtomicInteger parameterIndex = new AtomicInteger(1);
+
+            try {
+                connection.setAutoCommit(false);
                 for (IObservation observation : observations) {
+                    List<Map.Entry<String, Object>> list = observation.getValues().entrySet().stream().filter(entry -> !entry.getKey().equals("bidcurve")).sorted(Map.Entry.comparingByKey()).toList();
+                    String sql = String.format("INSERT INTO %s (time,tags,bidcurve,%s) VALUES (?,?::json,?::json%s)", tableName, String.join(",", list.stream().map(Map.Entry::getKey).toList()), ",?".repeat(list.size()));
+//                    log.trace("Executing SQL: {}", sql);
+                    PreparedStatement statement = connection.prepareStatement(sql);
+                    AtomicInteger parameterIndex = new AtomicInteger(1);
                     statement.setTimestamp(parameterIndex.getAndIncrement(), Timestamp.from(observation.getObservedAt().atZone(nl.tno.essim.time.EssimTime.defaultTimeZone).toInstant()));
                     statement.setString(parameterIndex.getAndIncrement(), objectMapper.writeValueAsString(observation.getTags()));
                     statement.setString(parameterIndex.getAndIncrement(), observation.getValues().get("bidcurve") == null ? null : objectMapper.writeValueAsString(observation.getValues().get("bidcurve")));
-                    List<Map.Entry<String, Object>> list = observation.getValues().entrySet().stream().filter(entry -> !entry.getKey().equals("bidcurve")).sorted(Map.Entry.comparingByKey()).toList();
-                    list.forEach(entry -> {
-                        try {
-                            PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), entry.getValue());
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+                    for (Map.Entry<String, Object> entry : list) {
+                        PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), entry.getValue());
+                    }
+                    statement.executeUpdate();
                 }
-                statement.executeUpdate();
+                connection.commit();
                 log.trace("Inserted {} rows into table: {} in {} ms", observations.size(), tableName, System.currentTimeMillis() - start);
             } catch (SQLException | JsonProcessingException e) {
+                connection.rollback();
+                log.warn("Could not insert data", e);
                 throw new RuntimeException(e);
+            } finally {
+                connection.setAutoCommit(true);
             }
             return null;
         }

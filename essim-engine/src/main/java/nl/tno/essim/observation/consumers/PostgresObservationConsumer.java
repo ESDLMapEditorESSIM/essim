@@ -12,15 +12,16 @@ import java.sql.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class PostgresObservationConsumer implements IObservationConsumer {
     private final String jdbcUrl;
     private final String username;
     private final String password;
-    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private Connection schemaConnection;
     private String schemaName;
     private HashMap<String, PostgresTableCache> tables = new HashMap<>();
@@ -29,14 +30,6 @@ public class PostgresObservationConsumer implements IObservationConsumer {
         this.jdbcUrl = jdbcUrl;
         this.username = username;
         this.password = password;
-//        executor.scheduleAtFixedRate(() -> {
-//            for (PostgresTableCache tableCache : tables.values()) {
-//                if (tableCache.dirtyAndExpired()) {
-//                    tableCache.storeObservations(schemaConnection);
-//                }
-//            }
-//        }, 0, 200, java.util.concurrent.TimeUnit.MILLISECONDS);
-
     }
 
     @Override
@@ -208,8 +201,13 @@ public class PostgresObservationConsumer implements IObservationConsumer {
                         tableCache.storeObservations(schemaConnection);
                     }
                 }
+                executor.shutdown();
+                boolean terminationSuccessful = executor.awaitTermination(1, TimeUnit.MINUTES);
+                if (!terminationSuccessful) {
+                    log.warn("Could not terminate postgres connection in 10 seconds!");
+                }
                 schemaConnection.close();
-                System.out.println("Schema connection closed.");
+                log.debug("Schema connection closed.");
             }
         } catch (Exception e) {
             System.err.println("Failed to close schema connection: " + e.getMessage());
