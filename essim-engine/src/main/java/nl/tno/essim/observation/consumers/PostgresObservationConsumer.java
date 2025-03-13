@@ -146,7 +146,7 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     }
 
     @NotNull
-    private static StringBuilder generateColumnDefinitions() {
+    static StringBuilder generateColumnDefinitions() {
         StringBuilder columns = new StringBuilder();
         Arrays.stream(ObservationField.values()).forEach(field -> {
             if (!field.equals(ObservationField.BIDCURVE)) {

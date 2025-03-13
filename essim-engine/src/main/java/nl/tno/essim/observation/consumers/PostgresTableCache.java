@@ -6,12 +6,14 @@ import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
+import nl.tno.essim.observation.ObservationField;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -64,20 +66,33 @@ public class PostgresTableCache {
 
             try {
                 connection.setAutoCommit(false);
+                String[] array = Arrays.stream(ObservationField.values()).filter(field -> !field.equals(ObservationField.BIDCURVE)).map(ObservationField::getKey).sorted(String::compareToIgnoreCase).toList().toArray(new String[0]);
+                String fieldNames = String.join(",", array);
+
+                String sql = String.format("INSERT INTO %s (time,tags,bidcurve,%s) VALUES (?,?::json,?::json%s)", tableName, String.join(",", fieldNames), ",?".repeat(ObservationField.values().length - 1));
+                PreparedStatement statement = connection.prepareStatement(sql);
+//                log.trace("Inserting with statement: {}", sql);
+
                 for (IObservation observation : observations) {
                     List<Map.Entry<String, Object>> list = observation.getValues().entrySet().stream().filter(entry -> !entry.getKey().equals("bidcurve")).sorted(Map.Entry.comparingByKey()).toList();
-                    String sql = String.format("INSERT INTO %s (time,tags,bidcurve,%s) VALUES (?,?::json,?::json%s)", tableName, String.join(",", list.stream().map(Map.Entry::getKey).toList()), ",?".repeat(list.size()));
-//                    log.trace("Executing SQL: {}", sql);
-                    PreparedStatement statement = connection.prepareStatement(sql);
                     AtomicInteger parameterIndex = new AtomicInteger(1);
                     statement.setTimestamp(parameterIndex.getAndIncrement(), Timestamp.from(observation.getObservedAt().atZone(nl.tno.essim.time.EssimTime.defaultTimeZone).toInstant()));
                     statement.setString(parameterIndex.getAndIncrement(), objectMapper.writeValueAsString(observation.getTags()));
                     statement.setString(parameterIndex.getAndIncrement(), observation.getValues().get("bidcurve") == null ? null : objectMapper.writeValueAsString(observation.getValues().get("bidcurve")));
+                    int arrayIndex = 0;
                     for (Map.Entry<String, Object> entry : list) {
+                        while (!array[arrayIndex++].equals(entry.getKey())) {
+                            PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), null);
+                        }
                         PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), entry.getValue());
                     }
-                    statement.executeUpdate();
+                    for (; arrayIndex < array.length; arrayIndex++) {
+                        PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), null);
+                    }
+                    statement.addBatch();
                 }
+                statement.executeBatch();
+                statement.close();
                 connection.commit();
                 log.trace("Inserted {} rows into table: {} in {} ms", observations.size(), tableName, System.currentTimeMillis() - start);
             } catch (SQLException | JsonProcessingException e) {
