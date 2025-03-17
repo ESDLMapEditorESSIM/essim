@@ -47,7 +47,6 @@ import java.util.Set;
 @Slf4j
 public class AbstractBasicConversionNode extends Node {
 
-    protected static final double DEFAULT_CONVERSION_EFFICIENCY = 0.6;
     @Getter
     @Setter
     private static boolean disablePriceBasedBidDecisions = System.getenv("DISABLE_PRICE_BASED_BID_DECISIONS") != null;
