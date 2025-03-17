@@ -15,15 +15,15 @@
  */
 package nl.tno.essim.managers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ObservationManager implements IObservationManager {
 
@@ -54,10 +54,4 @@ public class ObservationManager implements IObservationManager {
         }
     }
 
-    @Override
-    public void publishBatch(IObservationProvider source, IObservation observation) {
-        for (IObservationConsumer consumer : consumers) {
-            executorService.submit(() -> consumer.consumeBatch(simulationRunName, source, observation));
-        }
-    }
 }

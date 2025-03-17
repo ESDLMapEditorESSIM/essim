@@ -26,6 +26,4 @@ public interface IObservationManager {
 
 	public void publish(IObservationProvider source, IObservation observation);
 
-	public void publishBatch(IObservationProvider source, IObservation observation);
-
 }

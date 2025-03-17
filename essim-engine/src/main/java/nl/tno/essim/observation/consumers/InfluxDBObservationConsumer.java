@@ -25,13 +25,10 @@ import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.time.EssimTime;
 import org.influxdb.InfluxDB;
-import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 import org.influxdb.dto.Point.Builder;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -97,37 +94,5 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
         influxDB.flush();
         influxDB.disableBatch();
         log.debug("InfluxDB flush complete");
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-        org.influxdb.dto.BatchPoints.Builder batchBuilder = BatchPoints.database(database);
-
-        List<LocalDateTime> timestamps = (List<LocalDateTime>) observation.getValues().get("Timestamps");
-        if (timestamps == null) {
-            log.error("No Timestamps field present. Ignoring batch write to InfluxDB!!");
-            return;
-        }
-
-        for (String fieldName : observation.getValues().keySet()) {
-            if (fieldName.equals("Timestamps")) {
-                continue;
-            }
-
-            List<Object> listOfPoints = (List<Object>) observation.getValues().get(fieldName);
-
-            for (int i = 0; i < listOfPoints.size(); i++) {
-                Builder pointBuilder = Point.measurement(source.getProviderName());
-                pointBuilder.tag(observation.getTags());
-                pointBuilder.tag("simulationRun", simulationRunName);
-                pointBuilder.time(timestamps.get(i).atZone(EssimTime.defaultTimeZone).toEpochSecond(),
-                        TimeUnit.SECONDS);
-                pointBuilder.addField(fieldName, (double) listOfPoints.get(i));
-                batchBuilder.point(pointBuilder.build());
-            }
-        }
-
-        influx.getInfluxDB().write(batchBuilder.build());
     }
 }

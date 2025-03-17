@@ -1,20 +1,15 @@
 package nl.tno.essim.tests;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import nl.tno.essim.observation.IObservation;
+import nl.tno.essim.observation.IObservationConsumer;
+import nl.tno.essim.observation.IObservationProvider;
+
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import nl.tno.essim.observation.IObservation;
-import nl.tno.essim.observation.IObservationConsumer;
-import nl.tno.essim.observation.IObservationProvider;
 
 public class H2ObservationConsumer implements IObservationConsumer {
 	private final static String URI = "jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH";
@@ -78,11 +73,6 @@ public class H2ObservationConsumer implements IObservationConsumer {
 			sb.append("text");
 		}
 		return sb.toString();
-	}
-
-	@Override
-	public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-
 	}
 
 	@Override

@@ -35,6 +35,7 @@ public class PostgresTableCache {
 
     public synchronized void addObservation(Connection schemaConnection, IObservation observation) {
         observations.add(observation);
+        // If we exceed the maximum number of records for a batch, or the maximum time between two batches or the executor is idle anyway, we will bulk-insert the observations
         if (observations.size() >= BULK_INSERT_COUNT || executor.getActiveCount() < executor.getMaximumPoolSize() || System.currentTimeMillis() - lastTimestamp >= MAX_INSERT_DELAY) {
             storeObservations(schemaConnection);
         }
@@ -81,11 +82,13 @@ public class PostgresTableCache {
                     statement.setString(parameterIndex.getAndIncrement(), observation.getValues().get("bidcurve") == null ? null : objectMapper.writeValueAsString(observation.getValues().get("bidcurve")));
                     int arrayIndex = 0;
                     for (Map.Entry<String, Object> entry : list) {
+                        // Insert null if we don't have a value for this column
                         while (!array[arrayIndex++].equals(entry.getKey())) {
                             PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), null);
                         }
                         PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), entry.getValue());
                     }
+                    // Make sure all the columns have a value
                     for (; arrayIndex < array.length; arrayIndex++) {
                         PostgresObservationConsumer.setPreparedStatementValue(statement, parameterIndex.getAndIncrement(), null);
                     }

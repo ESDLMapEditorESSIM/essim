@@ -12,7 +12,10 @@ import java.sql.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class PostgresObservationConsumer implements IObservationConsumer {
@@ -177,16 +180,6 @@ public class PostgresObservationConsumer implements IObservationConsumer {
         } else {
             throw new UnsupportedOperationException("Type not supported: " + objClass.getName());
         }
-    }
-
-    @Override
-    public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-        String tableName = convertToValidPostgresColumnName(source.getProviderName());
-        if (!tables.containsKey(tableName)) {
-            createTable(source, observation);
-            tables.put(tableName, new PostgresTableCache(tableName, executor));
-        }
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
