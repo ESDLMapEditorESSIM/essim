@@ -16,8 +16,6 @@
 
 package essim.impl;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import common.*;
 import esdl.Duration;
 import esdl.ProfileElement;
@@ -31,7 +29,6 @@ import org.influxdb.InfluxDBFactory;
 import org.influxdb.InfluxDBIOException;
 import org.influxdb.dto.QueryResult;
 
-import java.io.*;
 import java.time.LocalDateTime;
 import java.util.Date;
 
@@ -39,9 +36,6 @@ import java.util.Date;
 public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 
     private static final int MAX_ATTEMPTS = 1;
-    private static final String USERNAME_PROP = "username";
-    private static final String PASSWORD_PROP = "password";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private TimeSeriesDataCache dataCache;
     private Duration aggregationPrecision;
     private DataProcessor dataProcessor;
@@ -52,44 +46,11 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
 
     private InfluxDB connectToInfluxHost() {
         if (getHost().isEmpty() || getPort() <= 0) {
-            throw new IllegalArgumentException("InfluxDB profile not configured correctly: " + this);
+            throw new IllegalArgumentException("Postgres profile not configured correctly: " + this);
         }
         final String serverId = getHost() + ":" + getPort();
-        final File propFile = new File("credentials.json");
-
-        log.debug("Looking for credentials in {}", propFile.getAbsolutePath());
-
-        if (propFile.exists()) {
-            try (InputStream is = new FileInputStream(propFile)) {
-                JsonNode root = objectMapper.readTree(is);
-
-                if (root.has(serverId)) {
-                    JsonNode server = root.get(serverId);
-
-                    if (server.has(USERNAME_PROP) && server.has(PASSWORD_PROP)) {
-                        log.debug("Using InfluxDB credentials read from config file {}.", propFile);
-                        return InfluxDBFactory
-                                .connect(serverId, server.get(USERNAME_PROP).asText(), server.get(PASSWORD_PROP).asText())
-                                .enableGzip();
-                    } else {
-                        log.info(
-                                "Configuration for server found in {}, but missing fields {} and/or {}. Not using authentication",
-                                propFile, USERNAME_PROP, PASSWORD_PROP);
-                    }
-                } else {
-                    log.info("Property file {} found, but no credential info for this server, not using authentication",
-                            propFile);
-                    // log.debug("serverId : {}", serverId);
-                    // log.debug("Prop file contents: {}", root.toString());
-                }
-            } catch (FileNotFoundException e) {
-                log.warn("Unable to load config {}: {}", propFile, e.getMessage());
-            } catch (IOException e) {
-                log.error("Exception while reading config {}: {}", propFile, e.getMessage());
-            }
-        }
-
-        return InfluxDBFactory.connect(serverId).enableGzip();
+        ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(serverId);
+        return dbCredentials == null ? InfluxDBFactory.connect(serverId).enableGzip() : InfluxDBFactory.connect(serverId, dbCredentials.username(), dbCredentials.password()).enableGzip();
     }
 
     @Override
@@ -125,8 +86,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         } else {
             dataProcessor = new DataProcessor(getProfileType(), getMultiplier());
         }
-        fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision),
-                getAnnualChangePercentage());
+        fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision), getAnnualChangePercentage());
     }
 
     /*
@@ -138,9 +98,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
     @Override
     public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
 
-        if (this.aggregationPrecision != null
-                && !this.aggregationPrecision.getDurationUnit().equals(aggregationPrecision.getDurationUnit())
-                && (this.aggregationPrecision.getValue() == aggregationPrecision.getValue())) {
+        if (this.aggregationPrecision != null && !this.aggregationPrecision.getDurationUnit().equals(aggregationPrecision.getDurationUnit()) && (this.aggregationPrecision.getValue() == aggregationPrecision.getValue())) {
             log.warn("Different aggregation precisions are not (yet) supported and ignored!");
         }
         LocalDateTime startTime = EssimTime.dateToLocalDateTime(from);
@@ -150,13 +108,11 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         return eList;
     }
 
-    public void fillCache(String startTimeOfDataset, String endTime, EssimDuration simulationStepLength,
-                          double annualChange) {
+    public void fillCache(String startTimeOfDataset, String endTime, EssimDuration simulationStepLength, double annualChange) {
 
         int connectionAttempts = 0;
 
-        String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '" + startTimeOfDataset
-                + "' AND time <= '" + endTime + "'";
+        String command = "SELECT \"" + field + "\" FROM \"" + measurement + "\" WHERE time >= '" + startTimeOfDataset + "' AND time <= '" + endTime + "'";
 
         if (this.filters != null && !this.filters.trim().isEmpty()) {
             final String filter = this.filters.trim();
@@ -164,8 +120,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         }
 
         log.debug("Influx Call for: {}", command);
-        ProfileCacheKey profileCacheKey = new ProfileCacheKey(getHost(), getPort(), getDatabase(), getMeasurement(),
-                getField(), getAnnualChangePercentage());
+        ProfileCacheKey profileCacheKey = new ProfileCacheKey(getHost(), getPort(), getDatabase(), getMeasurement(), getField(), getAnnualChangePercentage());
 
         synchronized (ProfileCache.getInstance()) {
             dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
@@ -181,15 +136,12 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
                         log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
                         queryResult = influxClient.query(query);
                         if (queryResult.hasError() || queryResult.getResults() == null) {
-                            throw new IllegalStateException("Error querying InfluxDB for query " + query.getCommand()
-                                    + ", queryError: " + queryResult.getError());
+                            throw new IllegalStateException("Error querying InfluxDB for query " + query.getCommand() + ", queryError: " + queryResult.getError());
                         }
                     }
                     for (QueryResult.Result result : queryResult.getResults()) {
                         if (result.getSeries() == null) {
-                            throw new IllegalArgumentException("No results returned on querying " + command + " at database ["
-                                    + database + "] at [" + getHost() + ":" + getPort() + "] for profile with id " + getId()
-                                    + ". Please verify the database name, measurement and field names and timeframe of query!");
+                            throw new IllegalArgumentException("No results returned on querying " + command + " at database [" + database + "] at [" + getHost() + ":" + getPort() + "] for profile with id " + getId() + ". Please verify the database name, measurement and field names and timeframe of query!");
                         }
                         for (QueryResult.Series series : result.getSeries()) {
                             log.debug("Query returned {} values for {}", series.getValues().size(), profileCacheKey);
@@ -219,9 +171,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
             case MINUTES:
                 return stepLength.getAmount() + "m";
             case MONTHS:
-                log.warn(
-                        "Using {} duration is not supported by InfluxDB, so it is mapped to 30 days, better use days using the number of days in a specific month",
-                        stepLength);
+                log.warn("Using {} duration is not supported by InfluxDB, so it is mapped to 30 days, better use days using the number of days in a specific month", stepLength);
                 return 30 * stepLength.getAmount() + "d";
             case NANOS:
                 return stepLength.getAmount() + "ns";
