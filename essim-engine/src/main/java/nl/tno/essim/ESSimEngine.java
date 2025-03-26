@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esdl.*;
 import essim.EssimPackage;
+import essim.impl.ProfileTools;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
@@ -50,6 +51,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -160,6 +162,8 @@ public class ESSimEngine implements IStatusProvider {
         log.info("Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice() + "]");
 
         esdlString = esdl;
+        ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
+        energySystem = loadEcoreResource(esdlStream);
 
         // Initialise SimulationManager
         observationManager = new ObservationManager(simulationId);
@@ -179,8 +183,19 @@ public class ESSimEngine implements IStatusProvider {
                 CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
                         simulation.getCsvFilesLocation());
                 observationManager.registerConsumer(csvObservationConsumer);
+                csvObservationConsumer.init(scenarioName);
                 log.debug("Registering CSV Observation Consumer");
             }
+            if (simulation.getPostgresURL() != null) {
+                String jdbcUri = "jdbc:" + simulation.getPostgresURL();
+                ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(simulation.getPostgresURL());
+                String username = dbCredentials == null ? "essim" : dbCredentials.username();
+                String password = dbCredentials == null ? "pgpassword" : dbCredentials.password();
+                PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
+                observationManager.registerConsumer(postgresObservationConsumer);
+                postgresObservationConsumer.init(scenarioName);
+            }
+
         } catch (Exception e) {
             simulationManager.shutdown();
             throw new IllegalArgumentException("Error in Observation Manager init", e);
@@ -194,8 +209,6 @@ public class ESSimEngine implements IStatusProvider {
                             .value(ObservationField.SIM_DESCRIPTION, simulationDescription)
                             .build());
         }
-        ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
-        energySystem = loadEcoreResource(esdlStream);
         if (energySystem == null) {
             log.error("Failed to load Energy System");
             throw new IllegalStateException("Failed to load ESDL!");
@@ -286,6 +299,21 @@ public class ESSimEngine implements IStatusProvider {
             msoClient.deployModels();
         }
 
+    }
+
+    @NotNull
+    private InfluxDBObservationConsumer getInfluxDBObservationConsumer(DatabaseConfiguration configuration) {
+        String host = configuration.getHost();
+        int port = configuration.getPort();
+        boolean tls = configuration.isTls();
+        if (port == 0) {
+            port = tls ? 443 : 80;
+        }
+        String influxUrl = String.format("http%s://%s:%d", tls ? "s" : "", host, port);
+
+        InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(influxUrl);
+        influxObservationConsumer.init(scenarioName);
+        return influxObservationConsumer;
     }
 
     public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) throws Exception {
