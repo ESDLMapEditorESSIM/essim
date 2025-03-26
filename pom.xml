@@ -26,9 +26,9 @@
         <revision>24.11</revision> <!-- use this to set the version of all the modules -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
-        <emf.version>2.29.0</emf.version>
-        <emfecore.version>2.35.0</emfecore.version>
-        <esdl.version>2.24.1</esdl.version>
+        <emf.version>2.41.0</emf.version>
+        <emfecore.version>2.38.0</emfecore.version>
+        <esdl.version>2.25.3.dev</esdl.version>
         <junit.jupiter.version>5.10.1</junit.jupiter.version>
         <base.package.name>nl.tno.essim</base.package.name>
         <jackson.version>2.18.1</jackson.version>

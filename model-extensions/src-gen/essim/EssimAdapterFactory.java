@@ -15,7 +15,7 @@
  */
 package essim;
 
-import esdl.DatabaseProfile;
+import esdl.LegacyAbstractDatabaseProfile;
 import esdl.DateTimeProfile;
 import esdl.ExternalProfile;
 import esdl.GenericProfile;
@@ -122,8 +122,8 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 		}
 
 		@Override
-		public Adapter caseDatabaseProfile(DatabaseProfile object) {
-			return createDatabaseProfileAdapter();
+		public Adapter caseLegacyAbstractDatabaseProfile(LegacyAbstractDatabaseProfile object) {
+			return createLegacyAbstractDatabaseProfileAdapter();
 		}
 
 		@Override
@@ -269,16 +269,16 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 	}
 
 	/**
-	 * Creates a new adapter for an object of class '{@link esdl.DatabaseProfile <em>Database Profile</em>}'.
+	 * Creates a new adapter for an object of class '{@link esdl.LegacyAbstractDatabaseProfile <em>Database Profile</em>}'.
 	 * <!-- begin-user-doc -->
 	 * This default implementation returns null so that we can easily ignore cases;
 	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
 	 * <!-- end-user-doc -->
 	 * @return the new adapter.
-	 * @see esdl.DatabaseProfile
+	 * @see esdl.LegacyAbstractDatabaseProfile
 	 * @generated
 	 */
-	public Adapter createDatabaseProfileAdapter() {
+	public Adapter createLegacyAbstractDatabaseProfileAdapter() {
 		return null;
 	}
 

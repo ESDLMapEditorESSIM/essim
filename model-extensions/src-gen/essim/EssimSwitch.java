@@ -15,7 +15,7 @@
  */
 package essim;
 
-import esdl.DatabaseProfile;
+import esdl.LegacyAbstractDatabaseProfile;
 import esdl.DateTimeProfile;
 import esdl.ExternalProfile;
 import esdl.GenericProfile;
@@ -94,7 +94,7 @@ public class EssimSwitch<T> extends Switch<T> {
 			if (result == null)
 				result = caseESSIMProfile(essimInfluxDBProfile);
 			if (result == null)
-				result = caseDatabaseProfile(essimInfluxDBProfile);
+				result = caseLegacyAbstractDatabaseProfile(essimInfluxDBProfile);
 			if (result == null)
 				result = caseExternalProfile(essimInfluxDBProfile);
 			if (result == null)
@@ -276,7 +276,7 @@ public class EssimSwitch<T> extends Switch<T> {
 	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
 	 * @generated
 	 */
-	public T caseDatabaseProfile(DatabaseProfile object) {
+	public T caseLegacyAbstractDatabaseProfile(LegacyAbstractDatabaseProfile object) {
 		return null;
 	}
 
