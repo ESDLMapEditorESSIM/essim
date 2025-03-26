@@ -76,7 +76,6 @@ class DynamicPricesTest4NotInJoule {
 		String esdl = new String(DynamicPricesTest4NotInJoule.class.getResourceAsStream("/testcase1/GH-HP-HD-CarrierCosts-PricesInkWh.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase4", simId, sim, esdl, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 		
 		String grafanaDashboard = "";

@@ -56,7 +56,6 @@ class BasicTest {
         String esdl = new String(BasicTest.class.getResourceAsStream("/ED-Imp-Exp.esdl").readAllBytes(), StandardCharsets.UTF_8);
         ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
         InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-        essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
         essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
         essimEngine.startSimulation();

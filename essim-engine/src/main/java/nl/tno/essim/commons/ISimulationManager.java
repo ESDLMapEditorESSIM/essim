@@ -27,8 +27,6 @@ public interface ISimulationManager {
 
 	public void addSolvers(List<TransportSolver> solvers);
 
-	void setObservationConsumers(List<IObservationConsumer> consumers);
-
 	LocalDateTime getStartDateTime();
 
 	LocalDateTime getEndDateTime();

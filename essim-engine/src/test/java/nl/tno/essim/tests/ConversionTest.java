@@ -64,7 +64,6 @@ class ConversionTest {
 
 		String simId = mongo.addSimulation(sim);
 		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
-		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
 		essimEngine.startSimulation();

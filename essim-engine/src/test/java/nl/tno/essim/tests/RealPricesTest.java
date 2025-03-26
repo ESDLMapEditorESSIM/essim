@@ -65,7 +65,6 @@ class RealPricesTest {
 		String esdl = new String(CHPTest.class.getResourceAsStream("/ED-Imp-Exp-highprices.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		ESSimEngine essimEngine = new ESSimEngine("local-realprices-test", simId, sim, esdl, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 		
 		essimEngine.startSimulation();

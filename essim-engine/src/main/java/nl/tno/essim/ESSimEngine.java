@@ -37,9 +37,10 @@ import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KPIObservationConsumer;
-import nl.tno.essim.observation.ObservationField;
+import nl.tno.essim.observation.consumers.PostgresObservationConsumer;
 import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -161,10 +162,9 @@ public class ESSimEngine implements IStatusProvider {
         esdlString = esdl;
 
         // Initialise SimulationManager
-        simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
-                simulationStepLength, mongo);
-
         observationManager = new ObservationManager(simulationId);
+        EssimTime simulationTime = new EssimTime(simulationStartTime, simulationEndTime, simulationStepLength);
+        simulationManager = new SimulationManager(simulationId, simulationTime, mongo, observationManager);
 
         try {
             // Register all ObservationConsumers - Eg: InfluxDB
@@ -173,14 +173,12 @@ public class ESSimEngine implements IStatusProvider {
                         simulation.getInfluxURL());
                 influxObservationConsumer.init(scenarioName);
                 observationManager.registerConsumer(influxObservationConsumer);
-                simulationManager.addObservationConsumer(influxObservationConsumer);
                 log.debug("Registering InfluxDB Observation Consumer: {}", scenarioName);
             }
             if (simulation.getCsvFilesLocation() != null) {
                 CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
                         simulation.getCsvFilesLocation());
                 observationManager.registerConsumer(csvObservationConsumer);
-                simulationManager.addObservationConsumer(csvObservationConsumer);
                 log.debug("Registering CSV Observation Consumer");
             }
         } catch (Exception e) {
@@ -269,7 +267,6 @@ public class ESSimEngine implements IStatusProvider {
                 KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
                 kpiObservationConsumer.init(simulationId);
                 observationManager.registerConsumer(kpiObservationConsumer);
-                simulationManager.addObservationConsumer(kpiObservationConsumer);
                 log.debug("Registering KPI Observation Consumer for {}", kpiCommunicator.getType());
                 List<KPIModule> modules = simulation.getKpiModule().getModules();
                 KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);

@@ -49,7 +49,8 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 	private final static long TIME_OUT_IN_SEC = getTimeout();
 	private String simulationId;
-	private EssimTime time;
+    private final ObservationManager observationManager;
+    private EssimTime time;
 	private ThreadPoolExecutor simulationExecutor;
 	private AtomicInteger solverTypeIndex;
 	private int numOfSolvers;
@@ -57,7 +58,6 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private double status;
 	@Getter
 	public String description;
-	private List<IObservationConsumer> observationConsumers;
 	private HashMap<Integer, List<TransportSolver>> solverBlock;
 	private List<Simulatable> otherSims;
 	@Getter
@@ -78,14 +78,14 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		return Long.parseLong(timeout);
 	}
 
-	public SimulationManager(String simulationId, LocalDateTime startDateTime, LocalDateTime endDateTime,
-			EssimDuration simStepLength, IMongoBackend mongo) {
+	public SimulationManager(String simulationId, EssimTime simulationTime, IMongoBackend mongo, ObservationManager observationManager) {
 		this.mongo = mongo;
 		this.simulationId = simulationId;
-		solverTypeIndex = new AtomicInteger();
+        this.observationManager = observationManager;
+        solverTypeIndex = new AtomicInteger();
 		solverBlock = new HashMap<Integer, List<TransportSolver>>();
 		otherSims = new ArrayList<Simulatable>();
-		time = new EssimTime(startDateTime, endDateTime, simStepLength);
+		time = simulationTime;
 		interrupted = false;
 		interruptedCause = "";
 
@@ -188,12 +188,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			}
 			stopSolvers();
 
-			if (observationConsumers != null) {
-				log.debug("Please wait while the data is flushed to the database. This could take a few seconds...");
-				for (IObservationConsumer consumer : observationConsumers) {
-					consumer.cleanup();
-				}
-			}
+			observationManager.cleanupConsumers();
 
 			if (msoClient != null) {
 				log.debug("Simulation done. Waiting for external models to terminate.");
@@ -320,15 +315,4 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 	}
 
-	@Override
-	public void setObservationConsumers(List<IObservationConsumer> consumers) {
-		this.observationConsumers = consumers;
-	}
-
-	public void addObservationConsumer(IObservationConsumer consumer) {
-		if (observationConsumers == null) {
-			observationConsumers = new ArrayList<IObservationConsumer>();
-		}
-		observationConsumers.add(consumer);
-	}
 }
