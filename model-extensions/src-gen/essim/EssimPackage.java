@@ -700,6 +700,197 @@ public interface EssimPackage extends EPackage {
 	int ESSIM_TIME_SERIES_PROFILE_OPERATION_COUNT = EsdlPackage.TIME_SERIES_PROFILE_OPERATION_COUNT + 1;
 
 	/**
+	 * The meta object id for the '{@link essim.impl.ESSIMDataTableProfileImpl <em>ESSIM Data Table Profile</em>}' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @see essim.impl.ESSIMDataTableProfileImpl
+	 * @see essim.impl.EssimPackageImpl#getESSIMDataTableProfile()
+	 * @generated
+	 */
+	int ESSIM_DATA_TABLE_PROFILE = 5;
+
+	/**
+	 * The feature id for the '<em><b>Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__NAME = EsdlPackage.DATA_TABLE_PROFILE__NAME;
+
+	/**
+	 * The feature id for the '<em><b>Profile Type</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__PROFILE_TYPE = EsdlPackage.DATA_TABLE_PROFILE__PROFILE_TYPE;
+
+	/**
+	 * The feature id for the '<em><b>Id</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__ID = EsdlPackage.DATA_TABLE_PROFILE__ID;
+
+	/**
+	 * The feature id for the '<em><b>Data Source</b></em>' containment reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__DATA_SOURCE = EsdlPackage.DATA_TABLE_PROFILE__DATA_SOURCE;
+
+	/**
+	 * The feature id for the '<em><b>Profile Quantity And Unit</b></em>' containment reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__PROFILE_QUANTITY_AND_UNIT = EsdlPackage.DATA_TABLE_PROFILE__PROFILE_QUANTITY_AND_UNIT;
+
+	/**
+	 * The feature id for the '<em><b>Interpolation Method</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__INTERPOLATION_METHOD = EsdlPackage.DATA_TABLE_PROFILE__INTERPOLATION_METHOD;
+
+	/**
+	 * The feature id for the '<em><b>Multiplier</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__MULTIPLIER = EsdlPackage.DATA_TABLE_PROFILE__MULTIPLIER;
+
+	/**
+	 * The feature id for the '<em><b>Start Date</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__START_DATE = EsdlPackage.DATA_TABLE_PROFILE__START_DATE;
+
+	/**
+	 * The feature id for the '<em><b>End Date</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__END_DATE = EsdlPackage.DATA_TABLE_PROFILE__END_DATE;
+
+	/**
+	 * The feature id for the '<em><b>Table Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__TABLE_NAME = EsdlPackage.DATA_TABLE_PROFILE__TABLE_NAME;
+
+	/**
+	 * The feature id for the '<em><b>Column Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__COLUMN_NAME = EsdlPackage.DATA_TABLE_PROFILE__COLUMN_NAME;
+
+	/**
+	 * The feature id for the '<em><b>Time Column Name</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__TIME_COLUMN_NAME = EsdlPackage.DATA_TABLE_PROFILE__TIME_COLUMN_NAME;
+
+	/**
+	 * The feature id for the '<em><b>Filter</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__FILTER = EsdlPackage.DATA_TABLE_PROFILE__FILTER;
+
+	/**
+	 * The feature id for the '<em><b>Schema</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__SCHEMA = EsdlPackage.DATA_TABLE_PROFILE__SCHEMA;
+
+	/**
+	 * The feature id for the '<em><b>Configuration</b></em>' reference.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE__CONFIGURATION = EsdlPackage.DATA_TABLE_PROFILE__CONFIGURATION;
+
+	/**
+	 * The number of structural features of the '<em>ESSIM Data Table Profile</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE_FEATURE_COUNT = EsdlPackage.DATA_TABLE_PROFILE_FEATURE_COUNT + 0;
+
+	/**
+	 * The operation id for the '<em>Get Profile</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE___GET_PROFILE__DATE_DATE_DURATION = EsdlPackage.DATA_TABLE_PROFILE___GET_PROFILE__DATE_DATE_DURATION;
+
+	/**
+	 * The operation id for the '<em>Set Profile</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE___SET_PROFILE__ELIST = EsdlPackage.DATA_TABLE_PROFILE___SET_PROFILE__ELIST;
+
+	/**
+	 * The operation id for the '<em>Init Profile</em>' operation.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE___INIT_PROFILE__DATE_DATE_DURATION = EsdlPackage.DATA_TABLE_PROFILE_OPERATION_COUNT
+			+ 0;
+
+	/**
+	 * The number of operations of the '<em>ESSIM Data Table Profile</em>' class.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int ESSIM_DATA_TABLE_PROFILE_OPERATION_COUNT = EsdlPackage.DATA_TABLE_PROFILE_OPERATION_COUNT + 1;
+
+	/**
 	 * The meta object id for the '{@link essim.ProfileRepetitionEnum <em>Profile Repetition Enum</em>}' enum.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -707,7 +898,7 @@ public interface EssimPackage extends EPackage {
 	 * @see essim.impl.EssimPackageImpl#getProfileRepetitionEnum()
 	 * @generated
 	 */
-	int PROFILE_REPETITION_ENUM = 5;
+	int PROFILE_REPETITION_ENUM = 6;
 
 	/**
 	 * Returns the meta object for class '{@link essim.ESSIMInfluxDBProfile <em>ESSIM Influx DB Profile</em>}'.
@@ -801,6 +992,16 @@ public interface EssimPackage extends EPackage {
 	 * @generated
 	 */
 	EClass getESSIMTimeSeriesProfile();
+
+	/**
+	 * Returns the meta object for class '{@link essim.ESSIMDataTableProfile <em>ESSIM Data Table Profile</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for class '<em>ESSIM Data Table Profile</em>'.
+	 * @see essim.ESSIMDataTableProfile
+	 * @generated
+	 */
+	EClass getESSIMDataTableProfile();
 
 	/**
 	 * Returns the meta object for enum '{@link essim.ProfileRepetitionEnum <em>Profile Repetition Enum</em>}'.
@@ -918,6 +1119,16 @@ public interface EssimPackage extends EPackage {
 		 * @generated
 		 */
 		EClass ESSIM_TIME_SERIES_PROFILE = eINSTANCE.getESSIMTimeSeriesProfile();
+
+		/**
+		 * The meta object literal for the '{@link essim.impl.ESSIMDataTableProfileImpl <em>ESSIM Data Table Profile</em>}' class.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @see essim.impl.ESSIMDataTableProfileImpl
+		 * @see essim.impl.EssimPackageImpl#getESSIMDataTableProfile()
+		 * @generated
+		 */
+		EClass ESSIM_DATA_TABLE_PROFILE = eINSTANCE.getESSIMDataTableProfile();
 
 		/**
 		 * The meta object literal for the '{@link essim.ProfileRepetitionEnum <em>Profile Repetition Enum</em>}' enum.

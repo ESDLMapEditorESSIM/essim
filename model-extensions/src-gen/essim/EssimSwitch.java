@@ -15,6 +15,7 @@
  */
 package essim;
 
+import esdl.DataTableProfile;
 import esdl.LegacyAbstractDatabaseProfile;
 import esdl.DateTimeProfile;
 import esdl.ExternalProfile;
@@ -155,6 +156,21 @@ public class EssimSwitch<T> extends Switch<T> {
 				result = defaultCase(theEObject);
 			return result;
 		}
+		case EssimPackage.ESSIM_DATA_TABLE_PROFILE: {
+			ESSIMDataTableProfile essimDataTableProfile = (ESSIMDataTableProfile) theEObject;
+			T result = caseESSIMDataTableProfile(essimDataTableProfile);
+			if (result == null)
+				result = caseDataTableProfile(essimDataTableProfile);
+			if (result == null)
+				result = caseESSIMProfile(essimDataTableProfile);
+			if (result == null)
+				result = caseExternalProfile(essimDataTableProfile);
+			if (result == null)
+				result = caseGenericProfile(essimDataTableProfile);
+			if (result == null)
+				result = defaultCase(theEObject);
+			return result;
+		}
 		default:
 			return defaultCase(theEObject);
 		}
@@ -236,6 +252,21 @@ public class EssimSwitch<T> extends Switch<T> {
 	}
 
 	/**
+	 * Returns the result of interpreting the object as an instance of '<em>ESSIM Data Table Profile</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>ESSIM Data Table Profile</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseESSIMDataTableProfile(ESSIMDataTableProfile object) {
+		return null;
+	}
+
+	/**
 	 * Returns the result of interpreting the object as an instance of '<em>Generic Profile</em>'.
 	 * <!-- begin-user-doc -->
 	 * This implementation returns null;
@@ -266,13 +297,13 @@ public class EssimSwitch<T> extends Switch<T> {
 	}
 
 	/**
-	 * Returns the result of interpreting the object as an instance of '<em>Database Profile</em>'.
+	 * Returns the result of interpreting the object as an instance of '<em>Legacy Abstract Database Profile</em>'.
 	 * <!-- begin-user-doc -->
 	 * This implementation returns null;
 	 * returning a non-null result will terminate the switch.
 	 * <!-- end-user-doc -->
 	 * @param object the target of the switch.
-	 * @return the result of interpreting the object as an instance of '<em>Database Profile</em>'.
+	 * @return the result of interpreting the object as an instance of '<em>Legacy Abstract Database Profile</em>'.
 	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
 	 * @generated
 	 */
@@ -352,6 +383,21 @@ public class EssimSwitch<T> extends Switch<T> {
 	 * @generated
 	 */
 	public T caseTimeSeriesProfile(TimeSeriesProfile object) {
+		return null;
+	}
+
+	/**
+	 * Returns the result of interpreting the object as an instance of '<em>Data Table Profile</em>'.
+	 * <!-- begin-user-doc -->
+	 * This implementation returns null;
+	 * returning a non-null result will terminate the switch.
+	 * <!-- end-user-doc -->
+	 * @param object the target of the switch.
+	 * @return the result of interpreting the object as an instance of '<em>Data Table Profile</em>'.
+	 * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+	 * @generated
+	 */
+	public T caseDataTableProfile(DataTableProfile object) {
 		return null;
 	}
 

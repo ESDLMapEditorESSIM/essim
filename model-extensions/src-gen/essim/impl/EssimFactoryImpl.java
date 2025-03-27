@@ -64,6 +64,8 @@ public class EssimFactoryImpl extends EFactoryImpl implements EssimFactory {
 			return createESSIMSingleValueProfile();
 		case EssimPackage.ESSIM_TIME_SERIES_PROFILE:
 			return createESSIMTimeSeriesProfile();
+		case EssimPackage.ESSIM_DATA_TABLE_PROFILE:
+			return createESSIMDataTableProfile();
 		default:
 			throw new IllegalArgumentException("The class '" + eClass.getName() + "' is not a valid classifier");
 		}
@@ -141,6 +143,17 @@ public class EssimFactoryImpl extends EFactoryImpl implements EssimFactory {
 	public ESSIMTimeSeriesProfile createESSIMTimeSeriesProfile() {
 		ESSIMTimeSeriesProfileImpl essimTimeSeriesProfile = new ESSIMTimeSeriesProfileImpl();
 		return essimTimeSeriesProfile;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
+	public ESSIMDataTableProfile createESSIMDataTableProfile() {
+		ESSIMDataTableProfileImpl essimDataTableProfile = new ESSIMDataTableProfileImpl();
+		return essimDataTableProfile;
 	}
 
 	/**

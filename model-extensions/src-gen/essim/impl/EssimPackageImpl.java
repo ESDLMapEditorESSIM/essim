@@ -19,6 +19,7 @@ import esdl.EsdlPackage;
 
 import esdl.impl.EsdlPackageImpl;
 
+import essim.ESSIMDataTableProfile;
 import essim.ESSIMDateTimeProfile;
 import essim.ESSIMInfluxDBProfile;
 import essim.ESSIMProfile;
@@ -78,6 +79,13 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 	 * @generated
 	 */
 	private EClass essimTimeSeriesProfileEClass = null;
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	private EClass essimDataTableProfileEClass = null;
 
 	/**
 	 * <!-- begin-user-doc -->
@@ -258,6 +266,16 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 	 * @generated
 	 */
 	@Override
+	public EClass getESSIMDataTableProfile() {
+		return essimDataTableProfileEClass;
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	@Override
 	public EEnum getProfileRepetitionEnum() {
 		return profileRepetitionEnumEEnum;
 	}
@@ -306,6 +324,8 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 
 		essimTimeSeriesProfileEClass = createEClass(ESSIM_TIME_SERIES_PROFILE);
 
+		essimDataTableProfileEClass = createEClass(ESSIM_DATA_TABLE_PROFILE);
+
 		// Create enums
 		profileRepetitionEnumEEnum = createEEnum(PROFILE_REPETITION_ENUM);
 	}
@@ -350,6 +370,8 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 		essimSingleValueProfileEClass.getESuperTypes().add(this.getESSIMProfile());
 		essimTimeSeriesProfileEClass.getESuperTypes().add(theEsdlPackage.getTimeSeriesProfile());
 		essimTimeSeriesProfileEClass.getESuperTypes().add(this.getESSIMProfile());
+		essimDataTableProfileEClass.getESuperTypes().add(theEsdlPackage.getDataTableProfile());
+		essimDataTableProfileEClass.getESuperTypes().add(this.getESSIMProfile());
 
 		// Initialize classes, features, and operations; add parameters
 		initEClass(essimInfluxDBProfileEClass, ESSIMInfluxDBProfile.class, "ESSIMInfluxDBProfile", !IS_ABSTRACT,
@@ -380,6 +402,9 @@ public class EssimPackageImpl extends EPackageImpl implements EssimPackage {
 				!IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 
 		initEClass(essimTimeSeriesProfileEClass, ESSIMTimeSeriesProfile.class, "ESSIMTimeSeriesProfile", !IS_ABSTRACT,
+				!IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+
+		initEClass(essimDataTableProfileEClass, ESSIMDataTableProfile.class, "ESSIMDataTableProfile", !IS_ABSTRACT,
 				!IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 
 		// Initialize enums and add enum literals

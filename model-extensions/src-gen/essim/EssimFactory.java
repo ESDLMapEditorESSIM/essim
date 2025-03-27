@@ -71,6 +71,15 @@ public interface EssimFactory extends EFactory {
 	ESSIMTimeSeriesProfile createESSIMTimeSeriesProfile();
 
 	/**
+	 * Returns a new object of class '<em>ESSIM Data Table Profile</em>'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return a new object of class '<em>ESSIM Data Table Profile</em>'.
+	 * @generated
+	 */
+	ESSIMDataTableProfile createESSIMDataTableProfile();
+
+	/**
 	 * Returns the package supported by this factory.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->

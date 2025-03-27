@@ -29,6 +29,7 @@
     <genClasses ecoreClass="essim.ecore#//ESSIMDateTimeProfile"/>
     <genClasses ecoreClass="essim.ecore#//ESSIMSingleValueProfile"/>
     <genClasses ecoreClass="essim.ecore#//ESSIMTimeSeriesProfile"/>
+    <genClasses ecoreClass="essim.ecore#//ESSIMDataTableProfile"/>
   </genPackages>
   <genPackages prefix="Esdl" utilityPackageSuffix="" ecorePackage="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#/">
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CommodityEnum">
@@ -56,6 +57,7 @@
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AreaScopeEnum/STATE"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AreaScopeEnum/COUNTRY"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AreaScopeEnum/CONTINENT"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AreaScopeEnum/SERVICE_AREA"/>
     </genEnums>
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ProfileTypeEnum">
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ProfileTypeEnum/UNDEFINED"/>
@@ -412,6 +414,7 @@
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//UnitEnum/NEWTON"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//UnitEnum/AMPERE"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//UnitEnum/DEGREES"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//UnitEnum/TONNE"/>
     </genEnums>
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//TimeUnitEnum">
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//TimeUnitEnum/NONE"/>
@@ -428,6 +431,7 @@
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasConversionTypeEnum/UNDEFINED"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasConversionTypeEnum/SMR"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasConversionTypeEnum/ATR"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasConversionTypeEnum/METHANATION"/>
     </genEnums>
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVInstallationTypeEnum">
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVInstallationTypeEnum/UNDEFINED"/>
@@ -437,6 +441,7 @@
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVInstallationTypeEnum/ROAD"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVInstallationTypeEnum/FIELD"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVInstallationTypeEnum/WATER"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVInstallationTypeEnum/CONCENTRATED_SOLAR"/>
     </genEnums>
     <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbineTypeEnum">
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbineTypeEnum/UNDEFINED"/>
@@ -589,6 +594,37 @@
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BufferDistanceTypeEnum/PARTICULATE_MATTER"/>
       <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BufferDistanceTypeEnum/NOX_EMISSIONS"/>
     </genEnums>
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum">
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/UNDEFINED"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/STEAM_TURBINE"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/INTERNAL_COMBUSTION"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/COMBINED_CYCLE_GAS_TURBINE"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/OPEN_CYCLE_GAS_TURBINE"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/INTEGRARED_COMBUSTION_COMBINED_CYCLE"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/SUPER_CRITICAL_STEAM_TURBINE"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/NUCLEAR_2ND_GENERATION"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/NUCLEAR_3RD_GENERATION"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/NUCLEAR_4TH_GENERATION"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlantTypeEnum/WASTE_INCENERATION"/>
+    </genEnums>
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum">
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/UNDEFINED"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/SQL"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/POSTGRESQL"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/MYSQL"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/MSSQL"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/DUCKDB"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/INFLUXDB"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseTypeEnum/TIMESCALE"/>
+    </genEnums>
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum">
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum/UNDEFINED"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum/CSV"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum/EXCEL"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum/PARQUET"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum/NETCDF"/>
+      <genEnumLiterals ecoreEnumLiteral="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileTypeEnum/S3"/>
+    </genEnums>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergyAsset">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergyAsset/port"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergyAsset/controlStrategy"/>
@@ -603,6 +639,8 @@
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Consumer">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Consumer/consType"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Consumer/power"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Consumer/operationalHours"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Consumer/fullLoadHours"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Storage">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Storage/capacity"/>
@@ -622,6 +660,8 @@
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Transport">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Transport/capacity"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Transport/efficiency"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Transport/operationalHours"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Transport/fullLoadHours"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystem">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystem/name"/>
@@ -637,11 +677,13 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystem/version"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystem/templates"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystem/esdlVersion"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystem/group"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbine">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbine/rotorDiameter"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbine/height"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbine/type"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindTurbine/powerCurveTable"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVPanel">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVPanel/panelEfficiency"/>
@@ -651,6 +693,7 @@
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Battery">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Battery/maxChargeDischargeCycles"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Battery/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityNetwork">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityNetwork/voltage"/>
@@ -682,6 +725,7 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Area/geometry"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Area/measures"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Area/sector"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Area/logicalGroup"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Port">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Port/id"/>
@@ -691,6 +735,7 @@
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Port/carrier"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Port/simultaneousPower"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Port/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Port/constraint"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AggregatedProducer">
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AggregatedProducer/aggregationOf"/>
@@ -785,6 +830,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GeothermalSource/flowRate"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GeothermalSource/pumpPower"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GeothermalSource/geothermalPotential"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GeothermalSource/powerFactor"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoGeneration">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoGeneration/heatEfficiency"/>
@@ -793,12 +839,14 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoGeneration/HERatio"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoGeneration/fuelType"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoGeneration/leadCommodity"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoGeneration/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatPump">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatPump/source"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatPump/stages"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatPump/COP"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatPump/additionalHeatingSourceType"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatPump/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatingDemand">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatingDemand/type"/>
@@ -806,7 +854,9 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatingDemand/minTemperature"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatingDemand/maxTemperature"/>
     </genClasses>
-    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityDemand"/>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityDemand">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityDemand/powerFactor"/>
+    </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasDemand"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GeothermalPotential">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GeothermalPotential/temperature"/>
@@ -879,6 +929,8 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlant/effMinLoad"/>
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlant/energyCarrier"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlant/mustRun"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlant/powerFactor"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PowerPlant/type"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractBuilding">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractBuilding/asset"/>
@@ -897,7 +949,9 @@
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Service"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AggregatorService"/>
-    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EVChargingStation"/>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EVChargingStation">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EVChargingStation/powerFactor"/>
+    </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Potential">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Potential/geometry"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Potential/geometryReference"/>
@@ -937,6 +991,8 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Carriers/carrier"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Carriers/dataSource"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Carriers/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Carriers/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Carriers/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FuelCell"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//XToPower"/>
@@ -952,6 +1008,7 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystemInformation/notes"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystemInformation/matters"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystemInformation/environmentalProfiles"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergySystemInformation/dataconfigurations"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Pump">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Pump/pumpCapacity"/>
@@ -959,6 +1016,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Pump/polarMomentOfInertia"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Pump/ratedSpeed"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Pump/pumpCurveTable"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Pump/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Valve">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Valve/type"/>
@@ -1011,7 +1069,9 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoolingDemand">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CoolingDemand/deviceType"/>
     </genClasses>
-    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Airco"/>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Airco">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Airco/powerFactor"/>
+    </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/investmentCosts"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/installationCosts"/>
@@ -1025,6 +1085,10 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/fixedOperationalCosts"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/variableMaintenanceCosts"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/developmentCosts"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/description"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/referenceYear"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CostInformation/decommissioningCosts"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//SpecificLabelDistribution"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//StringLabelDistribution">
@@ -1079,11 +1143,11 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//URIProfile">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//URIProfile/URI"/>
     </genClasses>
-    <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseProfile">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseProfile/host"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseProfile/port"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseProfile/database"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseProfile/filters"/>
+    <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//LegacyAbstractDatabaseProfile">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//LegacyAbstractDatabaseProfile/host"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//LegacyAbstractDatabaseProfile/port"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//LegacyAbstractDatabaseProfile/database"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//LegacyAbstractDatabaseProfile/filters"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//InfluxDBProfile">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//InfluxDBProfile/measurement"/>
@@ -1119,6 +1183,7 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Range">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Range/minValue"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Range/maxValue"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Range/midValue"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//SolarPotential">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//SolarPotential/value"/>
@@ -1139,6 +1204,8 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Profiles">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Profiles/profile"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Profiles/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Profiles/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Profiles/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Parties">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Parties/party"/>
@@ -1146,6 +1213,8 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSources">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSources/dataSource"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSources/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSources/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSources/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/name"/>
@@ -1154,7 +1223,9 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/attribution"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/releaseDate"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/version"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/licence"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/license"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/author"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSource/contactDetails"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergyDemand"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//SolarCollector">
@@ -1188,6 +1259,8 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MobilityFuelInformation/vehicleFuelEfficiency"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MobilityFuelInformation/dataSource"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MobilityFuelInformation/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MobilityFuelInformation/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MobilityFuelInformation/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//VehicleFuelEfficiency">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//VehicleFuelEfficiency/vehicleType"/>
@@ -1210,6 +1283,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Electrolyzer/minLoad"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Electrolyzer/effMaxLoad"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Electrolyzer/effMinLoad"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Electrolyzer/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasStorage">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//GasStorage/minStoragePressure"/>
@@ -1220,6 +1294,8 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Services">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Services/service"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Services/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Services/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Services/description"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ControlStrategy">
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ControlStrategy/energyAsset"/>
@@ -1253,10 +1329,17 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/id"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/name"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/quantityAndUnit"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/kpi"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/description"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/sector"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/carrier"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//KPI/matter"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//QuantityAndUnits">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//QuantityAndUnits/quantityAndUnit"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//QuantityAndUnits/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//QuantityAndUnits/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//QuantityAndUnits/description"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractQuantityAndUnit"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//QuantityAndUnitReference">
@@ -1314,6 +1397,8 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sectors/sector"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sectors/dataSource"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sectors/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sectors/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sectors/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sector">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sector/id"/>
@@ -1321,6 +1406,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sector/description"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sector/dataSource"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sector/code"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sector/sector"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnergyNetwork"/>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractConductor"/>
@@ -1393,6 +1479,7 @@
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVTInstallation">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVTInstallation/type"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PVTInstallation/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsage">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsage/id"/>
@@ -1428,6 +1515,8 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsageInformation">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsageInformation/buildingUsage"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsageInformation/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsageInformation/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingUsageInformation/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingTypeDistribution">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//BuildingTypeDistribution/bin"/>
@@ -1483,7 +1572,9 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Sensor/quantityAndUnit"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Switch"/>
-    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Compressor"/>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Compressor">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Compressor/powerFactor"/>
+    </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PressureReducingValve">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PressureReducingValve/valveCoefficient"/>
     </genClasses>
@@ -1508,6 +1599,7 @@
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindPark">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindPark/numberOfTurbines"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//WindPark/turbinePower"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//IntTargetKPI">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//IntTargetKPI/value"/>
@@ -1530,6 +1622,9 @@
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Templates">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Templates/assetTemplate"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Templates/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Templates/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Templates/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AssetTemplate">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AssetTemplate/asset"/>
@@ -1621,6 +1716,8 @@
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Notes">
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Notes/note"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Notes/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Notes/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Notes/description"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Note">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Note/id"/>
@@ -1646,11 +1743,10 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Matters/id"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Matters/dataSource"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Matters/matter"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Matters/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Matters/description"/>
     </genClasses>
-    <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractMatter">
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractMatter/id"/>
-      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractMatter/name"/>
-    </genClasses>
+    <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractMatter"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MatterReference">
       <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//MatterReference/reference"/>
     </genClasses>
@@ -1662,6 +1758,8 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnvironmentalProfiles/soilTemperatureProfile"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnvironmentalProfiles/relativeHumidityProfile"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnvironmentalProfiles/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnvironmentalProfiles/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//EnvironmentalProfiles/description"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractBehaviour">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractBehaviour/id"/>
@@ -1688,6 +1786,7 @@
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityProducer">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityProducer/minPower"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricityProducer/powerFactor"/>
     </genClasses>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatProducer">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HeatProducer/minTemperature"/>
@@ -1727,6 +1826,7 @@
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HybridHeatPump/heatPumpCOP"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HybridHeatPump/heatPumpCoolingPower"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HybridHeatPump/heatPumpCoolingCOP"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//HybridHeatPump/powerFactor"/>
     </genClasses>
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractBasicConversion">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractBasicConversion/power"/>
@@ -1750,5 +1850,60 @@
     <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ConnectableAsset"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PumpedHydroPower"/>
     <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//CAES"/>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSourceList">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSourceList/dataSource"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSourceList/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataSourceList/description"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//ElectricBoiler"/>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//InstanceYear">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//InstanceYear/year"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PriorityStrategy">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//PriorityStrategy/priority"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Group">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Group/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Group/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Group/description"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Group/member"/>
+    </genClasses>
+    <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractGroupMember">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractGroupMember/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractGroupMember/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractGroupMember/description"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Plan">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//Plan/element"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile/tableName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile/columnName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile/timeColumnName"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile/filter"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile/schema"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataTableProfile/configuration"/>
+    </genClasses>
+    <genClasses image="false" ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractDataConfiguration">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractDataConfiguration/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//AbstractDataConfiguration/id"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseConfiguration">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseConfiguration/database"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseConfiguration/type"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseConfiguration/host"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseConfiguration/port"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DatabaseConfiguration/tls"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileConfiguration">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileConfiguration/path"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//FileConfiguration/type"/>
+    </genClasses>
+    <genClasses ecoreClass="https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataConfigurations">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataConfigurations/configurations"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataConfigurations/id"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataConfigurations/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore#//DataConfigurations/description"/>
+    </genClasses>
   </genPackages>
 </genmodel:GenModel>

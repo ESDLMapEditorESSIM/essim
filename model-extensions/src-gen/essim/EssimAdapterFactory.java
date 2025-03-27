@@ -15,6 +15,7 @@
  */
 package essim;
 
+import esdl.DataTableProfile;
 import esdl.LegacyAbstractDatabaseProfile;
 import esdl.DateTimeProfile;
 import esdl.ExternalProfile;
@@ -112,6 +113,11 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 		}
 
 		@Override
+		public Adapter caseESSIMDataTableProfile(ESSIMDataTableProfile object) {
+			return createESSIMDataTableProfileAdapter();
+		}
+
+		@Override
 		public Adapter caseGenericProfile(GenericProfile object) {
 			return createGenericProfileAdapter();
 		}
@@ -149,6 +155,11 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 		@Override
 		public Adapter caseTimeSeriesProfile(TimeSeriesProfile object) {
 			return createTimeSeriesProfileAdapter();
+		}
+
+		@Override
+		public Adapter caseDataTableProfile(DataTableProfile object) {
+			return createDataTableProfileAdapter();
 		}
 
 		@Override
@@ -241,6 +252,20 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 	}
 
 	/**
+	 * Creates a new adapter for an object of class '{@link essim.ESSIMDataTableProfile <em>ESSIM Data Table Profile</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see essim.ESSIMDataTableProfile
+	 * @generated
+	 */
+	public Adapter createESSIMDataTableProfileAdapter() {
+		return null;
+	}
+
+	/**
 	 * Creates a new adapter for an object of class '{@link esdl.GenericProfile <em>Generic Profile</em>}'.
 	 * <!-- begin-user-doc -->
 	 * This default implementation returns null so that we can easily ignore cases;
@@ -269,7 +294,7 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 	}
 
 	/**
-	 * Creates a new adapter for an object of class '{@link esdl.LegacyAbstractDatabaseProfile <em>Database Profile</em>}'.
+	 * Creates a new adapter for an object of class '{@link esdl.LegacyAbstractDatabaseProfile <em>Legacy Abstract Database Profile</em>}'.
 	 * <!-- begin-user-doc -->
 	 * This default implementation returns null so that we can easily ignore cases;
 	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
@@ -349,6 +374,20 @@ public class EssimAdapterFactory extends AdapterFactoryImpl {
 	 * @generated
 	 */
 	public Adapter createTimeSeriesProfileAdapter() {
+		return null;
+	}
+
+	/**
+	 * Creates a new adapter for an object of class '{@link esdl.DataTableProfile <em>Data Table Profile</em>}'.
+	 * <!-- begin-user-doc -->
+	 * This default implementation returns null so that we can easily ignore cases;
+	 * it's useful to ignore a case when inheritance will catch all the cases anyway.
+	 * <!-- end-user-doc -->
+	 * @return the new adapter.
+	 * @see esdl.DataTableProfile
+	 * @generated
+	 */
+	public Adapter createDataTableProfileAdapter() {
 		return null;
 	}
 
