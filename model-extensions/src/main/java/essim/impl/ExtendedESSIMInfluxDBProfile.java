@@ -86,7 +86,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         } else {
             dataProcessor = new DataProcessor(getProfileType(), getMultiplier());
         }
-        fillCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision), getAnnualChangePercentage());
+        updateCache(startDateString, endDateString, Converter.toEssimDuration(aggregationPrecision), getAnnualChangePercentage());
     }
 
     /*
@@ -108,7 +108,7 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         return eList;
     }
 
-    public void fillCache(String startTimeOfDataset, String endTime, EssimDuration simulationStepLength, double annualChange) {
+    public void updateCache(String startTimeOfDataset, String endTime, EssimDuration simulationStepLength, double annualChange) {
 
         int connectionAttempts = 0;
 
@@ -120,7 +120,8 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
         }
 
         log.debug("Influx Call for: {}", command);
-        ProfileCacheKey profileCacheKey = new ProfileCacheKey(getHost(), getPort(), getDatabase(), getMeasurement(), getField(), getAnnualChangePercentage());
+        String uri = "http://" + getHost() + ":" + getPort();
+        ProfileCacheKey profileCacheKey = new ProfileCacheKey(uri, getDatabase(), getMeasurement(), getField(), getAnnualChangePercentage());
 
         synchronized (ProfileCache.getInstance()) {
             dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);

@@ -1,5 +1,5 @@
 package common;
 
-public record ProfileCacheKey(String host, Integer port, String database, String measurement, String field,
+public record ProfileCacheKey(String uri, String databaseOrSchema, String measurement, String field,
 							  Double annualChangePercentage) {
 }

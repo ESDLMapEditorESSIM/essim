@@ -40,16 +40,16 @@ public class TimeSeriesDataCache {
     @Getter
     private long lastAccessed;
 
-    public TimeSeriesDataCache(String name, List<List<Object>> influxDBSeriesData, double annualChange) {
+    public TimeSeriesDataCache(String name, List<List<Object>> seriesData, double annualChange) {
         this.name = name;
-        int size = influxDBSeriesData.size();
+        int size = seriesData.size();
         totalSize = size;
         timestamps = new LocalDateTime[totalSize];
         values = new double[totalSize];
 
         // validate datatypes
-        if (!influxDBSeriesData.isEmpty()) {
-            List<Object> mainListFirstDataPoint = influxDBSeriesData.getFirst();
+        if (!seriesData.isEmpty()) {
+            List<Object> mainListFirstDataPoint = seriesData.getFirst();
             Object object = mainListFirstDataPoint.get(DATA);
             if (!(object instanceof Number)) {
                 throw new IllegalArgumentException("Error reading timeseries data with name=" + name + ", data is not a numeric datatype, but is of type " + object.getClass().getSimpleName());
@@ -57,7 +57,7 @@ public class TimeSeriesDataCache {
         }
 
         for (int i = 0; i < size; i++) {
-            List<Object> list = influxDBSeriesData.get(i);
+            List<Object> list = seriesData.get(i);
             timestamps[i] = LocalDateTime.parse((String) list.get(TIMESTAMP), DateTimeFormatter.ISO_DATE_TIME);
             values[i] = ((double) list.get(DATA)) * (1 + (annualChange / 100));
         }
