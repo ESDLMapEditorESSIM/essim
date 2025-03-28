@@ -14,20 +14,19 @@ import nl.tno.essim.time.EssimTime;
 import org.eclipse.emf.common.util.EList;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
-import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 public class ExtendedEssimDataTableProfile extends ESSIMDataTableProfileImpl implements ESSIMDataTableProfile {
     private Duration aggregationPrecision;
     private DataProcessor dataProcessor;
     private Connection jdbcConnection;
+    private TimeSeriesDataCache dataCache;
 
     public ExtendedEssimDataTableProfile() {
         super();
@@ -38,8 +37,6 @@ public class ExtendedEssimDataTableProfile extends ESSIMDataTableProfileImpl imp
         if (from == null && to == null && aggregationPrecision == null) {
             return;
         }
-//        ProfileCacheKey profileCacheKey = new ProfileCacheKey(getHost(), getPort(), getDatabase(), getMeasurement(), getField(), getAnnualChangePercentage());
-
         this.aggregationPrecision = aggregationPrecision;
 
         Date profileStartDate = getStartDate();
@@ -69,48 +66,24 @@ public class ExtendedEssimDataTableProfile extends ESSIMDataTableProfileImpl imp
         updateCache(startDate, endDate);
     }
 
-    private Connection getDatabaseConnection() throws SQLException {
-        if (jdbcConnection == null) {
-            AbstractDataConfiguration dataConfiguration = getConfiguration();
-            if (!(dataConfiguration instanceof DatabaseConfiguration)) {
-                throw new UnsupportedOperationException(dataConfiguration.getClass().getSimpleName() + " is not supported yet!");
-            }
-            String baseUri = DatabaseUriFactory.getBaseUri((DatabaseConfiguration) dataConfiguration);
-            ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(baseUri);
-
-            Properties properties = new Properties();
-            properties.setProperty("user", dbCredentials.username());
-            properties.setProperty("password", dbCredentials.password());
-            jdbcConnection = DriverManager.getConnection(DatabaseUriFactory.create((DatabaseConfiguration) dataConfiguration), properties);
-        }
-        return jdbcConnection;
-    }
-
     private void updateCache(ZonedDateTime startDate, ZonedDateTime endDate) {
         AbstractDataConfiguration dataConfiguration = getConfiguration();
         if (!(dataConfiguration instanceof DatabaseConfiguration)) {
             throw new UnsupportedOperationException(dataConfiguration.getClass().getSimpleName() + " is not supported yet!");
         }
 
-        String baseUri = DatabaseUriFactory.getBaseUri((DatabaseConfiguration) dataConfiguration);
-        ProfileCacheKey profileCacheKey = new ProfileCacheKey(baseUri, getSchema(), getTableName(), getColumnName(), null);
+        ProfileDataSupplier profileDataSupplier = ProfileDataSupplierFactory.getProfileDataSupplier((DatabaseConfiguration) dataConfiguration);
+        ProfileCacheKey profileCacheKey = new ProfileCacheKey(profileDataSupplier.createUri((DatabaseConfiguration) dataConfiguration), getSchema(), getTableName(), getColumnName(), 0d);
 
         synchronized (ProfileCache.getInstance()) {
-            TimeSeriesDataCache dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
+            dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
             if (dataCache == null) {
                 log.debug("Profile {} is not cached, proceeding to query database", profileCacheKey);
                 try {
-                    Connection databaseConnection = getDatabaseConnection();
-                    String sql = String.format("SELECT %s as time %s as value FROM %s WHERE time >= ? AND time <= ?", getTimeColumnName(), getColumnName(), getTableName());
-                    try (java.sql.PreparedStatement statement = databaseConnection.prepareStatement(sql)) {
-                        statement.setObject(1, startDate.toOffsetDateTime());
-                        statement.setObject(2, endDate.toOffsetDateTime());
-                        ResultSet resultSet = statement.executeQuery();
-                        // TODO add new constructor to TimeSeriesDataCache which takes a resultSet and fills the cache structure
-                    }
+                    profileDataSupplier.getTimeSeriesDataCache(profileCacheKey, getTimeColumnName(), startDate, endDate);
 
-                } catch (SQLException e) {
-                    log.error("Error querying database @ {}. Trying again...", baseUri, e);
+                } catch (SQLException | ExecutionException e) {
+                    log.error("Error querying database @ {}. Trying again...", profileCacheKey.uri(), e);
                 }
             } else {
                 log.debug("Using profile {} from cache", profileCacheKey);
@@ -119,7 +92,11 @@ public class ExtendedEssimDataTableProfile extends ESSIMDataTableProfileImpl imp
     }
 
     @Override
-    public EList<ProfileElement> getProfile(Date from, Date to, Duration simulationStepLength) {
-        return null;
+    public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
+        if (this.aggregationPrecision != null && !this.aggregationPrecision.getDurationUnit().equals(aggregationPrecision.getDurationUnit()) && (this.aggregationPrecision.getValue() == aggregationPrecision.getValue())) {
+            log.warn("Different aggregation precisions are not (yet) supported and ignored!");
+        }
+        return dataCache.get(EssimTime.dateToLocalDateTime(from), EssimTime.dateToLocalDateTime(to), dataProcessor);
     }
+
 }

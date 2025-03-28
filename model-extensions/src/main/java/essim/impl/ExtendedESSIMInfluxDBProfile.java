@@ -97,15 +97,10 @@ public class ExtendedESSIMInfluxDBProfile extends ESSIMInfluxDBProfileImpl {
      */
     @Override
     public EList<ProfileElement> getProfile(Date from, Date to, Duration aggregationPrecision) {
-
         if (this.aggregationPrecision != null && !this.aggregationPrecision.getDurationUnit().equals(aggregationPrecision.getDurationUnit()) && (this.aggregationPrecision.getValue() == aggregationPrecision.getValue())) {
             log.warn("Different aggregation precisions are not (yet) supported and ignored!");
         }
-        LocalDateTime startTime = EssimTime.dateToLocalDateTime(from);
-        LocalDateTime endTime = EssimTime.dateToLocalDateTime(to);
-
-        EList<ProfileElement> eList = dataCache.get(startTime, endTime, dataProcessor);
-        return eList;
+        return dataCache.get(EssimTime.dateToLocalDateTime(from), EssimTime.dateToLocalDateTime(to), dataProcessor);
     }
 
     public void updateCache(String startTimeOfDataset, String endTime, EssimDuration simulationStepLength, double annualChange) {

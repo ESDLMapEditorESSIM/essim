@@ -24,6 +24,8 @@ import nl.tno.essim.util.DateRangeUtils;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -39,6 +41,33 @@ public class TimeSeriesDataCache {
     private int totalSize;
     @Getter
     private long lastAccessed;
+
+    public TimeSeriesDataCache(String name, ResultSet resultSet, double annualChange) throws SQLException {
+        this.name = name;
+
+        // Move to the end of the ResultSet to get total size
+        resultSet.last();
+        totalSize = resultSet.getRow();
+        resultSet.beforeFirst(); // Reset cursor to the beginning
+
+        timestamps = new LocalDateTime[totalSize];
+        values = new double[totalSize];
+
+        int index = 0;
+
+        while (resultSet.next()) {
+            java.sql.Timestamp timestamp = resultSet.getTimestamp("time");
+            timestamps[index] = timestamp.toLocalDateTime();
+
+            double value = resultSet.getDouble("value");
+            values[index] = value * (1 + (annualChange / 100));
+
+            index++;
+        }
+
+        lastAccessed = System.currentTimeMillis();
+
+    }
 
     public TimeSeriesDataCache(String name, List<List<Object>> seriesData, double annualChange) {
         this.name = name;
