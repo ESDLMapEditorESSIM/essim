@@ -1,13 +1,13 @@
 package nl.tno.essim.util;
 
 import esdl.*;
+import essim.impl.ProfileDataSupplierFactory;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
 import java.util.Date;
-import java.util.List;
 
 public class ProfileUtils {
     public static GenericProfile getEnergyProfile(Port port) {
@@ -53,7 +53,7 @@ public class ProfileUtils {
             Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
             Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
 
-            EList<ProfileElement> profileElements = profile.getProfile(from, to, Converter.toESDLDuration(horizon.getPeriod()));
+            EList<ProfileElement> profileElements = ProfileDataSupplierFactory.getProfileDataSupplier(profile).getProfileElements(from, to, Converter.toESDLDuration(horizon.getPeriod()));
             double totalDurationInMillis = 0;
             double totalValue = 0;
             double weightedSum = 0;
