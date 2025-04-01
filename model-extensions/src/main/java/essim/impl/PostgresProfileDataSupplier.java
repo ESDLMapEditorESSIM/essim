@@ -24,19 +24,18 @@ public class PostgresProfileDataSupplier implements ProfileDataSupplier {
     public PostgresProfileDataSupplier() {
         connectionCache = CacheBuilder.newBuilder()
                 .expireAfterAccess(10, TimeUnit.MINUTES)
-                .build(
-                        new CacheLoader<String, Connection>() {
-                            @Override
-                            public Connection load(@NotNull String jdbcUri) throws Exception {
-                                String baseUri = jdbcUri.substring(0, jdbcUri.indexOf("?"));
-                                ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(baseUri);
+                .build(new CacheLoader<>() {
+                    @Override
+                    public Connection load(@NotNull String jdbcUri) throws Exception {
+                        String baseUri = jdbcUri.substring(0, jdbcUri.indexOf("?"));
+                        ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(baseUri);
 
-                                Properties properties = new Properties();
-                                properties.setProperty("user", dbCredentials.username());
-                                properties.setProperty("password", dbCredentials.password());
-                                return DriverManager.getConnection(jdbcUri, properties);
-                            }
-                        });
+                        Properties properties = new Properties();
+                        properties.setProperty("user", dbCredentials.username());
+                        properties.setProperty("password", dbCredentials.password());
+                        return DriverManager.getConnection(jdbcUri, properties);
+                    }
+                });
     }
 
     @Override

@@ -26,6 +26,13 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     private Connection schemaConnection;
     private String schemaName;
     private HashMap<String, PostgresTableCache> tables = new HashMap<>();
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public PostgresObservationConsumer(String jdbcUrl, String username, String password) {
         this.jdbcUrl = jdbcUrl;

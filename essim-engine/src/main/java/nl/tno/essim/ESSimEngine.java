@@ -446,37 +446,42 @@ public class ESSimEngine implements IStatusProvider {
         return grafanaClient.getDashboardUrl();
     }
 
-    public void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
-        EList<Asset> areaAssets = area.getAsset();
-        if (areaAssets != null) {
-            for (Asset asset : areaAssets) {
-                if (asset instanceof EnergyAsset) {
-                    EnergyAsset energyAsset = (EnergyAsset) asset;
-                    assetList.add(energyAsset);
-                } else if (asset instanceof AbstractBuilding) {
-                    AbstractBuilding building = (AbstractBuilding) asset;
-                    findAllEnergyAssets(building, assetList);
-                }
-            }
-        }
+    public interface EnergyAssetVisitor {
+        void visit(EnergyAsset energyAsset);
+    }
+
+    public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
+        visitAllEnergyAssets(area, assetList::add);
+    }
+
+    public static void visitAllEnergyAssets(Area area, EnergyAssetVisitor visitor) {
+        // Process assets within the current area
+        processAssets(area.getAsset(), visitor);
+
+        // Recursively process sub-areas
         EList<Area> subAreas = area.getArea();
         if (subAreas != null) {
-            for (Area subArea : area.getArea()) {
-                findAllEnergyAssets(subArea, assetList);
+            for (Area subArea : subAreas) {
+                visitAllEnergyAssets(subArea, visitor);
             }
         }
     }
 
-    public void findAllEnergyAssets(AbstractBuilding building, List<EnergyAsset> assetList) {
-        EList<Asset> buildingAssets = building.getAsset();
-        if (buildingAssets != null) {
-            for (Asset asset : buildingAssets) {
+    public static void visitAllEnergyAssets(AbstractBuilding building, EnergyAssetVisitor visitor) {
+        // Process assets within the current building
+        processAssets(building.getAsset(), visitor);
+    }
+
+    // Refactored shared code logic to handle any type of asset list
+    private static void processAssets(EList<Asset> assets, EnergyAssetVisitor visitor) {
+        if (assets != null) {
+            for (Asset asset : assets) {
                 if (asset instanceof EnergyAsset) {
                     EnergyAsset energyAsset = (EnergyAsset) asset;
-                    assetList.add(energyAsset);
+                    visitor.visit(energyAsset);
                 } else if (asset instanceof AbstractBuilding) {
                     AbstractBuilding subBuilding = (AbstractBuilding) asset;
-                    findAllEnergyAssets(subBuilding, assetList);
+                    visitAllEnergyAssets(subBuilding, visitor);
                 }
             }
         }

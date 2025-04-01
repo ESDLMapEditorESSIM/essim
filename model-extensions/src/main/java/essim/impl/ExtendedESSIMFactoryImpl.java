@@ -15,6 +15,7 @@
  */
 package essim.impl;
 
+import essim.ESSIMDataTableProfile;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.plugin.EcorePlugin;
 
@@ -64,5 +65,8 @@ public class ExtendedESSIMFactoryImpl extends EssimFactoryImpl implements Extend
 		return new ExtendedESSIMTimeSeriesProfile();
 	}
 
-
+	@Override
+	public ESSIMDataTableProfile createESSIMDataTableProfile() {
+		return new ExtendedEssimDataTableProfile();
+	}
 }
