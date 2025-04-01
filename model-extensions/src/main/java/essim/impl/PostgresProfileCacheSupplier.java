@@ -17,11 +17,11 @@ import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-public class PostgresProfileDataSupplier implements ProfileDataSupplier {
+public class PostgresProfileCacheSupplier implements ProfileCacheSupplier {
     private static final String JDBC_URL_FORMAT = "jdbc:postgresql://%s:%d%s%s";
     private final LoadingCache<String, Connection> connectionCache;
 
-    public PostgresProfileDataSupplier() {
+    public PostgresProfileCacheSupplier() {
         connectionCache = CacheBuilder.newBuilder()
                 .expireAfterAccess(10, TimeUnit.MINUTES)
                 .build(new CacheLoader<>() {

@@ -6,7 +6,7 @@ import esdl.DatabaseConfiguration;
 
 import java.time.ZonedDateTime;
 
-public class InfluxDBProfileDataSupplier implements ProfileDataSupplier {
+public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
     @Override
     public String createUri(DatabaseConfiguration configuration) {
         return "";

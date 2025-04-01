@@ -72,15 +72,16 @@ public class ExtendedEssimDataTableProfile extends ESSIMDataTableProfileImpl imp
             throw new UnsupportedOperationException(dataConfiguration.getClass().getSimpleName() + " is not supported yet!");
         }
 
-        ProfileDataSupplier profileDataSupplier = ProfileDataSupplierFactory.getProfileDataSupplier((DatabaseConfiguration) dataConfiguration);
-        ProfileCacheKey profileCacheKey = new ProfileCacheKey(profileDataSupplier.createUri((DatabaseConfiguration) dataConfiguration), getSchema(), getTableName(), getColumnName(), 0d);
+        ProfileCacheSupplier profileCacheSupplier = ProfileDataSupplierFactory.getProfileDataSupplier((DatabaseConfiguration) dataConfiguration);
+        ProfileCacheKey profileCacheKey = new ProfileCacheKey(profileCacheSupplier.createUri((DatabaseConfiguration) dataConfiguration), getSchema(), getTableName(), getColumnName(), 0d);
 
         synchronized (ProfileCache.getInstance()) {
             dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
             if (dataCache == null) {
                 log.debug("Profile {} is not cached, proceeding to query database", profileCacheKey);
                 try {
-                    profileDataSupplier.getTimeSeriesDataCache(profileCacheKey, getTimeColumnName(), startDate, endDate);
+                    dataCache = profileCacheSupplier.getTimeSeriesDataCache(profileCacheKey, getTimeColumnName(), startDate, endDate);
+                    ProfileCache.getInstance().cache(profileCacheKey, dataCache);
 
                 } catch (SQLException | ExecutionException e) {
                     log.error("Error querying database @ {}. Trying again...", profileCacheKey.uri(), e);

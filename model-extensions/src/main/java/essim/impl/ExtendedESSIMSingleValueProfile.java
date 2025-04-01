@@ -28,6 +28,7 @@ import nl.tno.essim.util.Converter;
 
 public class ExtendedESSIMSingleValueProfile extends ESSIMSingleValueProfileImpl {
 
+	@Override
 	public void initProfile(Date from, Date to, Duration aggregationPrecision) {
 		if (from == null && to == null && aggregationPrecision == null) {
 			return;
