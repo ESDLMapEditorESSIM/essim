@@ -72,7 +72,7 @@ public class ExtendedEssimDataTableProfile extends ESSIMDataTableProfileImpl imp
             throw new UnsupportedOperationException(dataConfiguration.getClass().getSimpleName() + " is not supported yet!");
         }
 
-        ProfileCacheSupplier profileCacheSupplier = ProfileDataSupplierFactory.getProfileDataSupplier((DatabaseConfiguration) dataConfiguration);
+        ProfileCacheSupplier profileCacheSupplier = ProfileCacheSupplierFactory.getProfileDataSupplier((DatabaseConfiguration) dataConfiguration);
         ProfileCacheKey profileCacheKey = new ProfileCacheKey(profileCacheSupplier.createUri((DatabaseConfiguration) dataConfiguration), getSchema(), getTableName(), getColumnName(), 0d);
 
         synchronized (ProfileCache.getInstance()) {

@@ -5,7 +5,7 @@ import esdl.DatabaseTypeEnum;
 
 import java.util.HashMap;
 
-public class ProfileDataSupplierFactory {
+public class ProfileCacheSupplierFactory {
     private static HashMap<DatabaseTypeEnum, ProfileCacheSupplier> generatorMap = new HashMap<>();
     static {
         generatorMap.put(DatabaseTypeEnum.POSTGRESQL, new PostgresProfileCacheSupplier());
