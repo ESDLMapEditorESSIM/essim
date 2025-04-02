@@ -18,9 +18,6 @@ package nl.tno.essim.transportsolver;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import esdl.*;
-import essim.ESSIMDateTimeProfile;
-import essim.ESSIMInfluxDBProfile;
-import essim.ESSIMTimeSeriesProfile;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
@@ -39,14 +36,12 @@ import nl.tno.essim.time.Horizon;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
-import nl.tno.essim.util.Converter;
 
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class TransportSolver implements ITransportSolver, Simulatable, IObservationProvider {
@@ -382,21 +377,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                 RemoteLogicNode remoteLogicNode = (RemoteLogicNode) node;
                 remoteLogicNode.init();
             }
-
-            EnergyAsset asset = node.getAsset();
-            for (Port port : asset.getPort()) {
-                initialiseProfile(port);
-            }
-
-            if (asset.getControlStrategy() != null) {
-                if (asset.getControlStrategy() instanceof DrivenByProfile) {
-                    initialiseProfile(((DrivenByProfile) asset.getControlStrategy()).getProfile());
-                }
-            }
-        }
-
-        if (carrier.getCost() != null) {
-            initialiseProfile(carrier.getCost());
         }
     }
 
@@ -458,27 +438,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
     @Override
     public void stop() {
-        for (EnergyAsset asset : deviceNodes.stream().map(x -> x.getAsset()).collect(Collectors.toList())) {
-            for (Port port : asset.getPort()) {
-                for (GenericProfile profile : port.getProfile()) {
-                    if (profile != null) {
-                        if (profile instanceof ProfileReference) {
-                            profile = ((ProfileReference) profile).getReference();
-                        }
-                        if (profile instanceof ESSIMInfluxDBProfile) {
-                            ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
-                            profileImpl.initProfile(null, null, null);
-                        } else if (profile instanceof ESSIMDateTimeProfile) {
-                            ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
-                            dtProfile.initProfile(null, null, null);
-                        } else if (profile instanceof ESSIMTimeSeriesProfile) {
-                            ESSIMTimeSeriesProfile tsProfile = (ESSIMTimeSeriesProfile) profile;
-                            tsProfile.initProfile(null, null, null);
-                        }
-                    }
-                }
-            }
-        }
         for (Node node : deviceNodes) {
             if (node instanceof RemoteLogicNode) {
                 ((RemoteLogicNode) node).stop();
@@ -509,38 +468,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     @Override
     public String toString() {
         return getId();
-    }
-
-    private void initialiseProfile(Port port) {
-        for (GenericProfile profile : port.getProfile()) {
-            initialiseProfile(profile);
-        }
-    }
-
-    private void initialiseProfile(GenericProfile profile) {
-        if (profile != null) {
-            if (profile instanceof ProfileReference) {
-                profile = ((ProfileReference) profile).getReference();
-            }
-            // TODO: do instanceof check on ESSIMProfile, as all not-trivial profiles
-            // implement that interface
-            if (profile instanceof ESSIMInfluxDBProfile) {
-                ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
-                profileImpl.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-                        EssimTime.localDateTimeToDate(simulationEndTime),
-                        Converter.toESDLDuration(simulationStepLength));
-            } else if (profile instanceof ESSIMDateTimeProfile) {
-                ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
-                dtProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-                        EssimTime.localDateTimeToDate(simulationEndTime),
-                        Converter.toESDLDuration(simulationStepLength));
-            } else if (profile instanceof ESSIMTimeSeriesProfile) {
-                ESSIMTimeSeriesProfile tsProfile = (ESSIMTimeSeriesProfile) profile;
-                tsProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-                        EssimTime.localDateTimeToDate(simulationEndTime),
-                        Converter.toESDLDuration(simulationStepLength));
-            }
-        }
     }
 
     @Override
