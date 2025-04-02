@@ -24,6 +24,9 @@ public class TimeSeriesProfileDataHandler implements ProfileDataHandler {
 
     public TimeSeriesProfileDataHandler(TimeSeriesProfile profile, Date from, Date to) {
         this.profile = profile;
+        if (from == null && to == null) {
+            return;
+        }
         synchronized (lock) {
             long seriesStart = EssimTime.localDateTimeToDate(EssimTime.dateFromGUI(profile.getStartDateTime())).getTime() / 1000L;
             if ((from.getTime() - profileStart) % profile.getTimestep() == 0) {

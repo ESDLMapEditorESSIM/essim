@@ -36,7 +36,12 @@ public class ProfileDataManager {
     }
 
     public ProfileDataHandler getProfileDataSupplier(GenericProfile profile) {
-        return profileDataSuppliers.get(profile);
+        ProfileDataHandler profileDataHandler = profileDataSuppliers.get(profile);
+        if (profileDataHandler == null) {
+            profileDataHandler = createProfileDataSupplier(profile);
+            profileDataSuppliers.put(profile, profileDataHandler);
+        }
+        return profileDataHandler;
     }
 
     private ProfileDataHandler createProfileDataSupplier(GenericProfile profile) {
@@ -120,6 +125,7 @@ public class ProfileDataManager {
         if (profiles.isEmpty()) {
             TimeSeriesProfile profile = EsdlFactory.eINSTANCE.createTimeSeriesProfile();
             profile.setTimestep((int) timestamp.getSimulationStepLength().getSeconds());
+            profile.setStartDateTime(EssimTime.localDateTimeToDate(timestamp.getSimulationStartTime()));
             updatedProfile = writeProfile(profile, timestamp, value);
             profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
         } else {
