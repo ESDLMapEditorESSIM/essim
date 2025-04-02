@@ -122,11 +122,6 @@
             </dependency>
             <dependency>
                 <groupId>nl.tno.essim</groupId>
-                <artifactId>model-extensions</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>nl.tno.essim</groupId>
                 <artifactId>commons</artifactId>
                 <version>${project.version}</version>
             </dependency>
