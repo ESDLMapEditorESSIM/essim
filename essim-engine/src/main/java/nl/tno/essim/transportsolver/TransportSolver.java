@@ -27,6 +27,7 @@ import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.*;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
+import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
@@ -76,9 +77,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private int transportCount;
     private int transportWithCapacityCount;
     private Collection<NodeConfiguration> nodeConfig;
-    private String simulationId;
+    //    private String simulationId;
     private String esdlString;
     private Market market;
+    private ISimulationManager simulationManager;
 
     public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
                            Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem,
@@ -203,7 +205,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         rootRole = roleMap.get(rootAsset);
 
         String rootAssetId = rootAsset.getId();
-        NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
+        NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationManager.getName()).asset(rootAsset)
                 .esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
         if (nodeConfig != null) {
             this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
@@ -246,8 +248,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                 String nodeId = connectedAsset.getId();
                 Port connectedPort = assetConnections.get(connectedAsset);
                 NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).connectedPort(connectedPort)
-                        .simulationId(simulationId).asset(connectedAsset).parent(parentNode).networkId(getId())
-                        .esdlString(esdlString).carrier(carrier);
+                        .simulationId(simulationManager.getName()).asset(connectedAsset).parent(parentNode).networkId(getId())
+                        .esdlString(esdlString).carrier(carrier).profileDataManager(simulationManager.getProfileDataManager());
                 for (Port myPort : connectedAsset.getPort()) {
                     if (myPort instanceof InPort) {
                         InPort myInPort = (InPort) myPort;
@@ -451,7 +453,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
             }
         }
 
-        EmissionManager.getInstance(simulationId).organiseNetwork(getId());
+        EmissionManager.getInstance(simulationManager.getName()).organiseNetwork(getId());
 
     }
 
@@ -487,7 +489,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
     @Override
     public void setSimulationManager(ISimulationManager manager) {
-        this.simulationId = manager.getName();
+//        this.simulationId = manager.getName();
     }
 
     @Override
@@ -550,6 +552,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     @Override
     public boolean hasAnyTransportAssetWithCapacity() {
         return transportWithCapacityCount >= 1;
+    }
+
+    @Override
+    public ISimulationManager getSimulationManager() {
+        return simulationManager;
     }
 
     @Override

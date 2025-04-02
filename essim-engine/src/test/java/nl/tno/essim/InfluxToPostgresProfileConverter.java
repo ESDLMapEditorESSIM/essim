@@ -18,7 +18,7 @@ public class InfluxToPostgresProfileConverter {
 
     public static void main(String[] args) throws IOException {
         String esdl = Files.readString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue.esdl"));
-        EnergySystem energySystem = ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8)));
+        EnergySystem energySystem = (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst();
         InfluxToPostgresProfileConverter converter = new InfluxToPostgresProfileConverter();
         HashMap<String, String> urlMap = new HashMap<>();
 //        urlMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");

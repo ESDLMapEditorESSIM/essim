@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import essim.impl.ProfileDataManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.ISimulationManager;
@@ -39,8 +40,6 @@ import nl.tno.essim.commons.Simulatable;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
-import nl.tno.essim.observation.IObservationConsumer;
-import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
 
@@ -50,6 +49,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private final static long TIME_OUT_IN_SEC = getTimeout();
 	private String simulationId;
     private final ObservationManager observationManager;
+    private final ProfileDataManager profileDataManager;
     private EssimTime time;
 	private ThreadPoolExecutor simulationExecutor;
 	private AtomicInteger solverTypeIndex;
@@ -78,10 +78,11 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 		return Long.parseLong(timeout);
 	}
 
-	public SimulationManager(String simulationId, EssimTime simulationTime, IMongoBackend mongo, ObservationManager observationManager) {
+	public SimulationManager(String simulationId, EssimTime simulationTime, IMongoBackend mongo, ObservationManager observationManager, ProfileDataManager profileDataManager) {
 		this.mongo = mongo;
 		this.simulationId = simulationId;
         this.observationManager = observationManager;
+        this.profileDataManager = profileDataManager;
         solverTypeIndex = new AtomicInteger();
 		solverBlock = new HashMap<Integer, List<TransportSolver>>();
 		otherSims = new ArrayList<Simulatable>();
@@ -113,6 +114,11 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	@Override
 	public LocalDateTime getEndDateTime() {
 		return time.getSimulationEndTime();
+	}
+
+	@Override
+	public ProfileDataManager getProfileDataManager() {
+		return profileDataManager;
 	}
 
 	/*
@@ -159,7 +165,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			}
 
 			started = true;
-			// Run init() for all simulatables
+			profileDataManager.initializeProfiles();
 			initializeSolvers();
 
 			Instant startTime = Instant.now();

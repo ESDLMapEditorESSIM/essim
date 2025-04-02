@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import esdl.*;
 import esdl.impl.ItemImpl;
+import essim.impl.ProfileDataManager;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -66,6 +67,7 @@ public abstract class Node implements INode {
     protected long timeStep;
     protected Horizon now;
     protected Port connectedPort;
+    protected ProfileDataManager profileDataManager;
 
     /**
      * these are set by {@link #createBidCurve(long, Horizon, Market)}
@@ -522,6 +524,7 @@ public abstract class Node implements INode {
         @Getter
         @Accessors(fluent = true)
         private String esdlString;
+        private ProfileDataManager profileDataManager;
 
         public NodeBuilder asset(EnergyAsset asset) {
             this.asset = asset;
@@ -531,6 +534,11 @@ public abstract class Node implements INode {
 
         public NodeBuilder config(NodeConfiguration config) {
             this.config = config;
+            return this;
+        }
+
+        public NodeBuilder profileDataManager(ProfileDataManager profileDataManager) {
+            this.profileDataManager = profileDataManager;
             return this;
         }
 
@@ -572,7 +580,9 @@ public abstract class Node implements INode {
                     }
                 }
             }
-
+            if (node !=null) {
+                node.setProfileDataManager(profileDataManager);
+            }
             return node;
         }
 

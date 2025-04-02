@@ -1,7 +1,7 @@
 package nl.tno.essim.util;
 
 import esdl.*;
-import essim.impl.ProfileDataSupplierFactory;
+import essim.impl.ProfileDataManager;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import org.eclipse.emf.common.util.ECollections;
@@ -23,90 +23,6 @@ public class ProfileUtils {
         return energyProfile;
     }
 
-    public static double readProfile(GenericProfile profile, Port port, Horizon horizon) {
-        double values = readProfile(profile, horizon);
-        EnergyAsset energyAsset = port.getEnergyasset();
-        if (isPercentageProfile(profile)) {
-            double ratedPower = 1.0;
-            if (energyAsset instanceof Producer) {
-                Producer producer = (Producer) energyAsset;
-                ratedPower = producer.getPower();
-            } else if (energyAsset instanceof Consumer) {
-                Consumer consumer = (Consumer) energyAsset;
-                ratedPower = consumer.getPower();
-            } else if (energyAsset instanceof AbstractBasicConversion) {
-                AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
-                ratedPower = conversion.getPower();
-            }
-            final double power = ratedPower;
-            return values * power;
-
-        }
-        return values;
-    }
-
-    public static double readProfile(GenericProfile profile, Horizon horizon) {
-        if (profile instanceof ProfileReference) {
-            profile = ((ProfileReference) profile).getReference();
-        }
-        if (profile != null) {
-            Date from = EssimTime.localDateTimeToDate(horizon.getStartTime());
-            Date to = EssimTime.localDateTimeToDate(horizon.getEndTime());
-
-            EList<ProfileElement> profileElements = ProfileDataSupplierFactory.getProfileDataSupplier(profile).getProfileElements(from, to, Converter.toESDLDuration(horizon.getPeriod()));
-            double totalDurationInMillis = 0;
-            double totalValue = 0;
-            double weightedSum = 0;
-            for (ProfileElement profileElement : profileElements) {
-                var partStart = profileElement.getFrom().before(from) ? from : profileElement.getFrom();
-                var partEnd = profileElement.getTo().after(to) ? to : profileElement.getTo();
-                // Calculate fraction
-                long elementDuration = DateRangeUtils.getDurationInMillis(partEnd, partStart);
-                double fraction =
-                        (double) elementDuration / DateRangeUtils.getDurationInMillis(profileElement.getTo(), profileElement.getFrom());
-                totalValue += profileElement.getValue() * fraction;
-                weightedSum += profileElement.getValue() * elementDuration;
-                totalDurationInMillis += elementDuration;
-
-            }
-            // For energy profiles, we sum the parts (upsampling). For all other profiles (for example power) we calculated a weighted average
-            if (isEnergyProfile(profile)) {
-                return totalValue;
-            }
-            return weightedSum / totalDurationInMillis;
-        }
-        return Double.NaN;
-    }
-
-    public static void writeProfile(Port port, EssimTime timestamp, double value) {
-        EList<GenericProfile> profiles = port.getProfile();
-        GenericProfile updatedProfile;
-
-        if (profiles.isEmpty()) {
-            TimeSeriesProfile profile = EssimESDLFactory.eINSTANCE.createTimeSeriesProfile();
-            profile.setTimestep((int) timestamp.getSimulationStepLength().getSeconds());
-            updatedProfile = writeProfile(profile, timestamp, value);
-        } else {
-            GenericProfile profile = profiles.get(0);
-            if (profile instanceof ProfileReference) {
-                profile = ((ProfileReference) profile).getReference();
-            }
-            updatedProfile = writeProfile(profile, timestamp, value);
-        }
-        profiles.add(updatedProfile);
-    }
-
-    public static GenericProfile writeProfile(GenericProfile profile, EssimTime timestamp, double value) {
-        EList<ProfileElement> profileElementList = ECollections.newBasicEList();
-        ProfileElement element = EssimESDLFactory.eINSTANCE.createProfileElement();
-        element.setValue(value);
-        element.setFrom(EssimTime.localDateTimeToDate(timestamp.getTime()));
-        profileElementList.add(element);
-        profile.setProfile(profileElementList);
-        profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
-
-        return profile;
-    }
 
     public static boolean isPowerProfile(GenericProfile profile) {
         if (profile instanceof ProfileReference) {

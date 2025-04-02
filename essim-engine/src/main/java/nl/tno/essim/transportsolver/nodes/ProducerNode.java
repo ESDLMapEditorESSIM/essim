@@ -98,13 +98,13 @@ public class ProducerNode extends Node {
                 GenericProfile producerProfile = ProfileUtils.getEnergyProfile(port);
                 if (producerProfile != null) {
                     if (ProfileUtils.isPowerProfile(producerProfile)) {
-                        energyOutput = timeStep * ProfileUtils.readProfile(producerProfile, now);
+                        energyOutput = timeStep * profileDataManager.readProfile(producerProfile, now);
                         break;
                     } else if (ProfileUtils.isEnergyProfile(producerProfile)) {
-                        energyOutput = ProfileUtils.readProfile(producerProfile, now);
+                        energyOutput = profileDataManager.readProfile(producerProfile, now);
                         break;
                     } else if (ProfileUtils.isPercentageProfile(producerProfile)) {
-                        energyOutput = timeStep * ProfileUtils.readProfile(producerProfile, port, now);
+                        energyOutput = timeStep * profileDataManager.readProfile(producerProfile, port, now);
                     }
                 }
             }
@@ -118,13 +118,13 @@ public class ProducerNode extends Node {
         } else {
             energyOutput = timeStep * power;
             if (marginalCostProfile != null) {
-                Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
+                Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
                 if (Double.isNaN(aggregateCost)) {
                     aggregateCost = getDefaultMarginalCost();
                 }
                 setCost(aggregateCost);
             } else if (costProfile != null) {
-                Double aggregateCost = ProfileUtils.readProfile(costProfile, now);
+                Double aggregateCost = profileDataManager.readProfile(costProfile, now);
                 if (Double.isNaN(aggregateCost)) {
                     aggregateCost = getDefaultMarginalCost();
                 }
@@ -169,7 +169,7 @@ public class ProducerNode extends Node {
                     builder.value(ObservationField.EMISSION, emission);
                     builder.value(ObservationField.FUEL_CONSUMPTION, inputCarrierQuantity);
 
-                    double currentInputCarrierCost = ProfileUtils.readProfile(carrier.getCost(),
+                    double currentInputCarrierCost = profileDataManager.readProfile(carrier.getCost(),
                             new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength()));
                     if (!Double.isNaN(currentInputCarrierCost)) {
                         double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
