@@ -28,11 +28,11 @@ public class PostgresProfileCacheSupplier implements ProfileCacheSupplier {
                     @Override
                     public Connection load(@NotNull String jdbcUri) throws Exception {
                         String baseUri = jdbcUri.substring(0, jdbcUri.indexOf("?"));
-                        ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(baseUri);
+                        CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(baseUri);
 
                         Properties properties = new Properties();
-                        properties.setProperty("user", dbCredentials.username());
-                        properties.setProperty("password", dbCredentials.password());
+                        properties.setProperty("user", credentials.username());
+                        properties.setProperty("password", credentials.password());
                         return DriverManager.getConnection(jdbcUri, properties);
                     }
                 });

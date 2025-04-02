@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esdl.*;
 import essim.impl.ProfileDataManager;
-import essim.impl.ProfileTools;
+import essim.impl.CredentialUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
@@ -48,7 +48,6 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
@@ -295,9 +294,9 @@ public class ESSimEngine implements IStatusProvider {
             }
             if (simulation.getPostgresURL() != null) {
                 String jdbcUri = "jdbc:" + simulation.getPostgresURL();
-                ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(simulation.getPostgresURL());
-                String username = dbCredentials == null ? "essim" : dbCredentials.username();
-                String password = dbCredentials == null ? "pgpassword" : dbCredentials.password();
+                CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(simulation.getPostgresURL());
+                String username = credentials == null ? "essim" : credentials.username();
+                String password = credentials == null ? "pgpassword" : credentials.password();
                 PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
                 observationManager.registerConsumer(postgresObservationConsumer);
                 postgresObservationConsumer.init(scenarioName);

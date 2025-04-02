@@ -33,8 +33,8 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
             throw new IllegalArgumentException("Postgres profile not configured correctly: " + this);
         }
         final String serverId = profile.getHost() + ":" + profile.getPort();
-        ProfileTools.DBCredentials dbCredentials = ProfileTools.getDBCredentials(serverId);
-        return dbCredentials == null ? InfluxDBFactory.connect(serverId).enableGzip() : InfluxDBFactory.connect(serverId, dbCredentials.username(), dbCredentials.password()).enableGzip();
+        CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(serverId);
+        return credentials == null ? InfluxDBFactory.connect(serverId).enableGzip() : InfluxDBFactory.connect(serverId, credentials.username(), credentials.password()).enableGzip();
     }
 
     @Override
