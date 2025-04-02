@@ -41,7 +41,7 @@ import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtils;
+import nl.tno.essim.profiles.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

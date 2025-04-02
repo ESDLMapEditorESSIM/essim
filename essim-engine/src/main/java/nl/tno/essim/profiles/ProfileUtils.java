@@ -1,11 +1,6 @@
-package nl.tno.essim.util;
+package nl.tno.essim.profiles;
 
 import esdl.*;
-import essim.impl.ProfileDataManager;
-import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.time.Horizon;
-import org.eclipse.emf.common.util.ECollections;
-import org.eclipse.emf.common.util.EList;
 
 import java.util.Date;
 

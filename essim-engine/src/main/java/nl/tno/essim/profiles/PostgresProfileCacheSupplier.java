@@ -1,10 +1,9 @@
-package essim.impl;
+package nl.tno.essim.profiles;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import common.ProfileCacheKey;
-import common.TimeSeriesDataCache;
+import nl.tno.essim.commons.CredentialUtils;
 import esdl.DatabaseConfiguration;
 import org.jetbrains.annotations.NotNull;
 

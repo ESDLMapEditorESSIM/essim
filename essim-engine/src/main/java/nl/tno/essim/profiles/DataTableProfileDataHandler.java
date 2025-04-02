@@ -1,4 +1,4 @@
-package essim.impl;
+package nl.tno.essim.profiles;
 
 import esdl.Duration;
 import esdl.ProfileElement;

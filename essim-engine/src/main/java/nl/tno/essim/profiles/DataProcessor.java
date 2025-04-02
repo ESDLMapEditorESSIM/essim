@@ -1,5 +1,5 @@
 
-package common;
+package nl.tno.essim.profiles;
 
 import nl.tno.essim.util.Converter;
 

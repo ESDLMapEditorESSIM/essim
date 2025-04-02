@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import esdl.*;
 import esdl.impl.ItemImpl;
-import essim.impl.ProfileDataManager;
+import nl.tno.essim.profiles.ProfileDataManager;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;

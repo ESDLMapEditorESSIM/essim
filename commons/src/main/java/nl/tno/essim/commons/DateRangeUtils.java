@@ -1,4 +1,4 @@
-package nl.tno.essim.util;
+package nl.tno.essim.commons;
 
 import java.time.LocalDateTime;
 import java.util.Date;

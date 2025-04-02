@@ -1,4 +1,4 @@
-package essim.impl;
+package nl.tno.essim.profiles;
 
 import esdl.*;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
-import nl.tno.essim.util.DateRangeUtils;
+import nl.tno.essim.commons.DateRangeUtils;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 

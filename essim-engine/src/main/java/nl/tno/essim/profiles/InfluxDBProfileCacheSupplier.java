@@ -1,7 +1,5 @@
-package essim.impl;
+package nl.tno.essim.profiles;
 
-import common.ProfileCacheKey;
-import common.TimeSeriesDataCache;
 import esdl.DatabaseConfiguration;
 
 import java.time.ZonedDateTime;

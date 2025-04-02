@@ -1,9 +1,9 @@
-package essim.impl;
+package nl.tno.essim.profiles;
 
-import common.*;
 import esdl.Duration;
 import esdl.InfluxDBProfile;
 import esdl.ProfileElement;
+import nl.tno.essim.commons.CredentialUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.emf.common.util.EList;
 import org.influxdb.InfluxDB;
@@ -46,7 +46,7 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
             if (dataCache == null) {
                 dataCache = createTimeSeriesDataCache(profileCacheKey, dataCache);
             } else {
-                log.debug("Using profile {} from cache", profileCacheKey);
+                log.trace("Using profile {} from cache", profileCacheKey);
             }
             return dataCache.get(from.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
                           to.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),

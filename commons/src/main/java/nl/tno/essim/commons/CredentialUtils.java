@@ -1,4 +1,4 @@
-package essim.impl;
+package nl.tno.essim.commons;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

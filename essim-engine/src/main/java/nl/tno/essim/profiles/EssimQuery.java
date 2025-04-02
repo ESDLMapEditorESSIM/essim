@@ -13,7 +13,7 @@
  *  Manager:
  *      TNO
  */
-package common;
+package nl.tno.essim.profiles;
 
 import org.influxdb.dto.Query;
 

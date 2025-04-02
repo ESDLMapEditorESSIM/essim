@@ -14,7 +14,7 @@
  *      TNO
  */
 
-package common;
+package nl.tno.essim.profiles;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,7 +63,7 @@ public class ProfileCache extends TimerTask {
 	}
 
 	public synchronized TimeSeriesDataCache getDataCache(ProfileCacheKey profileCacheKey) {
-		log.debug("Fetch profile cache entry {} for query '{}'", profileCacheKey, profileCacheKey);
+		log.trace("Fetch profile cache entry {} for query '{}'", profileCacheKey, profileCacheKey);
 		TimeSeriesDataCache cache = dataCaches.get(profileCacheKey);
 		return cache;
 	}
