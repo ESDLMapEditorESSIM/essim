@@ -13,7 +13,6 @@
 
     <modules>
         <module>commons</module>
-        <module>model-extensions</module>
         <module>essim-engine</module>
     </modules>
 
