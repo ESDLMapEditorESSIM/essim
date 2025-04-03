@@ -21,11 +21,11 @@ public class InfluxToPostgresProfileConverter {
         EnergySystem energySystem = (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst();
         InfluxToPostgresProfileConverter converter = new InfluxToPostgresProfileConverter();
         HashMap<String, String> urlMap = new HashMap<>();
-//        urlMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");
-//        urlMap.put("http://influxdb:8086", "postgresql://localhost:15432/essim");
+        urlMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");
+        urlMap.put("http://influxdb:8086", "postgresql://localhost:15432/essim");
         converter.convert(energySystem, urlMap);
         String newEsdl = ESSimEngine.ecoreResourceToString(energySystem);
-        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_nochange.esdl"), newEsdl);
+        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted.esdl"), newEsdl);
         log.info("New ESDL:\n{}", newEsdl);
     }
 
@@ -87,6 +87,11 @@ public class InfluxToPostgresProfileConverter {
                         dataTableProfile.setColumnName(((InfluxDBProfile) profile).getField());
                         dataTableProfile.setTimeColumnName("time");
                         dataTableProfile.setSchema(((InfluxDBProfile) profile).getDatabase());
+                        dataTableProfile.setProfileQuantityAndUnit(profile.getProfileQuantityAndUnit());
+                        dataTableProfile.setStartDate(((InfluxDBProfile) profile).getStartDate());
+                        dataTableProfile.setEndDate(((InfluxDBProfile) profile).getEndDate());
+                        dataTableProfile.setMultiplier(((InfluxDBProfile) profile).getMultiplier());
+                        dataTableProfile.setInterpolationMethod(((InfluxDBProfile) profile).getInterpolationMethod());
                         newProfiles.add(dataTableProfile);
                     }
                 }

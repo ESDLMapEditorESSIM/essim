@@ -4,11 +4,15 @@ import esdl.AbstractDataConfiguration;
 import esdl.DatabaseConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.CredentialUtils;
+import nl.tno.essim.time.EssimTime;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.InfluxDBIOException;
 import org.influxdb.dto.QueryResult;
 import org.jetbrains.annotations.NotNull;
+
+import java.time.LocalDateTime;
+import java.util.Date;
 
 @Slf4j
 public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
@@ -28,11 +32,11 @@ public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
     }
 
     @Override
-    public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey profileCacheKey, String timeColumnName) {
+    public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey profileCacheKey, String timeColumnName, Date startDate, Date endDate) {
         log.debug("Profile {} is not cached, proceeding to query InfluxDB", profileCacheKey);
 
         try (InfluxDB influxClient = connectToInfluxHost(profileCacheKey.uri())) {
-            String command = buildQueryString(profileCacheKey);
+            String command = buildQueryString(profileCacheKey, startDate, endDate);
             log.debug("Influx Call for: {}", command);
             QueryResult queryResult = null;
             int connectionAttempts = 0;
@@ -62,8 +66,29 @@ public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
     }
 
     @NotNull
-    private String buildQueryString(ProfileCacheKey profileCacheKey) {
-        return "SELECT \"" + profileCacheKey.field() + "\" FROM \"" + profileCacheKey.measurement() + "\"";
+    private String buildQueryString(ProfileCacheKey profileCacheKey, Date profileStartDate, Date profileEndDate) {
+        String startDateString = null;
+        String endDateString = null;
+
+        if (profileStartDate != null) {
+            LocalDateTime startDateFromGUI = EssimTime.dateToLocalDateTime(profileStartDate);
+            LocalDateTime endDateFromGUI;
+            if (profileEndDate != null) {
+                endDateFromGUI = EssimTime.dateToLocalDateTime(profileEndDate);
+            } else {
+                endDateFromGUI = startDateFromGUI.plusYears(1L);
+            }
+            startDateString = EssimTime.toInfluxDBTimeString(startDateFromGUI);
+            endDateString = EssimTime.toInfluxDBTimeString(endDateFromGUI);
+        } else {
+            log.warn("Profile has no start date, querying everything");
+        }
+
+        String command = "SELECT \"" + profileCacheKey.field() + "\" FROM \"" + profileCacheKey.measurement() + "\"";
+        if (startDateString != null) {
+            command += " WHERE time >= '" + startDateString + "' AND time <= '" + endDateString + "'";
+        }
+        return command;
     }
 
 

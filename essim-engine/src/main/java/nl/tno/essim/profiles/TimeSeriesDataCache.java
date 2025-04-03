@@ -19,6 +19,7 @@ package nl.tno.essim.profiles;
 import esdl.EsdlFactory;
 import esdl.ProfileElement;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.commons.DateRangeUtils;
 import org.eclipse.emf.common.util.ECollections;
@@ -30,15 +31,17 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+@Slf4j
 public class TimeSeriesDataCache {
 
     private static final int TIMESTAMP = 0;
     private static final int DATA = 1;
 
-    private String name;
-    private LocalDateTime[] timestamps;
-    private double[] values;
-    private int totalSize;
+    @Getter
+    private final String name;
+    private final LocalDateTime[] timestamps;
+    private final double[] values;
+    private final int totalSize;
     @Getter
     private long lastAccessed;
 
@@ -48,6 +51,7 @@ public class TimeSeriesDataCache {
         // Move to the end of the ResultSet to get total size
         resultSet.last();
         totalSize = resultSet.getRow();
+        log.debug("Caching {} values for timeseries {}", totalSize, name);
         resultSet.beforeFirst(); // Reset cursor to the beginning
 
         timestamps = new LocalDateTime[totalSize];
@@ -113,7 +117,4 @@ public class TimeSeriesDataCache {
         return item;
     }
 
-    public String getName() {
-        return name;
-    }
 }
