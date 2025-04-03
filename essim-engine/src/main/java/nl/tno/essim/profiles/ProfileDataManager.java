@@ -57,7 +57,7 @@ public class ProfileDataManager {
             return new DateTimeProfileDataHandler((DateTimeProfile) profile, EssimTime.localDateTimeToDate(essimTime.getSimulationStartTime()), EssimTime.localDateTimeToDate(essimTime.getSimulationEndTime()), essimTime.getSimulationStepLength());
         }
         if (profile instanceof DataTableProfile) {
-//            return new Data
+            return new DataTableProfileDataHandler((DataTableProfile) profile, essimTime);
         }
         throw new UnsupportedOperationException("Profile type " + profile.getClass().getSimpleName() + " not yet implemented.");
     }
