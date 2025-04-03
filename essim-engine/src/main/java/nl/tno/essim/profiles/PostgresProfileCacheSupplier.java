@@ -3,6 +3,7 @@ package nl.tno.essim.profiles;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import esdl.AbstractDataConfiguration;
 import nl.tno.essim.commons.CredentialUtils;
 import esdl.DatabaseConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -38,19 +39,20 @@ public class PostgresProfileCacheSupplier implements ProfileCacheSupplier {
     }
 
     @Override
-    public String createUri(DatabaseConfiguration configuration) {
+    public String createUri(AbstractDataConfiguration config) {
+        if (!(config instanceof DatabaseConfiguration configuration)) {
+            throw new IllegalStateException("Should be a DatabaseConfiguration: " +config);
+        }
         String databasePart = (configuration.getDatabase() != null && !configuration.getDatabase().isEmpty()) ? "/" + configuration.getDatabase() : "";
         String tlsPart = configuration.isTls() ? "?ssl=true" : "";
         return String.format(JDBC_URL_FORMAT, configuration.getHost(), configuration.getPort(), databasePart, tlsPart);
     }
 
     @Override
-    public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey cacheKey, String timeColumnName, ZonedDateTime startDate, ZonedDateTime endDate) throws ExecutionException, SQLException {
+    public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey cacheKey, String timeColumnName) throws ExecutionException, SQLException {
         Connection databaseConnection = connectionCache.get(cacheKey.uri());
-        String sql = String.format("SELECT %s as time %s as value FROM %s WHERE time >= ? AND time <= ?", timeColumnName, cacheKey.field(), cacheKey.measurement());
+        String sql = String.format("SELECT %s as time %s as value FROM %s ORDER BY time ASC", timeColumnName, cacheKey.field(), cacheKey.measurement());
         try (java.sql.PreparedStatement statement = databaseConnection.prepareStatement(sql)) {
-            statement.setObject(1, startDate.toOffsetDateTime());
-            statement.setObject(2, endDate.toOffsetDateTime());
             ResultSet resultSet = statement.executeQuery();
             return new TimeSeriesDataCache(cacheKey.field(), resultSet, 0d);
         }

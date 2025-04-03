@@ -1,17 +1,70 @@
 package nl.tno.essim.profiles;
 
+import esdl.AbstractDataConfiguration;
 import esdl.DatabaseConfiguration;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.CredentialUtils;
+import org.influxdb.InfluxDB;
+import org.influxdb.InfluxDBFactory;
+import org.influxdb.InfluxDBIOException;
+import org.influxdb.dto.QueryResult;
+import org.jetbrains.annotations.NotNull;
 
-import java.time.ZonedDateTime;
-
+@Slf4j
 public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
+    private static final int MAX_ATTEMPTS = 1;
+    private TimeSeriesDataCache dataCache;
+    private DatabaseConfiguration dbConfig;
+
     @Override
-    public String createUri(DatabaseConfiguration configuration) {
-        return "";
+    public String createUri(AbstractDataConfiguration configuration) {
+        dbConfig = (DatabaseConfiguration) configuration;
+        return dbConfig.getHost() + ":" + dbConfig.getPort();
+    }
+
+    private InfluxDB connectToInfluxHost(String serverUri) {
+        CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(serverUri);
+        return credentials == null ? InfluxDBFactory.connect(serverUri).enableGzip() : InfluxDBFactory.connect(serverUri, credentials.username(), credentials.password()).enableGzip();
     }
 
     @Override
-    public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey cacheKey, String timeColumnName, ZonedDateTime startDate, ZonedDateTime endDate) {
-        return null;
+    public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey profileCacheKey, String timeColumnName) {
+        log.debug("Profile {} is not cached, proceeding to query InfluxDB", profileCacheKey);
+
+        try (InfluxDB influxClient = connectToInfluxHost(profileCacheKey.uri())) {
+            String command = buildQueryString(profileCacheKey);
+            log.debug("Influx Call for: {}", command);
+            QueryResult queryResult = null;
+            int connectionAttempts = 0;
+            while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
+                connectionAttempts++;
+                EssimQuery query = new EssimQuery(command, profileCacheKey.databaseOrSchema());
+                log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
+                queryResult = influxClient.query(query);
+                if (queryResult.hasError() || queryResult.getResults() == null) {
+                    throw new IllegalStateException("Error querying InfluxDB for query " + query.getCommand() + ", queryError: " + queryResult.getError());
+                }
+            }
+            for (QueryResult.Result result : queryResult.getResults()) {
+                if (result.getSeries() == null) {
+                    throw new IllegalArgumentException("No results returned on querying " + command + " at database [" + profileCacheKey.databaseOrSchema() + "] at [" + profileCacheKey.uri() + "]. Please verify the database name, measurement and field names and timeframe of query!");
+                }
+                for (QueryResult.Series series : result.getSeries()) {
+                    log.debug("Query returned {} values for {}", series.getValues().size(), profileCacheKey);
+                    dataCache = new TimeSeriesDataCache(profileCacheKey.field(), series.getValues(), 0d);
+                }
+            }
+            ProfileCache.getInstance().cache(profileCacheKey, dataCache);
+        } catch (InfluxDBIOException e) {
+            log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
+        }
+        return dataCache;
     }
+
+    @NotNull
+    private String buildQueryString(ProfileCacheKey profileCacheKey) {
+        return "SELECT \"" + profileCacheKey.field() + "\" FROM \"" + profileCacheKey.measurement() + "\"";
+    }
+
+
 }

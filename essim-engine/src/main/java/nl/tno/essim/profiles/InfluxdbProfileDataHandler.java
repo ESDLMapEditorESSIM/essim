@@ -54,7 +54,7 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
             synchronized (ProfileCache.getInstance()) {
                 dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
                 if (dataCache == null) {
-                    dataCache = createTimeSeriesDataCache(profileCacheKey, dataCache);
+                    dataCache = createTimeSeriesDataCache(profileCacheKey);
                 } else {
                     log.debug("Using profile {} from cache", profileCacheKey);
                 }
@@ -63,7 +63,7 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
         return dataCache.get(EssimTime.dateToLocalDateTime(from), EssimTime.dateToLocalDateTime(to), dataProcessor);
     }
 
-    private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey, TimeSeriesDataCache dataCache) {
+    private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) {
         log.debug("Profile {} is not cached, proceeding to query InfluxDB", profileCacheKey);
 
         try (InfluxDB influxClient = connectToInfluxHost()) {
@@ -73,7 +73,7 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
             int connectionAttempts = 0;
             while (connectionAttempts < MAX_ATTEMPTS && queryResult == null) {
                 connectionAttempts++;
-                EssimQuery query = new EssimQuery(command, profile.getDatabase());
+                EssimQuery query = new EssimQuery(command, profileCacheKey.databaseOrSchema());
                 log.debug("InfluxDB query Attempt#{}: {}", connectionAttempts, query.getCommand());
                 queryResult = influxClient.query(query);
                 if (queryResult.hasError() || queryResult.getResults() == null) {
