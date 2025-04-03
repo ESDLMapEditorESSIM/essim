@@ -34,7 +34,7 @@
     <Loggers>
         <Logger name="nl.tno" level="debug"/>
         <!--        <logger name="nl.tno.essim.kpi" level="TRACE"/>-->
-        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>
+<!--        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>-->
 <!--        <logger name="nl.tno.essim.observation.consumers.PostgresTableCache" level="TRACE"/>-->
         <Root level="INFO">
             <AppenderRef ref="logfile"/>

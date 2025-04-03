@@ -93,6 +93,7 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
         InfluxDB influxDB = influx.getInfluxDB();
         influxDB.flush();
         influxDB.disableBatch();
+        influx.close();
         log.debug("InfluxDB flush complete");
     }
 }
