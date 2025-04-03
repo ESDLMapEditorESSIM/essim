@@ -49,7 +49,7 @@ public class DateTimeProfileDataHandler implements ProfileDataHandler {
         LocalDateTime endDate = EssimTime.dateToLocalDateTime(end);
         double val = 0.0;
 
-        synchronized (this.profile) {
+        synchronized (this.profileData) {
             for (LocalDateTime t = startDate; t.isEqual(endDate)
                     || t.isBefore(endDate); t = t.plus(simStep.getSeconds(), ChronoUnit.SECONDS)) {
                 if (vals.containsKey(t)) {
