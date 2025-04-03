@@ -5,12 +5,17 @@ import esdl.InfluxDBProfile;
 import esdl.ProfileElement;
 import nl.tno.essim.commons.CredentialUtils;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.EList;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.InfluxDBIOException;
 import org.influxdb.dto.QueryResult;
+import org.jetbrains.annotations.NotNull;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 @Slf4j
@@ -19,13 +24,16 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
     private final InfluxDBProfile profile;
     private final DataProcessor dataProcessor;
 
-    public InfluxdbProfileDataHandler(InfluxDBProfile profile) {
+    public InfluxdbProfileDataHandler(InfluxDBProfile profile, EssimTime essimTime) {
         this.profile = profile;
+        Date profileStartDate = profile.getStartDate();
         if (profile.getProfileQuantityAndUnit() != null) {
             dataProcessor = new DataProcessor(profile.getProfileQuantityAndUnit(), profile.getMultiplier());
         } else {
             dataProcessor = new DataProcessor(profile.getProfileType(), profile.getMultiplier());
         }
+        // Make sure the cache is loaded
+        getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
     }
 
     private InfluxDB connectToInfluxHost() {
@@ -48,8 +56,8 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
             } else {
                 log.trace("Using profile {} from cache", profileCacheKey);
             }
-            return dataCache.get(from.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
-                          to.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
+            return dataCache.get(from.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                          to.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
                           dataProcessor);
         }
     }
@@ -58,12 +66,7 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
         log.debug("Profile {} is not cached, proceeding to query InfluxDB", profileCacheKey);
 
         try (InfluxDB influxClient = connectToInfluxHost()) {
-            String command = "SELECT \"" + profile.getField() + "\" FROM \"" + profile.getMeasurement() + "\"";
-
-            if (profile.getField() != null && !profile.getFilters().trim().isEmpty()) {
-                final String filter = profile.getFilters().trim();
-                command += " WHERE " + (filter.startsWith("AND") ? filter.substring(3).trim() : filter);
-            }
+            String command = buildQueryString();
             log.debug("Influx Call for: {}", command);
             QueryResult queryResult = null;
             int connectionAttempts = 0;
@@ -90,6 +93,41 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
             log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
         }
         return dataCache;
+    }
+
+    @NotNull
+    private String buildQueryString() {
+        Date profileStartDate = profile.getStartDate();
+        Date profileEndDate = profile.getEndDate();
+        String startDateString = null;
+        String endDateString = null;
+
+        if (profileStartDate != null) {
+            LocalDateTime startDateFromGUI = EssimTime.dateToLocalDateTime(profileStartDate);
+            LocalDateTime endDateFromGUI;
+            if (profileEndDate != null) {
+                endDateFromGUI = EssimTime.dateToLocalDateTime(profileEndDate);
+            } else {
+                endDateFromGUI = startDateFromGUI.plusYears(1L);
+            }
+            startDateString = EssimTime.toInfluxDBTimeString(startDateFromGUI);
+            endDateString = EssimTime.toInfluxDBTimeString(endDateFromGUI);
+        } else {
+            log.warn("Profile has no start date, querying everything");
+        }
+
+        String command = "SELECT \"" + profile.getField() + "\" FROM \"" + profile.getMeasurement() + "\"";
+        boolean hasWhereClause = false;
+        if (startDateString != null) {
+            command += " WHERE time >= '" + startDateString + "' AND time <= '" + endDateString + "'";
+            hasWhereClause = true;
+        }
+
+        if (profile.getField() != null && !profile.getFilters().trim().isEmpty()) {
+            final String filter = profile.getFilters().trim();
+            command += (hasWhereClause ? " AND " : " WHERE ") + (filter.startsWith("AND") ? filter.substring(3).trim() : filter);
+        }
+        return command;
     }
 
     @Override
