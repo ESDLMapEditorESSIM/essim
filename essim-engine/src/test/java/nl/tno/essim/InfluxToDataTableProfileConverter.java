@@ -2,6 +2,7 @@ package nl.tno.essim;
 
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,22 +15,39 @@ import java.util.HashMap;
 import java.util.UUID;
 
 @Slf4j
-public class InfluxToPostgresProfileConverter {
+public class InfluxToDataTableProfileConverter {
 
     public static void main(String[] args) throws IOException {
         String esdl = Files.readString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue.esdl"));
-        EnergySystem energySystem = (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst();
-        InfluxToPostgresProfileConverter converter = new InfluxToPostgresProfileConverter();
-        HashMap<String, String> urlMap = new HashMap<>();
-        urlMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");
-        urlMap.put("http://influxdb:8086", "postgresql://localhost:15432/essim");
-        converter.convert(energySystem, urlMap);
-        String newEsdl = ESSimEngine.ecoreResourceToString(energySystem);
-        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted.esdl"), newEsdl);
-        log.info("New ESDL:\n{}", newEsdl);
+
+        InfluxToDataTableProfileConverter converter = new InfluxToDataTableProfileConverter();
+        convertInfluxToPostgres(converter, (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
+        convertInfluxToInflux(converter, (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
     }
 
-    private void convert(EnergySystem energySystem, HashMap<String, String> urlMap) {
+    @NotNull
+    private static String convertInfluxToPostgres(InfluxToDataTableProfileConverter converter, EnergySystem energySystem) throws IOException {
+        HashMap<String, String> postgresMap = new HashMap<>();
+        postgresMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");
+        postgresMap.put("http://influxdb:8086", "postgresql://localhost:15432/essim");
+        converter.convert(energySystem, postgresMap, DatabaseTypeEnum.POSTGRESQL);
+        String newEsdl = ESSimEngine.ecoreResourceToString(energySystem);
+        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_to_postgres.esdl"), newEsdl);
+        return newEsdl;
+    }
+
+    @NotNull
+    private static String convertInfluxToInflux(InfluxToDataTableProfileConverter converter, EnergySystem energySystem) throws IOException {
+        HashMap<String, String> postgresMap = new HashMap<>();
+        postgresMap.put("http://localhost:8086", "http://localhost:8086");
+        postgresMap.put("http://influxdb:8086", "http://localhost:8086");
+        converter.convert(energySystem, postgresMap, DatabaseTypeEnum.INFLUXDB);
+        String newEsdl = ESSimEngine.ecoreResourceToString(energySystem);
+        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_to_influx.esdl"), newEsdl);
+        return newEsdl;
+    }
+
+    private void convert(EnergySystem energySystem, HashMap<String, String> urlMap, DatabaseTypeEnum type) {
         Instance instance = energySystem.getInstance().getFirst();
         if (instance.getArea() == null) {
             throw new IllegalArgumentException("No area found in ESDL energy instance !");
@@ -50,7 +68,7 @@ public class InfluxToPostgresProfileConverter {
                         DatabaseConfiguration dbc = map.get(newUri);
                         if (dbc == null) {
                             dbc = EsdlFactory.eINSTANCE.createDatabaseConfiguration();
-                            dbc.setType(DatabaseTypeEnum.POSTGRESQL);
+                            dbc.setType(type);
                             dbc.setId(UUID.randomUUID().toString());
                             URI uri = URI.create(newUri);
                             dbc.setHost(uri.getHost());
