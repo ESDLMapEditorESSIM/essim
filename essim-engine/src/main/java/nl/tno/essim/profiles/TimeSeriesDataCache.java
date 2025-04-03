@@ -20,14 +20,15 @@ import esdl.EsdlFactory;
 import esdl.ProfileElement;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.commons.DateRangeUtils;
+import nl.tno.essim.time.EssimTime;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -60,7 +61,7 @@ public class TimeSeriesDataCache {
         int index = 0;
 
         while (resultSet.next()) {
-            java.sql.Timestamp timestamp = resultSet.getTimestamp("time");
+            OffsetDateTime timestamp = resultSet.getObject("time", OffsetDateTime.class);
             timestamps[index] = timestamp.toLocalDateTime();
 
             double value = resultSet.getDouble("value");

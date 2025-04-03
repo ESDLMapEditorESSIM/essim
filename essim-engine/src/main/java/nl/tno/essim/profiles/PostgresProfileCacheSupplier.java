@@ -61,13 +61,13 @@ public class PostgresProfileCacheSupplier implements ProfileCacheSupplier {
     @Override
     public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey cacheKey, String timeColumnName, Date startDate, Date endDate) throws ExecutionException, SQLException {
         Connection databaseConnection = connectionCache.get(cacheKey.uri());
-        String sql = String.format("SELECT %s.%s as time, %s.%s as value FROM %s", cacheKey.databaseOrSchema(), timeColumnName, cacheKey.databaseOrSchema(), cacheKey.field(), cacheKey.measurement());
+        String sql = String.format("SELECT %s as time, \"%s\" as value FROM %s.%s", timeColumnName, cacheKey.field(), cacheKey.databaseOrSchema(), cacheKey.measurement());
         if (startDate != null) {
             sql += " WHERE time >= ? AND time <= ?";
         }
         sql += " ORDER BY time ASC";
         log.debug("Executing postgres query: {}", sql);
-        try (java.sql.PreparedStatement statement = databaseConnection.prepareStatement(sql)) {
+        try (java.sql.PreparedStatement statement = databaseConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
             if (startDate != null) {
                 statement.setDate(1, new java.sql.Date(startDate.getTime()));
                 statement.setDate(2, new java.sql.Date(endDate.getTime()));
