@@ -35,14 +35,10 @@ public class SingleValueProfileDataHandler implements ProfileDataHandler {
 
     @Override
     public boolean setProfileElements(EList<ProfileElement> profileElementList) {
-        throw new UnsupportedOperationException("setProfileElements not possible for SingleValueProfile");
-    }
-
-    public boolean setProfile(EList<ProfileElement> profileElementList) {
         if (profileElementList.size() != 1) {
             throw new IllegalArgumentException("List size should be exactly 1 for a Single Value profile");
         }
-        profile.setValue(profileElementList.get(0).getValue());
+        profile.setValue(profileElementList.getFirst().getValue());
         return true;
     }
 
