@@ -15,17 +15,16 @@ import org.influxdb.dto.QueryResult;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 
 @Slf4j
-public class InfluxdbProfileDataHandler implements ProfileDataHandler {
+public class InfluxDBProfileDataHandler implements ProfileDataHandler {
     private static final int MAX_ATTEMPTS = 1;
     private final InfluxDBProfile profile;
     private final DataProcessor dataProcessor;
     private TimeSeriesDataCache dataCache;
 
-    public InfluxdbProfileDataHandler(InfluxDBProfile profile, EssimTime essimTime) {
+    public InfluxDBProfileDataHandler(InfluxDBProfile profile, EssimTime essimTime) {
         this.profile = profile;
         Date profileStartDate = profile.getStartDate();
         if (profile.getProfileQuantityAndUnit() != null) {

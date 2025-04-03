@@ -45,7 +45,7 @@ public class ProfileDataManager {
 
     private ProfileDataHandler createProfileDataSupplier(GenericProfile profile) {
         if (profile instanceof InfluxDBProfile) {
-            return new InfluxdbProfileDataHandler((InfluxDBProfile) profile, essimTime);
+            return new InfluxDBProfileDataHandler((InfluxDBProfile) profile, essimTime);
         }
         if (profile instanceof SingleValue) {
             return new SingleValueProfileDataHandler((SingleValue) profile);
