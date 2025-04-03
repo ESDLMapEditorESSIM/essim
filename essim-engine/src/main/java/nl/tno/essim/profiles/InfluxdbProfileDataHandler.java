@@ -3,8 +3,8 @@ package nl.tno.essim.profiles;
 import esdl.Duration;
 import esdl.InfluxDBProfile;
 import esdl.ProfileElement;
-import nl.tno.essim.commons.CredentialUtils;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.CredentialUtils;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.EList;
@@ -23,6 +23,7 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
     private static final int MAX_ATTEMPTS = 1;
     private final InfluxDBProfile profile;
     private final DataProcessor dataProcessor;
+    private TimeSeriesDataCache dataCache;
 
     public InfluxdbProfileDataHandler(InfluxDBProfile profile, EssimTime essimTime) {
         this.profile = profile;
@@ -47,19 +48,19 @@ public class InfluxdbProfileDataHandler implements ProfileDataHandler {
 
     @Override
     public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {
-        String uri = "http://" + profile.getHost() + ":" + profile.getPort();
-        ProfileCacheKey profileCacheKey = new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), 0d);
-        synchronized (ProfileCache.getInstance()) {
-            TimeSeriesDataCache dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
-            if (dataCache == null) {
-                dataCache = createTimeSeriesDataCache(profileCacheKey, dataCache);
-            } else {
-                log.trace("Using profile {} from cache", profileCacheKey);
+        if (dataCache == null) {
+            String uri = "http://" + profile.getHost() + ":" + profile.getPort();
+            ProfileCacheKey profileCacheKey = new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), 0d);
+            synchronized (ProfileCache.getInstance()) {
+                dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
+                if (dataCache == null) {
+                    dataCache = createTimeSeriesDataCache(profileCacheKey, dataCache);
+                } else {
+                    log.debug("Using profile {} from cache", profileCacheKey);
+                }
             }
-            return dataCache.get(from.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
-                          to.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
-                          dataProcessor);
         }
+        return dataCache.get(EssimTime.dateToLocalDateTime(from), EssimTime.dateToLocalDateTime(to), dataProcessor);
     }
 
     private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey, TimeSeriesDataCache dataCache) {
