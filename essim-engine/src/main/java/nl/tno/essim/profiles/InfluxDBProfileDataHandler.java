@@ -92,7 +92,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
             }
             ProfileCache.getInstance().cache(profileCacheKey, dataCache);
         } catch (InfluxDBIOException e) {
-            log.error("Error querying InfluxDB: {}. Trying again...", e.getMessage());
+            throw new RuntimeException("Error querying InfluxDB: " + e.getMessage(), e);
         }
         return dataCache;
     }
