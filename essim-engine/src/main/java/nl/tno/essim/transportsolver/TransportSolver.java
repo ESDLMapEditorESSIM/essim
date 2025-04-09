@@ -19,9 +19,6 @@ package nl.tno.essim.transportsolver;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.powsybl.iidm.network.Network;
 import esdl.*;
-import essim.ESSIMDateTimeProfile;
-import essim.ESSIMInfluxDBProfile;
-import essim.ESSIMTimeSeriesProfile;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
@@ -33,13 +30,13 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
-import nl.tno.essim.util.Converter;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintWriter;
@@ -47,7 +44,6 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class TransportSolver implements ITransportSolver, Simulatable, IObservationProvider {
@@ -77,9 +73,10 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private int transportCount;
     private int transportWithCapacityCount;
     private Collection<NodeConfiguration> nodeConfig;
-    private String simulationId;
+    //    private String simulationId;
     private String esdlString;
     private Market market;
+    private ISimulationManager simulationManager;
     private Network network;
 
     public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
@@ -169,8 +166,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         rootRole = roleMap.get(rootAsset);
 
         String rootAssetId = rootAsset.getId();
-        NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationId).asset(rootAsset)
-                .esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier);
+        NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationManager.getName()).asset(rootAsset)
+                .esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier).profileDataManager(simulationManager.getProfileDataManager());
         if (nodeConfig != null) {
             this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
                     .ifPresent(nodeBuilder::config);
@@ -254,8 +251,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                 String nodeId = connectedAsset.getId();
                 Port connectedPort = assetConnections.get(connectedAsset);
                 NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).connectedPort(connectedPort)
-                        .simulationId(simulationId).asset(connectedAsset).parent(parentNode).networkId(getId())
-                        .esdlString(esdlString).carrier(carrier);
+                        .simulationId(simulationManager.getName()).asset(connectedAsset).parent(parentNode).networkId(getId())
+                        .esdlString(esdlString).carrier(carrier).profileDataManager(simulationManager.getProfileDataManager());
                 for (Port myPort : connectedAsset.getPort()) {
                     if (myPort instanceof InPort) {
                         InPort myInPort = (InPort) myPort;
@@ -389,21 +386,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                 RemoteLogicNode remoteLogicNode = (RemoteLogicNode) node;
                 remoteLogicNode.init();
             }
-
-            EnergyAsset asset = node.getAsset();
-            for (Port port : asset.getPort()) {
-                initialiseProfile(port);
-            }
-
-            if (asset.getControlStrategy() != null) {
-                if (asset.getControlStrategy() instanceof DrivenByProfile) {
-                    initialiseProfile(((DrivenByProfile) asset.getControlStrategy()).getProfile());
-                }
-            }
-        }
-
-        if (carrier.getCost() != null) {
-            initialiseProfile(carrier.getCost());
         }
     }
 
@@ -452,8 +434,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         observations.add(Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
                 .tag("carrierId", carrier.getId())
                 .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
-                .value("imbalanceEnergy", imbalance.doubleValue()).value("matchingPrice", balancingPrice)
-                .value("imbalancePower", imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
+                .value(ObservationField.IMBALANCE_ENERGY, imbalance.doubleValue()).value(ObservationField.MATCHING_PRICE, balancingPrice)
+                .value(ObservationField.IMBALANCE_POWER, imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
         return observations;
     }
 
@@ -469,32 +451,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
             }
         }
 
-        EmissionManager.getInstance(simulationId).organiseNetwork(getId());
+        EmissionManager.getInstance(simulationManager.getName()).organiseNetwork(getId());
     }
 
     @Override
     public void stop() {
-        for (EnergyAsset asset : deviceNodes.stream().map(x -> x.getAsset()).collect(Collectors.toList())) {
-            for (Port port : asset.getPort()) {
-                for (GenericProfile profile : port.getProfile()) {
-                    if (profile != null) {
-                        if (profile instanceof ProfileReference) {
-                            profile = ((ProfileReference) profile).getReference();
-                        }
-                        if (profile instanceof ESSIMInfluxDBProfile) {
-                            ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
-                            profileImpl.initProfile(null, null, null);
-                        } else if (profile instanceof ESSIMDateTimeProfile) {
-                            ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
-                            dtProfile.initProfile(null, null, null);
-                        } else if (profile instanceof ESSIMTimeSeriesProfile) {
-                            ESSIMTimeSeriesProfile tsProfile = (ESSIMTimeSeriesProfile) profile;
-                            tsProfile.initProfile(null, null, null);
-                        }
-                    }
-                }
-            }
-        }
         for (Node node : deviceNodes) {
             if (node instanceof RemoteLogicNode) {
                 ((RemoteLogicNode) node).stop();
@@ -504,7 +465,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
     @Override
     public void setSimulationManager(ISimulationManager manager) {
-        this.simulationId = manager.getName();
+        this.simulationManager = manager;
     }
 
     @Override
@@ -527,38 +488,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         return getId();
     }
 
-    private void initialiseProfile(Port port) {
-        for (GenericProfile profile : port.getProfile()) {
-            initialiseProfile(profile);
-        }
-    }
-
-    private void initialiseProfile(GenericProfile profile) {
-        if (profile != null) {
-            if (profile instanceof ProfileReference) {
-                profile = ((ProfileReference) profile).getReference();
-            }
-            // TODO: do instanceof check on ESSIMProfile, as all not-trivial profiles
-            // implement that interface
-            if (profile instanceof ESSIMInfluxDBProfile) {
-                ESSIMInfluxDBProfile profileImpl = (ESSIMInfluxDBProfile) profile;
-                profileImpl.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-                        EssimTime.localDateTimeToDate(simulationEndTime),
-                        Converter.toESDLDuration(simulationStepLength));
-            } else if (profile instanceof ESSIMDateTimeProfile) {
-                ESSIMDateTimeProfile dtProfile = (ESSIMDateTimeProfile) profile;
-                dtProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-                        EssimTime.localDateTimeToDate(simulationEndTime),
-                        Converter.toESDLDuration(simulationStepLength));
-            } else if (profile instanceof ESSIMTimeSeriesProfile) {
-                ESSIMTimeSeriesProfile tsProfile = (ESSIMTimeSeriesProfile) profile;
-                tsProfile.initProfile(EssimTime.localDateTimeToDate(simulationStartTime),
-                        EssimTime.localDateTimeToDate(simulationEndTime),
-                        Converter.toESDLDuration(simulationStepLength));
-            }
-        }
-    }
-
     @Override
     public boolean hasAnyTransportAsset() {
         return transportCount >= 1;
@@ -567,6 +496,11 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     @Override
     public boolean hasAnyTransportAssetWithCapacity() {
         return transportWithCapacityCount >= 1;
+    }
+
+    @Override
+    public ISimulationManager getSimulationManager() {
+        return simulationManager;
     }
 
     @Override

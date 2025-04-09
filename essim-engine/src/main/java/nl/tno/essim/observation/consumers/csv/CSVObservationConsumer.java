@@ -75,9 +75,5 @@ public class CSVObservationConsumer implements IObservationConsumer {
 
 	}
 
-	@Override
-	public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-
-	}
 }
 

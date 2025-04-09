@@ -139,7 +139,7 @@
         </dependency>
         <dependency>
             <groupId>nl.tno.essim</groupId>
-            <artifactId>model-extensions</artifactId>
+            <artifactId>commons</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -152,6 +152,21 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.influxdb</groupId>
+            <artifactId>influxdb-java</artifactId>
+            <version>2.24</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.6-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.5</version>
         </dependency>
 
 
@@ -225,6 +240,18 @@
             <artifactId>jakarta.servlet-api</artifactId>
             <version>5.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.7.5</version>
+        </dependency>
+        <!-- HikariCP Dependency -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>6.3.0</version>
+        </dependency>
+
         <!-- powersybl open loadflow -->
         <dependency>
             <groupId>com.powsybl</groupId>
@@ -261,6 +288,11 @@
             <version>6.8.13</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>nl.tno.essim</groupId>
+            <artifactId>commons</artifactId>
+        </dependency>
+
     </dependencies>
 
 

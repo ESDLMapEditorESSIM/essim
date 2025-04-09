@@ -1,64 +1,70 @@
 /**
- * 
+ *
  */
 
 package nl.tno.essim.observation;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import lombok.Builder;
-import lombok.Singular;
-
-/**
- * @author werkmane
- *
- */
-@Builder
+@AllArgsConstructor
+@Getter
 public class Observation implements IObservation {
 
-	private LocalDateTime observedAt;
-	@Singular
-	private Map<String, Object> values;
-	@Singular
-	private Map<String, String> tags;
+    private LocalDateTime observedAt;
+    private Map<String, Object> values;
+    private Map<String, String> tags;
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see dido.observation.framework.IObservation#getValues()
-	 */
-	@Override
-	public Map<String, Object> getValues() {
-		return values;
-	}
+    public static class ObservationBuilder {
+        private LocalDateTime observedAt;
+        private Map<ObservationField, Object> values = new HashMap<>();
+        private Map<String, String> tags = new HashMap<>();
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see dido.observation.framework.IObservation#getTags()
-	 */
-	@Override
-	public Map<String, String> getTags() {
-		return tags;
-	}
+        public ObservationBuilder value(ObservationField key, Object value) {
+            if (values == null) {
+                values = new HashMap<>();
+            }
+            this.values.put(key, value);
+            return this;
+        }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see dido.observation.framework.IObservation#getObservedAt()
-	 */
-	@Override
-	public LocalDateTime getObservedAt() {
-		return observedAt;
-	}
+
+        public ObservationBuilder observedAt(LocalDateTime observedAt) {
+            this.observedAt = observedAt;
+            return this;
+        }
+
+        public ObservationBuilder tag(String key, String value) {
+            if (this.tags == null) {
+                this.tags = new HashMap<>();
+            }
+            this.tags.put(key, value);
+            return this;
+        }
+
+        public Observation build() {
+            HashMap<String, Object> newValues = new HashMap<>();
+            values.forEach((key, value) -> newValues.put(key.getKey(), value));
+            return new Observation(observedAt, newValues, tags);
+        }
+    }
+
+    public static ObservationBuilder builder() {
+        return new ObservationBuilder();
+    }
 
 	public ObservationBuilder toBuilder() {
-		return builder()
-				.observedAt(this.observedAt)
-				.values(new HashMap<>(this.values))
-				.tags(new HashMap<>(this.tags));
-	}
+        ObservationBuilder builder = builder();
+        builder.observedAt(observedAt);
+        builder.values = new HashMap<>();
+        values.forEach((key, value) -> builder.value(ObservationField.valueOf(key), value));
+        builder.tags = new HashMap<>();
+        tags.forEach(builder::tag);
+        return builder;
+    }
 
 }

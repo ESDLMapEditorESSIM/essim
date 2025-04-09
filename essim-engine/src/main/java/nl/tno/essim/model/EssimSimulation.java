@@ -20,6 +20,7 @@ import java.util.Map;
     "timeStep",
     "status",
     "influxURL",
+    "postgresURL",
     "csvFilesLocation",
     "natsURL",
     "mqttURL",
@@ -76,6 +77,11 @@ public class EssimSimulation {
 
   @JsonProperty("influxURL")
   private String influxURL;
+
+    @Getter
+    @Setter
+    @JsonProperty("postgresURL")
+    private String postgresURL;
 
   @JsonProperty("csvFilesLocation")
   private String csvFilesLocation;
@@ -373,4 +379,5 @@ public class EssimSimulation {
   public void setAdditionalProperties(String key, Object value) {
     this.additionalProperties.put(key, value);
   }
+
 }

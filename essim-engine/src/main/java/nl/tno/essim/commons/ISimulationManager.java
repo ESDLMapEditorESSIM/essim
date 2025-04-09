@@ -18,7 +18,7 @@ package nl.tno.essim.commons;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import nl.tno.essim.observation.IObservationConsumer;
+import nl.tno.essim.profiles.ProfileDataManager;
 import nl.tno.essim.transportsolver.TransportSolver;
 
 public interface ISimulationManager {
@@ -27,10 +27,10 @@ public interface ISimulationManager {
 
 	public void addSolvers(List<TransportSolver> solvers);
 
-	void setObservationConsumers(List<IObservationConsumer> consumers);
-
 	LocalDateTime getStartDateTime();
 
 	LocalDateTime getEndDateTime();
+
+	ProfileDataManager getProfileDataManager();
 
 }

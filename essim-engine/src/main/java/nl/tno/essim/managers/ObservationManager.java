@@ -2,12 +2,12 @@
  * This work is based on original code developed and copyrighted by TNO 2020.
  * Subsequent contributions are licensed to you by the developers of such code and are
  * made available to the Project under one or several contributor license agreements.
- *
+ * <p>
  * This work is licensed to you under the Apache License, Version 2.0.
  * You may obtain a copy of the license at
- * 
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Contributors:
  * TNO         - Initial implementation
  * Manager:
@@ -15,36 +15,27 @@
  */
 package nl.tno.essim.managers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 
+import java.util.ArrayList;
+
+@Slf4j
 public class ObservationManager implements IObservationManager {
 
-    private ArrayList<IObservationConsumer> consumers;
-    private String simulationRunName;
-    private ExecutorService executorService;
+    private final ArrayList<IObservationConsumer> consumers = new ArrayList<>();
+    private final String simulationRunName;
 
     public ObservationManager(String simulationRunName) {
         this.simulationRunName = simulationRunName;
-        consumers = new ArrayList<IObservationConsumer>();
-        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
     @Override
     public void registerConsumer(IObservationConsumer consumer) {
         consumers.add(consumer);
-    }
-
-    @Override
-    public void registerConsumers(List<IObservationConsumer> consumerList) {
-        consumers.addAll(consumerList);
     }
 
     @Override
@@ -55,9 +46,11 @@ public class ObservationManager implements IObservationManager {
     }
 
     @Override
-    public void publishBatch(IObservationProvider source, IObservation observation) {
+    public void cleanupConsumers() {
+        log.debug("Please wait while the observations are being processed. This could take a few seconds...");
         for (IObservationConsumer consumer : consumers) {
-            executorService.submit(() -> consumer.consumeBatch(simulationRunName, source, observation));
+            consumer.cleanup();
         }
     }
+
 }

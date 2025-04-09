@@ -36,10 +36,11 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtils;
+import nl.tno.essim.profiles.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -81,14 +82,14 @@ public class StorageNode extends Node {
 			double energy = 0.0;
 			GenericProfile storageProfile = storage.getProfile();
 			if (ProfileUtils.isPowerProfile(storageProfile)) {
-                energy = timeStep * ProfileUtils.readProfile(storageProfile, now);
+                energy = timeStep * profileDataManager.readProfile(storageProfile, now);
 			} else if (ProfileUtils.isEnergyProfile(storageProfile)) {
-                energy = ProfileUtils.readProfile(storageProfile, now);
+                energy = profileDataManager.readProfile(storageProfile, now);
 			} else if (ProfileUtils.isSoCProfile(storageProfile)) {
 				LocalDateTime startTime = now.getStartTime().minus(timeStep, ChronoUnit.SECONDS);
 				Horizon last = new Horizon(startTime, timeStepinDT);
-                double currentSoC = ProfileUtils.readProfile(storageProfile, last);
-                double newSoC = ProfileUtils.readProfile(storageProfile, now);
+                double currentSoC = profileDataManager.readProfile(storageProfile, last);
+                double newSoC = profileDataManager.readProfile(storageProfile, now);
 				energy = ((newSoC - currentSoC) * capacity);
 			}
 
@@ -115,11 +116,11 @@ public class StorageNode extends Node {
 					StorageStrategy storageStrategy = (StorageStrategy) controlStrategy;
 					GenericProfile marginalChargeCosts = storageStrategy.getMarginalChargeCosts();
 					if (marginalChargeCosts != null) {
-                        mcCharge = ProfileUtils.readProfile(marginalChargeCosts, now);
+                        mcCharge = profileDataManager.readProfile(marginalChargeCosts, now);
 					}
 					GenericProfile marginalDischargeCosts = storageStrategy.getMarginalDischargeCosts();
 					if (marginalDischargeCosts != null) {
-                        mcDischarge = ProfileUtils.readProfile(marginalDischargeCosts, now);
+                        mcDischarge = profileDataManager.readProfile(marginalDischargeCosts, now);
 					}
 				}
 			}
@@ -131,7 +132,7 @@ public class StorageNode extends Node {
 	@Override
 	public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
 		builder.tag("capability", "Storage");
-		builder.value("soc", storage.getFillLevel());
+		builder.value(ObservationField.SOC, storage.getFillLevel());
 		if (energy > 0) {
 			EmissionManager.getInstance(simulationId).addConsumer(networkId, storage, Math.abs(energy));
 		} else {

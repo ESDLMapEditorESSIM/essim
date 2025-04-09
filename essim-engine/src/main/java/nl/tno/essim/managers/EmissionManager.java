@@ -42,6 +42,7 @@ import nl.tno.essim.commons.SimulationStatus;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 
 @Slf4j
@@ -360,7 +361,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 						.tag("carrierId", producerCarrier.getId())
 						.tag("carrierName",
 								producerCarrier.getName() == null ? "UnnamedCarrier" : producerCarrier.getName())
-						.value("emission", emission).build());
+						.value(ObservationField.EMISSION, emission).build());
 			}
 		}
 
@@ -379,7 +380,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 						.tag("carrierId", consumerCarrier.getId())
 						.tag("carrierName",
 								consumerCarrier.getName() == null ? "UnnamedCarrier" : consumerCarrier.getName())
-						.value("emission", emission).build());
+						.value(ObservationField.EMISSION, emission).build());
 			}
 		}
 

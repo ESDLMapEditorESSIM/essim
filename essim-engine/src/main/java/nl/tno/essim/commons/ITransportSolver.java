@@ -17,6 +17,7 @@
 package nl.tno.essim.commons;
 
 import esdl.Carrier;
+import nl.tno.essim.managers.SimulationManager;
 
 public interface ITransportSolver extends Simulatable {
 
@@ -27,5 +28,6 @@ public interface ITransportSolver extends Simulatable {
 	public boolean hasAnyTransportAsset();
 
 	public boolean hasAnyTransportAssetWithCapacity();
+	ISimulationManager getSimulationManager();
 
 }

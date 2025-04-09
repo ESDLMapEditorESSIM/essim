@@ -19,7 +19,8 @@ package nl.tno.essim;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esdl.*;
-import essim.EssimPackage;
+import nl.tno.essim.profiles.ProfileDataManager;
+import nl.tno.essim.commons.CredentialUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
@@ -39,8 +40,10 @@ import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KPIObservationConsumer;
+import nl.tno.essim.observation.consumers.PostgresObservationConsumer;
 import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
@@ -50,6 +53,7 @@ import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -67,13 +71,13 @@ import java.util.regex.Pattern;
 public class ESSimEngine implements IStatusProvider {
     static {
         // Initialize the models
-        EssimESDLPackage.eINSTANCE.eClass();
-        EssimPackage.eINSTANCE.eClass();
+        EsdlPackage.eINSTANCE.eClass();
     }
 
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
+    private final XMIResourceImpl esdlResource;
     private EssimLoadFlowController loadFlowController;
     private List<EnergyAsset> energyAssets;
     @Getter
@@ -159,12 +163,18 @@ public class ESSimEngine implements IStatusProvider {
         log.info("Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice() + "]");
 
         esdlString = esdl;
+        ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
+        esdlResource = loadEcoreResource(esdlStream);
+        energySystem = (EnergySystem) esdlResource.getContents().getFirst();
+        if (energySystem == null) {
+            log.error("Failed to load Energy System");
+            throw new IllegalStateException("Failed to load ESDL!");
+        }
+
 
         // Initialise SimulationManager
-        simulationManager = new SimulationManager(simulationId, simulationStartTime, simulationEndTime,
-                simulationStepLength, mongo);
-
         observationManager = new ObservationManager(simulationId);
+        registerObservationConsumers(simulation);
 
 
         if (simulation.isPowsyblLoadFlow()) {
@@ -172,46 +182,22 @@ public class ESSimEngine implements IStatusProvider {
             simulationManager.setLoadFlowController(loadFlowController);
         }
 
-        try {
-            // Register all ObservationConsumers - Eg: InfluxDB
-            if (simulation.getInfluxURL() != null) {
-                InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(
-                        simulation.getInfluxURL());
-                influxObservationConsumer.init(scenarioName);
-                observationManager.registerConsumer(influxObservationConsumer);
-                simulationManager.addObservationConsumer(influxObservationConsumer);
-                log.debug("Registering InfluxDB Observation Consumer: {}", scenarioName);
-            }
-            if (simulation.getCsvFilesLocation() != null) {
-                CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
-                        simulation.getCsvFilesLocation());
-                observationManager.registerConsumer(csvObservationConsumer);
-                simulationManager.addObservationConsumer(csvObservationConsumer);
-                log.debug("Registering CSV Observation Consumer");
-            }
-        } catch (Exception e) {
-            simulationManager.shutdown();
-            throw new IllegalArgumentException("Error in Observation Manager init", e);
-        }
+        EssimTime simulationTime = new EssimTime(simulationStartTime, simulationEndTime, simulationStepLength);
+        ProfileDataManager profileDataManager = new ProfileDataManager(esdlResource, simulationTime);
+        simulationManager = new SimulationManager(simulationId, simulationTime, mongo, observationManager, profileDataManager);
+
 
         // Publish Simulation Description
         if (simulationDescription != null) {
             observationManager.publish(generalObservationProvider,
                     Observation.builder()
                             .observedAt(simulationStartTime)
-                            .value("SimDescription", simulationDescription)
+                            .value(ObservationField.SIM_DESCRIPTION, simulationDescription)
                             .build());
         }
-        ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
-        energySystem = loadEcoreResource(esdlStream);
-        if (energySystem == null) {
-            log.error("Failed to load Energy System");
-            throw new IllegalStateException("Failed to load ESDL!");
-        }
-
         energySystemId = "UnnamedEnergySystem";
         if (energySystem.getName() != null) {
-            if (!energySystem.getName().equals("")) {
+            if (!energySystem.getName().isEmpty()) {
                 energySystemId = energySystem.getName();
             }
         }
@@ -222,7 +208,7 @@ public class ESSimEngine implements IStatusProvider {
             throw new IllegalArgumentException("No energy instance found in ESDL file!");
         }
 
-        Instance instance = energySystem.getInstance().get(0);
+        Instance instance = energySystem.getInstance().getFirst();
         if (instance.getArea() == null) {
             throw new IllegalArgumentException("No area found in ESDL energy instance !");
         }
@@ -235,15 +221,15 @@ public class ESSimEngine implements IStatusProvider {
         if (esInformation == null) {
             throw new IllegalArgumentException("No Energy System Information specified! Cannot read carrier information.");
         }
-        Carriers carriers = esInformation.getCarriers();
+            Carriers carriers = esInformation.getCarriers();
         if (carriers == null) {
             throw new IllegalArgumentException("No Carrier Information specified!");
 
         }
-        TreeMap<Integer, List<TransportSolver>> transportSolveOrder = determineTransportSolverOrder(carriers);
-        if (transportSolveOrder.isEmpty()) {
-            throw new IllegalStateException("Conflicting Control Strategies found!!");
-        }
+                TreeMap<Integer, List<TransportSolver>> transportSolveOrder = createTransportSolvers(carriers);
+                if (transportSolveOrder.isEmpty()) {
+                    throw new IllegalStateException("Conflicting Control Strategies found!!");
+                }
         // Here we have all the information to build the powsybl network
         if (loadFlowController != null) {
             List<TransportSolver> electricityTransportSolvers = transportSolveOrder.entrySet().stream().flatMap(entry -> entry.getValue().stream()).filter(solver -> solver.getCarrier() instanceof ElectricityCommodity).toList();
@@ -251,21 +237,21 @@ public class ESSimEngine implements IStatusProvider {
         }
 
 
-        log.debug("Going with this parallelised order:");
+                log.debug("Going with this parallelised order:");
 
-        // Add to simulation manager the transport solvers in the order we determined.
-        for (int k : transportSolveOrder.keySet()) {
-            List<TransportSolver> solvers = transportSolveOrder.get(k);
-            log.debug(" - {}: {}", k, solvers.toString());
-            for (TransportSolver solver : solvers) {
-                solver.setSimulationManager(simulationManager);
-                solver.setObservationManager(observationManager);
-            }
-            simulationManager.addSolvers(solvers);
-        }
-        EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
-        emissionManager.setObservationManager(observationManager);
-        simulationManager.addOtherSimulatable(emissionManager);
+                // Add to simulation manager the transport solvers in the order we determined.
+                for (int k : transportSolveOrder.keySet()) {
+                    List<TransportSolver> solvers = transportSolveOrder.get(k);
+                    log.debug(" - {}: {}", k, solvers.toString());
+                    for (TransportSolver solver : solvers) {
+                        solver.setSimulationManager(simulationManager);
+                        solver.setObservationManager(observationManager);
+                    }
+                    simulationManager.addSolvers(solvers);
+                }
+                EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
+                emissionManager.setObservationManager(observationManager);
+                simulationManager.addOtherSimulatable(emissionManager);
         int numAssets = 0;
         for (TransportSolver solver : solversList) {
             numAssets += solver.getProcessedList().size();
@@ -280,7 +266,6 @@ public class ESSimEngine implements IStatusProvider {
                 KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
                 kpiObservationConsumer.init(simulationId);
                 observationManager.registerConsumer(kpiObservationConsumer);
-                simulationManager.addObservationConsumer(kpiObservationConsumer);
                 log.debug("Registering KPI Observation Consumer for {}", kpiCommunicator.getType());
                 List<KPIModule> modules = simulation.getKpiModule().getModules();
                 KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);
@@ -302,7 +287,55 @@ public class ESSimEngine implements IStatusProvider {
 
     }
 
-    public TreeMap<Integer, List<TransportSolver>> determineTransportSolverOrder(Carriers carriers) throws Exception {
+    private void registerObservationConsumers(EssimSimulation simulation) {
+        try {
+            // Register all ObservationConsumers - Eg: InfluxDB
+            if (simulation.getInfluxURL() != null) {
+                InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(
+                        simulation.getInfluxURL());
+                influxObservationConsumer.init(scenarioName);
+                observationManager.registerConsumer(influxObservationConsumer);
+                log.debug("Registering InfluxDB Observation Consumer: {}", scenarioName);
+            }
+            if (simulation.getCsvFilesLocation() != null) {
+                CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
+                        simulation.getCsvFilesLocation());
+                observationManager.registerConsumer(csvObservationConsumer);
+                csvObservationConsumer.init(scenarioName);
+                log.debug("Registering CSV Observation Consumer");
+            }
+            if (simulation.getPostgresURL() != null) {
+                String jdbcUri = "jdbc:" + simulation.getPostgresURL();
+                CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(simulation.getPostgresURL());
+                String username = credentials == null ? "essim" : credentials.username();
+                String password = credentials == null ? "pgpassword" : credentials.password();
+                PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
+                observationManager.registerConsumer(postgresObservationConsumer);
+                postgresObservationConsumer.init(scenarioName);
+            }
+
+        } catch (Exception e) {
+//            simulationManager.shutdown();
+            throw new IllegalArgumentException("Error in Observation Manager init", e);
+        }
+    }
+
+    @NotNull
+    private InfluxDBObservationConsumer getInfluxDBObservationConsumer(DatabaseConfiguration configuration) {
+        String host = configuration.getHost();
+        int port = configuration.getPort();
+        boolean tls = configuration.isTls();
+        if (port == 0) {
+            port = tls ? 443 : 80;
+        }
+        String influxUrl = String.format("http%s://%s:%d", tls ? "s" : "", host, port);
+
+        InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(influxUrl);
+        influxObservationConsumer.init(scenarioName);
+        return influxObservationConsumer;
+    }
+
+    public TreeMap<Integer, List<TransportSolver>> createTransportSolvers(Carriers carriers) throws Exception {
 
         // Create all Transport Solvers based on carriers.
         // There could be isolated networks also. So repeat this process till we get a
@@ -432,55 +465,56 @@ public class ESSimEngine implements IStatusProvider {
         return grafanaClient.getDashboardUrl();
     }
 
-    public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
-        EList<Asset> areaAssets = area.getAsset();
-        if (areaAssets != null) {
-            for (Asset asset : areaAssets) {
-                if (asset instanceof EnergyAsset) {
-                    EnergyAsset energyAsset = (EnergyAsset) asset;
-                    assetList.add(energyAsset);
-                } else if (asset instanceof AbstractBuilding) {
-                    AbstractBuilding building = (AbstractBuilding) asset;
-                    findAllEnergyAssets(building, assetList);
+    public interface EnergyAssetVisitor {
+        void visit(EnergyAsset energyAsset);
                 }
+
+    public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
+        visitAllEnergyAssets(area, assetList::add);
             }
-        }
+
+    public static void visitAllEnergyAssets(Area area, EnergyAssetVisitor visitor) {
+        // Process assets within the current area
+        processAssets(area.getAsset(), visitor);
+
+        // Recursively process sub-areas
         EList<Area> subAreas = area.getArea();
         if (subAreas != null) {
-            for (Area subArea : area.getArea()) {
-                findAllEnergyAssets(subArea, assetList);
+            for (Area subArea : subAreas) {
+                visitAllEnergyAssets(subArea, visitor);
             }
         }
     }
 
-    public static void findAllEnergyAssets(AbstractBuilding building, List<EnergyAsset> assetList) {
-        EList<Asset> buildingAssets = building.getAsset();
-        if (buildingAssets != null) {
-            for (Asset asset : buildingAssets) {
+    public static void visitAllEnergyAssets(AbstractBuilding building, EnergyAssetVisitor visitor) {
+        // Process assets within the current building
+        processAssets(building.getAsset(), visitor);
+    }
+
+    // Refactored shared code logic to handle any type of asset list
+    private static void processAssets(EList<Asset> assets, EnergyAssetVisitor visitor) {
+        if (assets != null) {
+            for (Asset asset : assets) {
                 if (asset instanceof EnergyAsset) {
                     EnergyAsset energyAsset = (EnergyAsset) asset;
-                    assetList.add(energyAsset);
+                    visitor.visit(energyAsset);
                 } else if (asset instanceof AbstractBuilding) {
                     AbstractBuilding subBuilding = (AbstractBuilding) asset;
-                    findAllEnergyAssets(subBuilding, assetList);
+                    visitAllEnergyAssets(subBuilding, visitor);
                 }
             }
         }
-    }
-
-    public static <T extends EObject> T loadEcoreResource(String projectFileName) throws IOException {
-        return loadEcoreResource(new FileInputStream(projectFileName));
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends EObject> T loadEcoreResource(InputStream stream) throws IOException {
+    public static XMIResourceImpl loadEcoreResource(InputStream stream) throws IOException {
 
         XMIResourceImpl resource = new XMIResourceImpl();
         resource.getDefaultLoadOptions().put(XMIResource.OPTION_DEFER_IDREF_RESOLUTION, Boolean.TRUE);
         resource.setIntrinsicIDToEObjectMap(new HashMap<String, EObject>());
         resource.load(stream, null);
 
-        return (T) resource.getContents().get(0);
+        return resource;
     }
 
     public static <T extends EObject> String ecoreResourceToString(T ecoreResource) throws IOException {

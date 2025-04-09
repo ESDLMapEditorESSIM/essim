@@ -117,7 +117,6 @@ class DynamicPricesTest {
 		
 		ESSimEngine essimEngine = new ESSimEngine("local-realprices-test", simId, sim, esdl, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 		
 		

@@ -4,7 +4,6 @@ import esdl.Asset;
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
 import esdl.Port;
-import essim.ESSIMSingleValueProfile;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.model.Market;
@@ -37,7 +36,6 @@ class LoadflowTest {
 
 		String simId = mongo.addSimulation(sim);
 		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, sim.getEsdlContents(), mongo);
-		essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
 		essimEngine.startSimulation();

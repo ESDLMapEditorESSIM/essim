@@ -23,7 +23,7 @@ import org.influxdb.dto.QueryResult;
 import org.influxdb.dto.QueryResult.Result;
 import org.influxdb.dto.QueryResult.Series;
 
-import common.EssimQuery;
+import nl.tno.essim.profiles.EssimQuery;
 import esdl.EsdlFactory;
 import esdl.EsdlPackage;
 import esdl.TimeSeriesProfile;

@@ -126,10 +126,6 @@ public class InMemoryObservationConsumer implements IObservationConsumer {
 
     }
 
-    @Override
-    public void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation) {
-
-    }
 }
 
 @Slf4j

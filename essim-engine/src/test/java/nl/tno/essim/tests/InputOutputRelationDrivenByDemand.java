@@ -72,7 +72,6 @@ class InputOutputRelationDrivenByDemand {
             String esdl = new String(InputOutputRelationDrivenByDemand.class.getResourceAsStream("/InputOutputRelationDrivenByDemand.esdl").readAllBytes(), StandardCharsets.UTF_8);
             ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, esdl, mongo);
             InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-            essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
             essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
             essimEngine.startSimulation();

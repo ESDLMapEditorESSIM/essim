@@ -21,7 +21,5 @@ public interface IObservationConsumer {
 
 	void consume(String simulationRunName, IObservationProvider source, IObservation observation);
 
-	void consumeBatch(String simulationRunName, IObservationProvider source, IObservation observation);
-
 	void cleanup();
 }

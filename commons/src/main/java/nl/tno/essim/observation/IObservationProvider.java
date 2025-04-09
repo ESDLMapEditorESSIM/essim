@@ -16,6 +16,8 @@
 
 package nl.tno.essim.observation;
 
+import java.util.Collection;
+
 public interface IObservationProvider {
 
 	void setObservationManager(IObservationManager manager);

@@ -61,7 +61,6 @@ class DynamicPricesTest2 {
         String esdl = new String(DynamicPricesTest2.class.getResourceAsStream("/testcase1/GH-HP-HD-CarrierCosts-TimeSeriesProfile.esdl").readAllBytes(), StandardCharsets.UTF_8);
         ESSimEngine essimEngine = new ESSimEngine("local-realprices-testcase3", simId, sim, esdl, mongo);
         InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
-        essimEngine.getSimulationManager().addObservationConsumer(inMemoryObservationConsumer);
         essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
 
         String grafanaDashboard = "";

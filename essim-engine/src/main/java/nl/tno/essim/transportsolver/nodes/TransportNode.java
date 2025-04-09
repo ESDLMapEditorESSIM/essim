@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 
@@ -52,11 +53,11 @@ public class TransportNode extends Node {
     public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
         long timeStepInSeconds = timestamp.getSimulationStepLength().getSeconds();
         builder.tag("capability", "Transport");
-        builder.value("capacity", capacity).value("allocationEnergy", directionFactor * energy).value("allocationPower",
+        builder.value(ObservationField.CAPACITY, capacity).value(ObservationField.ALLOCATION_ENERGY, directionFactor * energy).value(ObservationField.ALLOCATION_POWER,
                 directionFactor * energy / timeStepInSeconds);
         if (capacity != 0) {
             double load = directionFactor * energy / (timeStepInSeconds * capacity);
-            builder.value("load", load);
+            builder.value(ObservationField.LOAD, load);
         }
     }
 

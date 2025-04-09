@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import esdl.*;
 import esdl.impl.ItemImpl;
+import nl.tno.essim.profiles.ProfileDataManager;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -34,6 +35,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import org.jetbrains.annotations.NotNull;
@@ -66,6 +68,7 @@ public abstract class Node implements INode {
     protected long timeStep;
     protected Horizon now;
     protected Port connectedPort;
+    protected ProfileDataManager profileDataManager;
 
     /**
      * these are set by {@link #createBidCurve(long, Horizon, Market)}
@@ -437,12 +440,12 @@ public abstract class Node implements INode {
                 .tag("assetClass", asset.getClass().getInterfaces()[0].getSimpleName()).tag("address", address)
                 .tag("carrierId", carrier.getId()).tag("role", role.name())
                 .tag("carrierName", carrier.getName() == null ? "UnnamedCarrier" : carrier.getName())
-                .value("allocationEnergy", energy)
-                .value("allocationPower", energy / timestamp.getSimulationStepLength().getSeconds())
-                .value("marginalCost", demandFunction.getMarginalCost());
+                .value(ObservationField.ALLOCATION_ENERGY, energy)
+                .value(ObservationField.ALLOCATION_POWER, energy / timestamp.getSimulationStepLength().getSeconds())
+                .value(ObservationField.MARGINAL_COST, demandFunction.getMarginalCost());
 
         if (storeBidCurves) {
-            builder.value("bidcurve", this.demandFunction);
+            builder.value(ObservationField.BIDCURVE, this.demandFunction);
         }
 
         // Tag sector if defined
@@ -541,6 +544,7 @@ public abstract class Node implements INode {
         @Getter
         @Accessors(fluent = true)
         private String esdlString;
+        private ProfileDataManager profileDataManager;
 
         public NodeBuilder asset(EnergyAsset asset) {
             this.asset = asset;
@@ -550,6 +554,11 @@ public abstract class Node implements INode {
 
         public NodeBuilder config(NodeConfiguration config) {
             this.config = config;
+            return this;
+        }
+
+        public NodeBuilder profileDataManager(ProfileDataManager profileDataManager) {
+            this.profileDataManager = profileDataManager;
             return this;
         }
 
@@ -591,7 +600,9 @@ public abstract class Node implements INode {
                     }
                 }
             }
-
+            if (node !=null) {
+                node.setProfileDataManager(profileDataManager);
+            }
             return node;
         }
 

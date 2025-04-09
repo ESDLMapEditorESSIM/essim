@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.SimulationStatus;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.Observation;
+import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.eclipse.emf.common.util.BasicEList;
@@ -650,9 +651,9 @@ public class EssimLoadFlowController {
                 double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
                 double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double q = q1 > q2 ? q1 - q2 : q2 - q1;
-                Observation observation = builder.value("loadflowPower", p * 1000)
-                        .value("loadflowReactivePower", q * 1000)
-                        .value("loadflowCurrent", line.getTerminal(side).getI())
+                Observation observation = builder.value(ObservationField.LOADFLOW_POWER, p * 1000)
+                        .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000)
+                        .value(ObservationField.LOADFLOW_CURRENT, line.getTerminal(side).getI())
                         .build();
                 observationMap.put(getObservationKey(observation), observation);
                 super.visitLine(line, side);
@@ -665,7 +666,7 @@ public class EssimLoadFlowController {
             Observation.ObservationBuilder builder = observation.toBuilder();
             Observation lfObservation = observationMap.get(getObservationKey(observation));
             if (lfObservation != null) {
-                builder.values(lfObservation.getValues());
+                lfObservation.getValues().forEach((key, value) -> builder.value(ObservationField.valueOf(key), value));
             }
             observations.set(i, builder.build());
         }
@@ -679,8 +680,8 @@ public class EssimLoadFlowController {
     private Observation createObservation(String id, Terminal terminal, EssimTime timestamp) {
         Carrier carrier = carrierMap.get(id);
         Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
-        Observation observation = builder.value("loadflowPower", terminal.getP() * 1000)
-                .value("loadflowReactivePower", terminal.getQ() * 1000)
+        Observation observation = builder.value(ObservationField.LOADFLOW_POWER, terminal.getP() * 1000)
+                .value(ObservationField.LOADFLOW_REACTIVE_POWER, terminal.getQ() * 1000)
 //                .value("loadflowCurrent", terminal.getI())
                 .build();
         return observation;

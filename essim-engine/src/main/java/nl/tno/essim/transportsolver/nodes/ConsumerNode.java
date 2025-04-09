@@ -36,7 +36,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.ProfileUtils;
+import nl.tno.essim.profiles.ProfileUtils;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -89,11 +89,11 @@ public class ConsumerNode extends Node {
 		}
 		if (consumerProfile != null) {
 			if (ProfileUtils.isPowerProfile(consumerProfile)) {
-                energyOutput = timeStep * ProfileUtils.readProfile(consumerProfile, now);
+                energyOutput = timeStep * profileDataManager.readProfile(consumerProfile, now);
 			} else if (ProfileUtils.isEnergyProfile(consumerProfile)) {
-                energyOutput = ProfileUtils.readProfile(consumerProfile, now);
+                energyOutput = profileDataManager.readProfile(consumerProfile, now);
 			} else if (ProfileUtils.isPercentageProfile(consumerProfile)) {
-                energyOutput = timeStep * ProfileUtils.readProfile(consumerProfile, inputPort, now);
+                energyOutput = timeStep * profileDataManager.readProfile(consumerProfile, inputPort, now);
 			}
 		}
 		if (!Double.isNaN(energyOutput)) {
@@ -101,13 +101,13 @@ public class ConsumerNode extends Node {
 		} else {
 			energyOutput = timeStep * power;
 			if (marginalCostProfile != null) {
-                Double aggregateCost = ProfileUtils.readProfile(marginalCostProfile, now);
+                Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
 				setCost(aggregateCost);
 			} else if (costProfile != null) {
-                Double aggregateCost = ProfileUtils.readProfile(costProfile, now);
+                Double aggregateCost = profileDataManager.readProfile(costProfile, now);
 				if(Double.isNaN(aggregateCost)) {
 					aggregateCost = getDefaultMarginalCost();
 				}
