@@ -27,8 +27,10 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
             dataProcessor = new DataProcessor(profile.getProfileType(), profile.getMultiplier());
         }
         cacheSupplier = ProfileCacheSupplierFactory.getProfileCacheSupplier(profile.getConfiguration());
-        // Make sure the cache is loaded
-        getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+        if (profileStartDate != null) {
+            // Make sure the cache is loaded
+            getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+        }
     }
 
     @Override

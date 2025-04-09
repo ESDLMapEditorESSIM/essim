@@ -32,8 +32,10 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
         } else {
             dataProcessor = new DataProcessor(profile.getProfileType(), profile.getMultiplier());
         }
-        // Make sure the cache is loaded
-        getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+        if (profileStartDate != null) {
+            // Make sure the cache is loaded
+            getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+        }
     }
 
     private InfluxDB connectToInfluxHost() {
