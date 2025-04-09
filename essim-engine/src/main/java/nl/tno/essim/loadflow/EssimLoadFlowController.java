@@ -666,7 +666,7 @@ public class EssimLoadFlowController {
             Observation.ObservationBuilder builder = observation.toBuilder();
             Observation lfObservation = observationMap.get(getObservationKey(observation));
             if (lfObservation != null) {
-                lfObservation.getValues().forEach((key, value) -> builder.value(ObservationField.valueOf(key), value));
+                lfObservation.getValues().forEach((key, value) -> builder.value(ObservationField.valueOfKey(key), value));
             }
             observations.set(i, builder.build());
         }

@@ -61,7 +61,7 @@ public class Observation implements IObservation {
         ObservationBuilder builder = builder();
         builder.observedAt(observedAt);
         builder.values = new HashMap<>();
-        values.forEach((key, value) -> builder.value(ObservationField.valueOf(key), value));
+        values.forEach((key, value) -> builder.value(ObservationField.valueOfKey(key), value));
         builder.tags = new HashMap<>();
         tags.forEach(builder::tag);
         return builder;

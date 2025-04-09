@@ -21,7 +21,8 @@ public enum ObservationField {
     SOC("soc", Double.class),
     LOADFLOW_POWER("loadflowPower", Double.class),
     LOADFLOW_REACTIVE_POWER("loadflowReactivePower", Double.class),
-    LOADFLOW_CURRENT("loadflowCurrent", Double.class);
+    LOADFLOW_CURRENT("loadflowCurrent", Double.class),
+    ;
 
     private final String key;
     private final Class<?> observationType;
@@ -29,5 +30,14 @@ public enum ObservationField {
     ObservationField(String key, Class<?> observationType) {
         this.key = key;
         this.observationType = observationType;
+    }
+
+    public static ObservationField valueOfKey(String key) {
+        for (ObservationField field : values()) {
+            if (field.getKey().equals(key)) {
+                return field;
+            }
+        }
+        throw new IllegalArgumentException("No ObservationField with key: " + key);
     }
 }

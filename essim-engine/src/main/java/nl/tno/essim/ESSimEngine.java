@@ -177,14 +177,14 @@ public class ESSimEngine implements IStatusProvider {
         registerObservationConsumers(simulation);
 
 
+        EssimTime simulationTime = new EssimTime(simulationStartTime, simulationEndTime, simulationStepLength);
+        ProfileDataManager profileDataManager = new ProfileDataManager(esdlResource, simulationTime);
+        simulationManager = new SimulationManager(simulationId, simulationTime, mongo, observationManager, profileDataManager);
+
         if (simulation.isPowsyblLoadFlow()) {
             loadFlowController = new EssimLoadFlowController(simulationId);
             simulationManager.setLoadFlowController(loadFlowController);
         }
-
-        EssimTime simulationTime = new EssimTime(simulationStartTime, simulationEndTime, simulationStepLength);
-        ProfileDataManager profileDataManager = new ProfileDataManager(esdlResource, simulationTime);
-        simulationManager = new SimulationManager(simulationId, simulationTime, mongo, observationManager, profileDataManager);
 
 
         // Publish Simulation Description
