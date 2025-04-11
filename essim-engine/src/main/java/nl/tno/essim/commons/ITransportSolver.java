@@ -17,13 +17,14 @@
 package nl.tno.essim.commons;
 
 import esdl.Carrier;
-import nl.tno.essim.managers.SimulationManager;
+
+import java.util.Set;
 
 public interface ITransportSolver extends Simulatable {
 
 	public String getId();
 
-	public Carrier getCarrier();
+	public Set<Carrier> getCarriers();
 
 	public boolean hasAnyTransportAsset();
 

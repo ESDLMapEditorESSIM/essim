@@ -232,7 +232,7 @@ public class ESSimEngine implements IStatusProvider {
                 }
         // Here we have all the information to build the powsybl network
         if (loadFlowController != null) {
-            List<TransportSolver> electricityTransportSolvers = transportSolveOrder.entrySet().stream().flatMap(entry -> entry.getValue().stream()).filter(solver -> solver.getCarrier() instanceof ElectricityCommodity).toList();
+            List<TransportSolver> electricityTransportSolvers = transportSolveOrder.entrySet().stream().flatMap(entry -> entry.getValue().stream()).filter(solver -> solver.getCarriers().stream().anyMatch(c -> c instanceof ElectricityCommodity)).toList();
             loadFlowController.createNetwork(electricityTransportSolvers, energyAssets);
         }
 

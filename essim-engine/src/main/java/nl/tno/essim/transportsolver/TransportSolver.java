@@ -44,6 +44,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class TransportSolver implements ITransportSolver, Simulatable, IObservationProvider {
@@ -55,7 +56,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     @Getter
     private String id;
     @Getter
-    private Carrier carrier;
+    private Set<Carrier> carriers = new HashSet<>(3);
     private List<EnergyAsset> assetList;
     @Getter
     private List<EnergyAsset> processedList;
@@ -83,7 +84,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                            Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem,
                            Market market) {
         this.id = name;
-        this.carrier = carrier;
+        this.carriers.add(carrier);
         this.nodeConfig = nodeConfig;
         this.esdlString = energySystem;
         this.market = market;
@@ -97,7 +98,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         if (asset instanceof EnergyAsset) {
             EnergyAsset energyAsset = (EnergyAsset) asset;
             for (Port port : energyAsset.getPort()) {
-                if (carrier.equals(port.getCarrier())) {
+                if (carriers.contains(port.getCarrier())) {
                     return true;
                 }
             }
@@ -158,16 +159,20 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                         + roleMap.get(asset));
             }
             log.error("Cannot find a producer or consumer in network " + getId() + " for carrier: "
-                    + getCarrier().getId() + "!! Assets in this network are: " + String.join(", ", assetListString));
+                    + carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")) + "!! Assets in this network are: " + String.join(", ", assetListString));
             log.error("This network ({}) will not be created!", getId());
             return null;
         }
 
         rootRole = roleMap.get(rootAsset);
+        Optional<Carrier> carrier = rootAsset.getPort().stream().map(Port::getCarrier).filter(carriers::contains).findFirst();
+        if (!carrier.isPresent()) {
+            throw new IllegalStateException("Carrier of root asset not found in network " + getId());
+        }
 
         String rootAssetId = rootAsset.getId();
         NodeBuilder nodeBuilder = Node.builder().nodeId(rootAssetId).simulationId(simulationManager.getName()).asset(rootAsset)
-                .esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier).profileDataManager(simulationManager.getProfileDataManager());
+                .esdlString(esdlString).role(rootRole).parent(null).networkId(getId()).carrier(carrier.get()).profileDataManager(simulationManager.getProfileDataManager());
         if (nodeConfig != null) {
             this.nodeConfig.stream().filter(n -> rootAssetId.equals(n.getEsdlNodeId())).findFirst()
                     .ifPresent(nodeBuilder::config);
@@ -186,7 +191,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         tree.findDeviceNodes(deviceNodes);
 
         if (deviceNodes.size() <= 1) {
-            log.error("Only one asset in network " + getId() + " for carrier: " + getCarrier().getId() + "!! : "
+            log.error("Only one asset in network " + getId() + " for carrier: " + carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")) + "!! : "
                     + deviceNodes.get(0));
             log.error("This network ({}) will not be created!", getId());
             return assetList;
@@ -231,7 +236,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         if (rootAsset == null) {
             log.warn(
                     "Network {} for carrier {} ({}) has no energy producers in it! Please check if this was intentional!",
-                    getId(), carrier.getId(), carrier.getName());
+                    getId(), carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")), carriers.stream().map(Carrier::getName).collect(Collectors.joining(", ")));
             for (EnergyAsset asset : assetList) {
                 if (roleMap.get(asset).equals(Role.CONSUMER)) {
                     rootAsset = asset;
@@ -246,13 +251,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     public void makeTree(Node parentNode) throws Exception {
         // if (!(Commons.isConversionToSameCarrier(parentNode.getAsset()))) {
         HashMap<EnergyAsset, Port> assetConnections = Commons.findAllConnectedAssets(parentNode.getAsset());
-        for (EnergyAsset connectedAsset : assetConnections.keySet()) {
+        for (Map.Entry<EnergyAsset, Port> entry : assetConnections.entrySet()) {
+            EnergyAsset connectedAsset = entry.getKey();
             if (assetList.contains(connectedAsset) && !processedList.contains(connectedAsset)) {
                 String nodeId = connectedAsset.getId();
                 Port connectedPort = assetConnections.get(connectedAsset);
                 NodeBuilder nodeBuilder = Node.builder().nodeId(nodeId).connectedPort(connectedPort)
                         .simulationId(simulationManager.getName()).asset(connectedAsset).parent(parentNode).networkId(getId())
-                        .esdlString(esdlString).carrier(carrier).profileDataManager(simulationManager.getProfileDataManager());
+                        .esdlString(esdlString).carrier(entry.getValue().getCarrier()).profileDataManager(simulationManager.getProfileDataManager());
                 for (Port myPort : connectedAsset.getPort()) {
                     if (myPort instanceof InPort) {
                         InPort myInPort = (InPort) myPort;
@@ -431,11 +437,13 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         tree.calculateAssignedEnergies(timestamp, balancingPrice);
         tree.addObservations(timestamp, observations);
 
-        observations.add(Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
-                .tag("carrierId", carrier.getId())
-                .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
-                .value(ObservationField.IMBALANCE_ENERGY, imbalance.doubleValue()).value(ObservationField.MATCHING_PRICE, balancingPrice)
-                .value(ObservationField.IMBALANCE_POWER, imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
+        carriers.forEach(carrier -> {
+            observations.add(Observation.builder().observedAt(timestamp.getTime()).tag("transportNetworkId", getId())
+                    .tag("carrierId", carrier.getId())
+                    .tag("carrierName", (carrier.getName() == null) ? "UnnamedCarrier" : carrier.getName())
+                    .value(ObservationField.IMBALANCE_ENERGY, imbalance.doubleValue()).value(ObservationField.MATCHING_PRICE, balancingPrice)
+                    .value(ObservationField.IMBALANCE_POWER, imbalance.divide(BigDecimal.valueOf(timeStep), MathContext.DECIMAL128).doubleValue()).build());
+        });
         return observations;
     }
 
