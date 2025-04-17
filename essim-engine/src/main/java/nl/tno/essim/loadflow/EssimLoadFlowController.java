@@ -78,6 +78,7 @@ public class EssimLoadFlowController {
     private final AtomicInteger simulationRunCounter = new AtomicInteger(1000);
     SimulationStatus status = SimulationStatus.UNDEFINED;
 
+
     public EssimLoadFlowController(String networkName) {
         this.networkName = networkName;
         executor = Executors.newSingleThreadExecutor(threadFactory);
@@ -119,18 +120,18 @@ public class EssimLoadFlowController {
         network.setMinimumAcceptableValidationLevel(ValidationLevel.STEADY_STATE_HYPOTHESIS);
 
         // Now we create the assets per carrier
-        solvers.stream().filter(s -> s.getCarrier() instanceof ElectricityCommodity).forEach(solver -> {
-            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && p.getCarrier().equals(solver.getCarrier())).toList().isEmpty()).toList();
-            Carrier carrier = solver.getCarrier();
+        solvers.stream().filter(s -> s.getCarriers().iterator().next() instanceof ElectricityCommodity).forEach(solver -> {
+            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && solver.getCarriers().contains(p.getCarrier())).toList().isEmpty()).toList();
             // Create the network elements for the connected assets
-            createAssets(connectedAssets, (ElectricityCommodity) carrier);
+            solver.getCarriers().forEach(c -> {
+                createAssets(connectedAssets, (ElectricityCommodity) c);
+            });
         });
         // Create the transformers connecting the carriers
         createTransformers(assetList);
         // Now we create the lines
         createLines(assetList, network);
-        solvers.forEach(solver -> carrierSolverMap.put(solver.getCarrier().getId(), solver));
-
+        solvers.forEach(solver -> solver.getCarriers().forEach(c -> carrierSolverMap.put(c.getId(), solver)));
         exportNetwork();
     }
 
@@ -572,10 +573,13 @@ public class EssimLoadFlowController {
         LocalDateTime time = timestamp.getTime();
         ZoneId zoneId = ZoneId.systemDefault();
         network.setCaseDate(time.atZone(zoneId));
-        LoadFlowParameters parameters = new LoadFlowParameters()
+        LoadFlowParameters parameters = LoadFlowParameters.load()
                 .setUseReactiveLimits(false);
-        OpenLoadFlowParameters.create(parameters)
-                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED);
+        parameters.getExtension(OpenLoadFlowParameters.class)
+                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
+                .setUseActiveLimits(false)
+                .setPlausibleActivePowerLimit(Double.MAX_VALUE);
+
         OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider();
         LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 
@@ -602,12 +606,7 @@ public class EssimLoadFlowController {
     }
 
     public ArrayList<Observation> step(EssimTime timestamp, ArrayList<Observation> observations) {
-        Future<ArrayList<Observation>> future = executor.submit(new Callable<ArrayList<Observation>>() {
-            @Override
-            public ArrayList<Observation> call() throws Exception {
-                return processObservations(timestamp, observations);
-            }
-        });
+        Future<ArrayList<Observation>> future = executor.submit(() -> processObservations(timestamp, observations));
         try {
             return future.get();
         } catch (InterruptedException | ExecutionException e) {
