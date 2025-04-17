@@ -592,7 +592,7 @@ public class ESSimEngine implements IStatusProvider {
                                 boolean portFound = conversion.getPort()
                                         .parallelStream()
                                         .anyMatch(p -> drivenByDemand.getOutPort().equals(p)
-                                                && p.getCarrier().equals(solver.getCarrier()));
+                                                && solver.getCarriers().contains(p.getCarrier()));
                                 if (solver.getRole(conversion).equals(Role.PRODUCER) && portFound) {
                                     solvers.addFirst(solver);
                                 } else {
@@ -603,7 +603,7 @@ public class ESSimEngine implements IStatusProvider {
                                 boolean portFound = conversion.getPort()
                                         .parallelStream()
                                         .anyMatch(p -> drivenBySupply.getInPort().equals(p)
-                                                && p.getCarrier().equals(solver.getCarrier()));
+                                                && solver.getCarriers().contains(p.getCarrier()));
                                 if (solver.getRole(conversion).equals(Role.CONSUMER) && portFound) {
                                     solvers.addFirst(solver);
                                 } else {
