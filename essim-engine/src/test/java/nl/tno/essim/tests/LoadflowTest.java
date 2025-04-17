@@ -68,14 +68,12 @@ class LoadflowTest {
 		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "1b");
 
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
-
-//		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
-//		System.out.println("Resulting ESDL: \n" + resultESDL);
+		// TODO: Add checks
 	}
 
 	@Test
-	void testLoadFlow2() throws Exception {
-		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow0.esdl").readAllBytes(), StandardCharsets.UTF_8);
+	void testLoadFlowEindhovenMSOnly() throws Exception {
+		String esdl = new String(LoadflowTest.class.getResourceAsStream("/LoadflowEindhovenMSOnly.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EssimSimulation sim = new EssimSimulation();
 		sim.setEsdlContents(esdl);
@@ -84,10 +82,8 @@ class LoadflowTest {
 		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "2a");
 
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
-
-//		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
-//		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
+
 	@Test
 	void testLoadFlowWithConversion() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow-with-conversion.esdl").readAllBytes(), StandardCharsets.UTF_8);
@@ -115,9 +111,8 @@ class LoadflowTest {
 		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "-WT");
 
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
+		// TODO: add checks
 
-//		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
-//		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
 
 	@Test

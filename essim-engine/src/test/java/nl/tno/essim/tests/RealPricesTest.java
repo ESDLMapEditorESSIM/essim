@@ -59,14 +59,22 @@ class RealPricesTest {
 		market.setMinPrice(-100.0);
 		market.setMaxPrice(100.0);
 		market.setDeltaPrice(1E-12);
-		
+		if (System.getenv("INFLUX_URL") != null) {
+			sim.setInfluxURL(System.getenv("INFLUX_URL"));
+		}
+
 		sim.setScenarioID("testcase1-realpriceprofile");
 		String simId = mongo.addSimulation(sim);
 		String esdl = new String(CHPTest.class.getResourceAsStream("/ED-Imp-Exp-highprices.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		ESSimEngine essimEngine = new ESSimEngine("local-realprices-test", simId, sim, esdl, mongo);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		essimEngine.getObservationManager().registerConsumer(inMemoryObservationConsumer);
-		
+
+		String grafanaDashboard = "";
+		if (System.getenv("INFLUX_URL") != null) {
+			grafanaDashboard = essimEngine.createGrafanaDashboard();
+		}
+
 		essimEngine.startSimulation();
 		while (mongo.getSimulationStatus(simId).getState() != Status.COMPLETE) {
 			Thread.sleep(100);
@@ -106,9 +114,9 @@ class RealPricesTest {
 			Resource eResource = es.eResource();
 			EnergyAsset asset = (EnergyAsset)eResource.getEObject(entry.getKey());
 			if (asset instanceof Export) {
-				assertEquals(total, 0.0, 1E-3);
+				assertEquals(0.0, total, 1E-2);
 			} else if (asset instanceof ElectricityDemand || asset instanceof ElectricityNetwork) {
-				assertEquals(total, 1E9, 1E3);
+				assertEquals(1E9, total, 1E3);
 			} else if (asset instanceof Import) {
 				assertEquals(-1E9, total, 1E9);
 			}

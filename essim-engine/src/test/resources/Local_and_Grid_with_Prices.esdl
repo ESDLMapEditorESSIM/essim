@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<esdl:EnergySystem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:esdl="http://www.tno.nl/esdl" id="2ee64f26-6549-4088-a6b8-a03489bc6025" name="Untitled EnergySystem" description="" esdlVersion="v2303" version="10">
+<esdl:EnergySystem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:esdl="http://www.tno.nl/esdl" id="2ee64f26-6549-4088-a6b8-a03489bc6025" name="Local Network And Grid With Prices" description="" esdlVersion="v2303" version="10">
   <instance xsi:type="esdl:Instance" id="b510fb05-876c-41ae-840e-19bed0c6f786" name="Untitled Instance">
     <area xsi:type="esdl:Area" name="Untitled Area" id="5b57a707-7698-44a6-af66-074869dbdd7f">
       <asset xsi:type="esdl:Import" power="25000.0" name="Import_Global" id="a1211753-1cda-4760-b9ce-972c8925fca0">

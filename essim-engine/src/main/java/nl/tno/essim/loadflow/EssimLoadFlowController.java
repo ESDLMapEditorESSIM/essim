@@ -563,7 +563,7 @@ public class EssimLoadFlowController {
         } else if (o instanceof Generator generator) {
             generator.setTargetP(power);
         } else if (o instanceof Battery battery) {
-            battery.setTargetP(power);
+            battery.setTargetP(-power);
         }
     }
 
