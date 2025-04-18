@@ -46,9 +46,7 @@ public class Commons {
     ;
 
     public static String readFileIntoString(String filename) throws IOException {
-        try (InputStream is = Commons.class.getClassLoader().getResourceAsStream(filename)) {
-            return new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
-        }
+        return new String(Objects.requireNonNull(Commons.class.getClassLoader().getResourceAsStream(filename)).readAllBytes());
     }
 
     public static boolean isConversionToSameCarrier(EnergyAsset asset) {

@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
-import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.transportsolver.TransportSolver;
@@ -40,6 +39,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
@@ -47,21 +47,7 @@ import java.util.List;
 @Slf4j
 public class GrafanaClient {
 
-    private static final String JSON_RESOURCES = "json/";
-    private static final String GRAFANA_DASHBOARD_JSON = JSON_RESOURCES + "dashboard.json";
-    private static final String GRAFANA_TOTAL_EMISSIONS_PANEL = JSON_RESOURCES + "total-emissions.json";
-    private static final String GRAFANA_EMISSIONS_PER_CARRIER_PANEL = JSON_RESOURCES + "emission-per-carrier.json";
-    private static final String GRAFANA_SIM_DESC_PANEL = JSON_RESOURCES + "sim-desc-panel.json";
-    private static final String GRAFANA_NETWORK_BALANCE_TABLE = JSON_RESOURCES + "network-balance-table.json";
-    private static final String GRAFANA_PROD_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-prod.json";
-    //	private static final String GRAFANA_CONS_EMISSIONS_PANEL = JSON_RESOURCES + "emission-row-cons.json";
-    private static final String GRAFANA_SOLVER_PANEL = JSON_RESOURCES + "tp-solver-panel.json";
-    private static final String GRAFANA_SOLVER_PANEL_POWER = JSON_RESOURCES + "tp-solver-panel-power.json";
-    private static final String GRAFANA_SOLVER_PANEL_LOADFLOW_POWER = JSON_RESOURCES + "tp-solver-panel-loadflow-power.json";
-    private static final String GRAFANA_JLOAD_PANEL = JSON_RESOURCES + "transport-loads-joule.json";
-    private static final String GRAFANA_WLOAD_PANEL = JSON_RESOURCES + "transport-loads-watt.json";
-    private static final String GRAFANA_WLOSSES_PANEL = JSON_RESOURCES + "transport-losses-watt.json";
-    private static final String GRAFANA_PLOAD_PANEL = JSON_RESOURCES + "transport-loads-percent.json";
+    private static final String JSON_RESOURCES = "/json/";
 
     private static final String GRAFANA_ADMIN_USER_ENV = "GRAFANA_ADMIN_USER";
     private static final String GRAFANA_ADMIN_PASSWORD_ENV = "GRAFANA_ADMIN_PASSWORD";
@@ -83,17 +69,19 @@ public class GrafanaClient {
     private final String grafanaInternalUrl;
     @Getter
     private String dashboardUrl;
-    private final String energySystemId;
-    private final String scenarioName;
     private final String simulationRunName;
     private final IMongoBackend mongo;
     private String grafanaAdminAuthorisation;
 
+    record PanelInfo(ObjectNode panel,
+                     boolean isTransportPanel,
+                     String titlePostfix
+    ) {
+    }
+
     public GrafanaClient(String user, String timeString, String influxDBURL, List<TransportSolver> solversList,
                          String energySystemId, String scenarioName, String simulationRunName, LocalDateTime simStartDate,
                          LocalDateTime simEndDate, boolean emissionRow, boolean haveLoadflow, IMongoBackend mongo) {
-        this.energySystemId = energySystemId;
-        this.scenarioName = scenarioName;
         this.simulationRunName = simulationRunName;
         this.mongo = mongo;
 
@@ -122,151 +110,65 @@ public class GrafanaClient {
         grafanaAdminAuthorisation = Base64.getEncoder()
                 .encodeToString((grafanaAdminUser + ":" + grafanaAdminPassword).getBytes());
 
-        //mongo = MongoBackend.getInstance();
         grafanaAdminKey = createGrafanaAdminKey();
 
-        String tsPanelJoule = System.getenv(GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE);
-        boolean grafanaTransportSolverPanelJoule;
-        if (tsPanelJoule == null) {
-            grafanaTransportSolverPanelJoule = true;
-        } else grafanaTransportSolverPanelJoule = tsPanelJoule.trim().equalsIgnoreCase("true");
 
-        String tsPanelWatt = System.getenv(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT);
-        boolean grafanaTransportSolverPanelWatt;
-        if (tsPanelWatt == null) {
-            grafanaTransportSolverPanelWatt = true;
-        } else grafanaTransportSolverPanelWatt = tsPanelWatt.trim().equalsIgnoreCase("true");
-
-        String loadPanelJoule = System.getenv(GRAFANA_LOAD_PANEL_JOULE);
-        boolean grafanaLoadPanelJoule;
-        if (loadPanelJoule == null) {
-            grafanaLoadPanelJoule = false;
-        } else grafanaLoadPanelJoule = loadPanelJoule.trim().equalsIgnoreCase("true");
-
-        String loadPanelWatt = System.getenv(GRAFANA_LOAD_PANEL_WATT);
-        boolean grafanaLoadPanelWatt;
-        if (loadPanelWatt == null) {
-            grafanaLoadPanelWatt = true;
-        } else grafanaLoadPanelWatt = loadPanelWatt.trim().equalsIgnoreCase("true");
-
-        String loadPanelPercent = System.getenv(GRAFANA_LOAD_PANEL_PERCENT);
-        boolean grafanaLoadPanelPercent;
-        if (loadPanelPercent == null) {
-            grafanaLoadPanelPercent = true;
-        } else grafanaLoadPanelPercent = loadPanelPercent.trim().equalsIgnoreCase("true");
-
-        String dashboardString = null;
-        String totalEmissionsString = null;
-        String emissionsPerCarrierString = null;
-        String simDescPanelString = null;
-        String networkBalanceTableString = null;
-        String producerEmissionPanelString = null;
-//		String consumerEmissionPanelString = null;
-        String tpSolverPanelString = null;
-        String tpSolverPanelPowerString = null;
-        String tpSolverPanelLoadflowPowerString = null;
-        String tpSolverJLoadPanelString = null;
-        String tpSolverWLoadPanelString = null;
-        String tpSolverWLossesPanelString;
-        String tpSolverPLoadPanelString = null;
-        try {
-            dashboardString = Commons.readFileIntoString(GRAFANA_DASHBOARD_JSON);
-            totalEmissionsString = Commons.readFileIntoString(GRAFANA_TOTAL_EMISSIONS_PANEL);
-            emissionsPerCarrierString = Commons.readFileIntoString(GRAFANA_EMISSIONS_PER_CARRIER_PANEL);
-            simDescPanelString = Commons.readFileIntoString(GRAFANA_SIM_DESC_PANEL);
-            networkBalanceTableString = Commons.readFileIntoString(GRAFANA_NETWORK_BALANCE_TABLE);
-            producerEmissionPanelString = Commons.readFileIntoString(GRAFANA_PROD_EMISSIONS_PANEL);
-//			consumerEmissionPanelString = Commons.readFileIntoString(GRAFANA_CONS_EMISSIONS_PANEL);
-            tpSolverPanelString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL);
-            tpSolverPanelPowerString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL_POWER);
-            tpSolverPanelLoadflowPowerString = Commons.readFileIntoString(GRAFANA_SOLVER_PANEL_LOADFLOW_POWER);
-            tpSolverJLoadPanelString = Commons.readFileIntoString(GRAFANA_JLOAD_PANEL);
-            tpSolverWLoadPanelString = Commons.readFileIntoString(GRAFANA_WLOAD_PANEL);
-            tpSolverWLossesPanelString = Commons.readFileIntoString(GRAFANA_WLOSSES_PANEL);
-            tpSolverPLoadPanelString = Commons.readFileIntoString(GRAFANA_PLOAD_PANEL);
-        } catch (IOException e) {
-            return;
+        ArrayList<PanelInfo> panels = new ArrayList<>();
+        if (showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE, true)) {
+            panels.add(new PanelInfo(readJson("tp-solver-panel.json"), false, " (in J)"));
+        }
+        if (showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
+            panels.add(new PanelInfo(readJson("tp-solver-panel-power.json"), false, " (in W)"));
+        }
+        if (haveLoadflow && showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
+            panels.add(new PanelInfo(readJson("tp-solver-panel-loadflow-power.json"), false, " (loadflow in W)"));
+        }
+        if (showPanel(GRAFANA_LOAD_PANEL_JOULE, false)) {
+            panels.add(new PanelInfo(readJson("transport-loads-joule.json"), true, " Transport flows (in J)"));
+        }
+        if (showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
+            panels.add(new PanelInfo(readJson("transport-loads-watt.json"), true, " Transport flows (in W)"));
+        }
+        if (haveLoadflow && showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
+            panels.add(new PanelInfo(readJson("transport-losses-watt.json"), true, " Transport losses (in W)"));
+        }
+        if (showPanel(GRAFANA_LOAD_PANEL_PERCENT, true)) {
+            panels.add(new PanelInfo(readJson("transport-loads-percent.json"), true, " Transport loads (in %)"));
         }
 
+        ObjectNode dashboardJSON = createDashboardJson(user, timeString, energySystemId, simStartDate, simEndDate);
+        databaseLabel = addDatasource(dashboardJSON, influxDBURL, scenarioName);
+        ArrayNode panelArray = addPanelArray(dashboardJSON);
+        addSimpelPanel(panelArray, readJson("total-emissions.json"));
+        addSimpelPanel(panelArray, readJson("emission-per-carrier.json"));
+        addSimpelPanel(panelArray, readJson("sim-desc-panel.json"));
+        addNetworkBalanceTable(panelArray, energySystemId);
+        if (emissionRow) {
+            addSimpelPanel(panelArray, readJson("emission-row-prod.json"));
+        }
+
+        // Add solver panels
+        int index = 0;
+        for (ITransportSolver solver : solversList) {
+            String solverId = solver.getId();
+            for (PanelInfo panel : panels) {
+                if (!panel.isTransportPanel || solver.hasAnyTransportAsset()) {
+                    addSolverPanel(panelArray, panel.panel(), solverId, panel.titlePostfix, index);
+                }
+            }
+        }
+
+        ObjectNode makeDashboardJSON = ESSimEngine.getObjectMapper().createObjectNode();
+        makeDashboardJSON.set("dashboard", dashboardJSON);
+        makeDashboardJSON.put("folderId", 0);
+        makeDashboardJSON.put("overwrite", true);
+
+        log.debug("Grafana: POSTing to {} with content: \n{}", DASHBOARDS_URL, makeDashboardJSON.toString());
+
+        String response = post(DASHBOARDS_URL, makeDashboardJSON.toString());
+        ObjectNode respJSON = null;
         try {
-            ObjectNode dashboardJSON = createDashboardJson(user, timeString, energySystemId, simStartDate, simEndDate, dashboardString);
-
-            databaseLabel = addDatasource(dashboardJSON, influxDBURL, scenarioName);
-            ArrayNode panelArray = addPanelArray(dashboardJSON);
-
-            // 1
-            addSimpelPanel(totalEmissionsString, panelArray);
-
-            // 2
-            addSimpelPanel(emissionsPerCarrierString, panelArray);
-
-            // 3
-            addSimpelPanel(simDescPanelString, panelArray);
-
-            // 4
-            addNetworkBalanceTable(energySystemId, networkBalanceTableString, panelArray);
-
-            if (emissionRow) {
-                // 5
-                addSimpelPanel(producerEmissionPanelString, panelArray);
-            }
-
-            int i = 0;
-            for (ITransportSolver solver : solversList) {
-                String solverId = solver.getId();
-
-                if (grafanaTransportSolverPanelJoule) {
-                    addSolverPanel(panelArray, tpSolverPanelString, solverId, " (in J)", i);
-                    i++;
-                }
-
-                if (grafanaTransportSolverPanelWatt) {
-                    addSolverPanel(panelArray, tpSolverPanelPowerString, solverId, " (in W)", i);
-                    i++;
-                }
-
-
-                if (grafanaTransportSolverPanelWatt && haveLoadflow) {
-                    addSolverPanel(panelArray, tpSolverPanelLoadflowPowerString, solverId, " (loadflow in W)", i);
-                    i++;
-                }
-
-
-                if (solver.hasAnyTransportAsset()) {
-
-                    if (grafanaLoadPanelJoule) {
-                        addSolverPanel(panelArray, tpSolverJLoadPanelString, solverId, " Transport flows (in J)", i);
-                        i++;
-                    }
-
-                    if (grafanaLoadPanelWatt) {
-                        addSolverPanel(panelArray, tpSolverWLoadPanelString, solverId, " Transport flows (in W)", i);
-                        i++;
-                    }
-
-                    if (grafanaLoadPanelWatt && haveLoadflow) {
-                        addSolverPanel(panelArray, tpSolverWLossesPanelString, solverId, " Transport losses (in W)", i);
-                        i++;
-                    }
-
-
-                    if (solver.hasAnyTransportAssetWithCapacity() && grafanaLoadPanelPercent) {
-                        addSolverPanel(panelArray, tpSolverPLoadPanelString, solverId, " Transport loads (in %)", i);
-                        i++;
-                    }
-                }
-            }
-
-
-            ObjectNode makeDashboardJSON = ESSimEngine.getObjectMapper().createObjectNode();
-            makeDashboardJSON.set("dashboard", dashboardJSON);
-            makeDashboardJSON.put("folderId", 0);
-            makeDashboardJSON.put("overwrite", true);
-
-            log.debug("Grafana: POSTing to {} with content: \n{}", DASHBOARDS_URL, makeDashboardJSON.toString());
-
-            String response = post(DASHBOARDS_URL, makeDashboardJSON.toString());
-            ObjectNode respJSON = (ObjectNode) ESSimEngine.getObjectMapper().readTree(response);
+            respJSON = (ObjectNode) ESSimEngine.getObjectMapper().readTree(response);
             if (respJSON.has("status")) {
                 if (respJSON.get("status").asText().equals("success")) {
                     log.debug("Dashboard successfully created!!");
@@ -275,13 +177,25 @@ public class GrafanaClient {
                 }
             }
         } catch (JsonProcessingException e) {
-            log.warn("Could not parse json", e);
+            throw new RuntimeException(e);
         }
-
     }
 
-    private void addSolverPanel(ArrayNode panelArray, String solverPanelString, String solverId, String titlePostfix, int index) throws JsonProcessingException {
-        ObjectNode solverPanelNode = (ObjectNode) ESSimEngine.getObjectMapper().readTree(solverPanelString);
+    private static boolean showPanel(String envVar, boolean defaultValue) {
+        String value = System.getenv(envVar);
+        return value == null ? defaultValue : value.trim().equalsIgnoreCase("true");
+    }
+
+    private static ObjectNode readJson(String jsonResource) {
+        try {
+            return (ObjectNode) ESSimEngine.getObjectMapper().readTree(GrafanaClient.class.getResourceAsStream(JSON_RESOURCES + jsonResource));
+        } catch (IOException e) {
+            log.warn("Could not read json resource {}", jsonResource, e);
+        }
+        return null;
+    }
+
+    private void addSolverPanel(ArrayNode panelArray, ObjectNode solverPanelNode, String solverId, String titlePostfix, int index) {
         solverPanelNode.put("title", solverId + titlePostfix);
         solverPanelNode.put("datasource", databaseLabel);
 
@@ -296,8 +210,8 @@ public class GrafanaClient {
         panelArray.add(solverPanelNode);
     }
 
-    private void addNetworkBalanceTable(String energySystemId, String networkBalanceTableString, ArrayNode panelArray) throws JsonProcessingException {
-        ObjectNode netBalPanel = (ObjectNode) ESSimEngine.getObjectMapper().readTree(networkBalanceTableString);
+    private void addNetworkBalanceTable(ArrayNode panelArray, String energySystemId) {
+        ObjectNode netBalPanel = readJson("network-balance-table.json");
         netBalPanel.put("datasource", databaseLabel);
         setSimulationRun(netBalPanel, simulationRunName);
         netBalPanel.path("targets").forEach(target -> {
@@ -307,8 +221,8 @@ public class GrafanaClient {
     }
 
     @NotNull
-    private static ObjectNode createDashboardJson(String user, String timeString, String energySystemId, LocalDateTime simStartDate, LocalDateTime simEndDate, String dashboardString) throws JsonProcessingException {
-        ObjectNode dashboardJSON = (ObjectNode) ESSimEngine.getObjectMapper().readTree(dashboardString);
+    private static ObjectNode createDashboardJson(String user, String timeString, String energySystemId, LocalDateTime simStartDate, LocalDateTime simEndDate) {
+        ObjectNode dashboardJSON = readJson("dashboard.json");
         dashboardJSON.set("id", NullNode.getInstance());
         dashboardJSON.set("uid", NullNode.getInstance());
         dashboardJSON.put("title", energySystemId + " [" + user + "] [" + timeString + "]");
@@ -322,11 +236,10 @@ public class GrafanaClient {
         return dashboardJSON;
     }
 
-    private void addSimpelPanel(String panelString, ArrayNode panelArray) throws JsonProcessingException {
-        ObjectNode simDescPanel = (ObjectNode) ESSimEngine.getObjectMapper().readTree(panelString);
-        simDescPanel.put("datasource", databaseLabel);
-        setSimulationRun(simDescPanel, simulationRunName);
-        panelArray.add(simDescPanel);
+    private void addSimpelPanel(ArrayNode panelArray, ObjectNode panelNode) {
+        panelNode.put("datasource", databaseLabel);
+        setSimulationRun(panelNode, simulationRunName);
+        panelArray.add(panelNode);
     }
 
     private static void setSimulationRun(ObjectNode panelNode, String simulationRunName) {
@@ -463,7 +376,7 @@ public class GrafanaClient {
         StringBuilder response = new StringBuilder();
         try {
             URL url = new URL(grafanaInternalUrl + path);
-            log.trace("Going to do POST query : " + url.toString());
+            log.trace("Going to do POST query : {}", url);
 
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setDoOutput(true);
@@ -494,7 +407,6 @@ public class GrafanaClient {
         } catch (IOException e) {
             log.warn("Could not post to Admin", e);
         }
-
         return response.toString();
     }
 
@@ -521,8 +433,6 @@ public class GrafanaClient {
                 br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
             } catch (IOException e) {
                 throw new RuntimeException(e);
-//                throw new IllegalArgumentException("Attempt to connect to Grafana at " + url.toString()
-//                        + " failed. Please check if the service is up and running.");
             }
 
             String output;
