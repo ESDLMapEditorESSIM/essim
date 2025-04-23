@@ -58,6 +58,9 @@ class ConversionTest {
 		if (System.getenv("INFLUX_URL") != null) {
 			sim.setInfluxURL(System.getenv("INFLUX_URL"));
 		}
+		if (System.getenv("POSTGRES_URL") != null) {
+			sim.setPostgresURL(System.getenv("POSTGRES_URL"));
+		}
 		if (market != null) {
 			sim.setMarket(market);
 		}

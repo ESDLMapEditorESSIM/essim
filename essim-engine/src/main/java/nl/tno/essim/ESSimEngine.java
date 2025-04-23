@@ -19,6 +19,7 @@ package nl.tno.essim;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esdl.*;
+import nl.tno.essim.grafana.GrafanaDashboardGenerator;
 import nl.tno.essim.profiles.ProfileDataManager;
 import nl.tno.essim.commons.CredentialUtils;
 import lombok.Getter;
@@ -26,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.commons.IStatusProvider;
-import nl.tno.essim.grafana.GrafanaClient;
 import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIInfo;
 import nl.tno.essim.loadflow.EssimLoadFlowController;
@@ -36,7 +36,6 @@ import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
-import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
@@ -96,7 +95,7 @@ public class ESSimEngine implements IStatusProvider {
     @Getter
     private SimulationManager simulationManager;
     private HashMap<String, String> networkDiags = new HashMap<String, String>();
-    private String influxURL;
+    private String databaseURL;
     private Date simRunTime;
     private List<NodeConfiguration> nodeConfig;
     private RemoteKPIModule kpiModules;
@@ -138,7 +137,12 @@ public class ESSimEngine implements IStatusProvider {
         nodeConfig = simulation.getNodeConfig();
         kpiModules = simulation.getKpiModule();
         msoConfiguration = simulation.getMso();
-        influxURL = simulation.getInfluxURL();
+        if (simulation.getPostgresURL() != null && !simulation.getPostgresURL().isEmpty()) {
+            databaseURL = simulation.getPostgresURL();
+        }
+        else {
+            databaseURL = simulation.getInfluxURL();
+        }
 
         scenarioName = simulation.getScenarioID();
         this.simulationId = simulationId;
@@ -459,10 +463,11 @@ public class ESSimEngine implements IStatusProvider {
                 }
             }
         }
-        GrafanaClient grafanaClient = new GrafanaClient(user, timeString, influxURL, solversList, energySystemId,
+//        String databaseUrl = post
+        GrafanaDashboardGenerator grafanaDashboardGenerator = new GrafanaDashboardGenerator(user, timeString, databaseURL, solversList, energySystemId,
                 scenarioName, simulationId, simulationStartTime,
                 simulationEndTime.plus(simulationStepLength.getAmount(), simulationStepLength.getUnit()), emissionRow, loadFlowController != null, mongo);
-        return grafanaClient.getDashboardUrl();
+        return grafanaDashboardGenerator.getDashboardUrl();
     }
 
     public interface EnergyAssetVisitor {
