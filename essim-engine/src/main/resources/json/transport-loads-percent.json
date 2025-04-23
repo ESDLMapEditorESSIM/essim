@@ -1,129 +1,84 @@
 {
-	"datasource": "${DS_ESSIM}",
-	"fieldConfig": {
-		"defaults": {
-			"custom": {
-				"drawStyle": "line",
-				"lineInterpolation": "stepAfter",
-				"barAlignment": 0,
-				"lineWidth": 1,
-				"fillOpacity": 10,
-				"gradientMode": "none",
-				"spanNulls": true,
-				"showPoints": "never",
-				"pointSize": 5,
-				"stacking": {
-					"mode": "none",
-					"group": "A"
-				},
-				"axisPlacement": "auto",
-				"axisLabel": "",
-				"scaleDistribution": {
-					"type": "linear"
-				},
-				"hideFrom": {
-					"tooltip": false,
-					"viz": false,
-					"legend": false
-				},
-				"thresholdsStyle": {
-					"mode": "off"
-				}
-			},
-			"color": {
-				"mode": "palette-classic"
-			},
-			"thresholds": {
-				"mode": "absolute",
-				"steps": [
+  "datasource": "${DS_ESSIM}",
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "lineInterpolation": "stepAfter",
+        "barAlignment": 0,
+        "lineWidth": 1,
+        "fillOpacity": 10,
+        "gradientMode": "none",
+        "spanNulls": true,
+        "showPoints": "never",
+        "pointSize": 5,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        },
+        "axisPlacement": "auto",
+        "axisLabel": "",
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
           {
             "color": "green",
             "value": null
           }
         ]
-			},
-			"mappings": [],
-			"unit": "percentunit"
-		},
-		"overrides": []
-	},
-	"gridPos": {
-		"h": 8,
-		"w": 24,
-		"x": 0,
-		"y": 17
-	},
-	"id": 8,
-	"links": [],
-	"options": {
-		"tooltip": {
-			"mode": "single"
-		},
-		"legend": {
-			"displayMode": "table",
-			"placement": "right",
-			"calcs": [
-				"mean"
-			]
-		}
-	},
-	"pluginVersion": "8.2.5",
-	"targets": [
-		{
-			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
-			"groupBy": [
-				{
-					"params": [
-						"assetClass"
-					],
-					"type": "tag"
-				},
-				{
-					"params": [
-						"assetName"
-					],
-					"type": "tag"
-				},
-				{
-					"params": [
-						"address"
-					],
-					"type": "tag"
-				}
-			],
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"orderByTime": "ASC",
-			"policy": "default",
-			"refId": "B",
-			"resultFormat": "time_series",
-			"select": [
-				[
-					{
-						"params": [
-							"load"
-						],
-						"type": "field"
-					}
-				]
-			],
-			"tags": [
-				{
-					"key": "simulationRun",
-					"operator": "=",
-					"value": "/^$SimulationRun$/"
-				},
-				{
-					"condition": "AND",
-					"key": "capability",
-					"operator": "=",
-					"value": "Transport"
-				}
-			]
-		}
-	],
-	"timeFrom": null,
-	"timeShift": null,
-	"title": "$$$TRANSPORT-SOLVER-NAME$$$ Transport loads (in %)",
-	"transparent": true,
-	"type": "timeseries"
+      },
+      "mappings": [],
+      "unit": "percentunit"
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 17
+  },
+  "id": 8,
+  "links": [],
+  "options": {
+    "tooltip": {
+      "mode": "single"
+    },
+    "legend": {
+      "displayMode": "table",
+      "placement": "right",
+      "calcs": [
+        "mean"
+      ]
+    }
+  },
+  "pluginVersion": "8.2.5",
+  "targets": [
+    {
+      "refId": "B",
+      "query": "SELECT load FROM $$$TRANSPORT-SOLVER-NAME$$$ WHERE simulationRun =~ /^$SimulationRun$/ AND capability = 'Transport' GROUP BY assetClass, assetName, address ORDER BY time ASC",
+      "resultFormat": "time_series",
+      "alias": "$tag_assetClass ($tag_assetName, $tag_address)"
+    }
+  ],
+  "timeFrom": null,
+  "timeShift": null,
+  "title": "$$$TRANSPORT-SOLVER-NAME$$$ Transport loads (in %)",
+  "transparent": true,
+  "type": "timeseries"
 }

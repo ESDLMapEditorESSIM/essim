@@ -13,44 +13,8 @@
   "targets": [
     {
       "refId": "A",
-      "policy": "default",
-      "resultFormat": "time_series",
-      "orderByTime": "ASC",
-      "tags": [
-        {
-          "key": "simulationRun",
-          "operator": "=",
-          "value": "$$SimulationRunName$$"
-        },
-        {
-          "condition": "AND",
-          "key": "capability",
-          "operator": "=",
-          "value": "Producer"
-        }
-      ],
-      "groupBy": [],
-      "select": [
-        [
-          {
-            "type": "field",
-            "params": [
-              "emission"
-            ]
-          },
-          {
-            "type": "sum",
-            "params": []
-          },
-          {
-            "type": "math",
-            "params": [
-              " / 1000"
-            ]
-          }
-        ]
-      ],
-      "measurement": "/.*/"
+      "query": "SELECT SUM(emission) / 1000 AS total_emissions_tonnes FROM /.*/ WHERE simulationRun = '$$SimulationRunName$$' AND capability = 'Producer' ORDER BY time ASC",
+      "resultFormat": "time_series"
     }
   ],
   "options": {},

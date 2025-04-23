@@ -110,121 +110,25 @@
 	"pluginVersion": "8.2.5",
 	"targets": [
 		{
-			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
-			"groupBy": [
-				{
-					"params": [
-						"assetName"
-					],
-					"type": "tag"
-				},
-				{
-					"params": [
-						"assetClass"
-					],
-					"type": "tag"
-				},
-				{
-					"params": [
-						"address"
-					],
-					"type": "tag"
-				}
-			],
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"orderByTime": "ASC",
-			"policy": "default",
 			"refId": "A",
-			"resultFormat": "time_series",
-			"select": [
-				[
-					{
-						"params": [
-							"allocationEnergy"
-						],
-						"type": "field"
-					}
-				]
-			],
-			"tags": [
-				{
-					"key": "simulationRun",
-					"operator": "=",
-					"value": "/^$SimulationRun$/"
-				},
-				{
-					"condition": "AND",
-					"key": "capability",
-					"operator": "<>",
-					"value": "Transport"
-				}
-			]
+			"query": "SELECT allocationEnergy FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun =~ /^$SimulationRun$/ AND capability <> 'Transport' GROUP BY assetName, assetClass, address ORDER BY time ASC",
+			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
+			"resultFormat": "time_series"
 		},
 		{
-			"alias": "Imbalance",
-			"groupBy": [],
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"orderByTime": "ASC",
-			"policy": "default",
 			"refId": "B",
-			"resultFormat": "time_series",
-			"select": [
-				[
-					{
-						"params": [
-							"imbalanceEnergy"
-						],
-						"type": "field"
-					},
-					{
-						"params": [
-							"*-1"
-						],
-						"type": "math"
-					}
-				]
-			],
-			"tags": [
-				{
-					"key": "simulationRun",
-					"operator": "=",
-					"value": "/^$SimulationRun$/"
-				}
-			]
+			"query": "SELECT imbalanceEnergy * -1 FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun =~ /^$SimulationRun$/ ORDER BY time ASC",
+			"alias": "Imbalance",
+			"resultFormat": "time_series"
 		},
 		{
-			"alias": "SOC",
-			"groupBy": [],
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"orderByTime": "ASC",
-			"policy": "default",
 			"refId": "C",
-			"resultFormat": "time_series",
-			"select": [
-				[
-					{
-						"params": [
-							"soc"
-						],
-						"type": "field"
-					}
-				]
-			],
-			"tags": [
-				{
-					"key": "simulationRun",
-					"operator": "=",
-					"value": "/^$SimulationRun$/"
-				},
-				{
-					"condition": "AND",
-					"key": "capability",
-					"operator": "=",
-					"value": "Storage"
-				}
-			]
+			"query": "SELECT soc FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun =~ /^$SimulationRun$/ AND capability = 'Storage' ORDER BY time ASC",
+			"alias": "SOC",
+			"resultFormat": "time_series"
 		}
-	],
+	]
+,
 	"timeFrom": null,
 	"timeShift": null,
 	"title": "$$$TRANSPORT-SOLVER-NAME$$$",

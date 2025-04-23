@@ -12,49 +12,10 @@
   "links": [],
   "targets": [
     {
-      "alias": "$tag_assetClass ($tag_assetName)",
-      "groupBy": [
-		{
-			"params": [
-				"sector"
-			],
-			"type": "tag"
-		}
-      ],
-      "measurement": "ESSIM",
-      "orderByTime": "ASC",
-      "policy": "default",
       "refId": "A",
-      "resultFormat": "time_series",
-      "select": [
-        [
-          {
-            "params": [
-              "emission"
-            ],
-            "type": "field"
-          },
-          {
-            "params": [
-              " / 1000"
-            ],
-            "type": "math"
-          }
-        ]
-      ],
-      "tags": [
-        {
-          "key": "simulationRun",
-          "operator": "=",
-          "value": "$$SimulationRunName$$"
-        },
-        {
-          "condition": "AND",
-          "key": "capability",
-          "operator": "=",
-          "value": "Producer"
-        }
-      ]
+      "query": "SELECT emission / 1000 AS emission_tonnes FROM ESSIM WHERE simulationRun = '$$SimulationRunName$$' AND capability = 'Producer' GROUP BY sector, assetClass, assetName ORDER BY time ASC",
+      "alias": "$tag_assetClass ($tag_assetName)",
+      "resultFormat": "time_series"
     }
   ],
   "transparent": true,

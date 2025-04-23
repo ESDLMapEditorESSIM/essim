@@ -29,12 +29,10 @@ import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -186,9 +184,11 @@ public class GrafanaClient {
         return value == null ? defaultValue : value.trim().equalsIgnoreCase("true");
     }
 
-    private static ObjectNode readJson(String jsonResource) {
-        try {
-            return (ObjectNode) ESSimEngine.getObjectMapper().readTree(GrafanaClient.class.getResourceAsStream(JSON_RESOURCES + jsonResource));
+    private ObjectNode readJson(String jsonResource) {
+        try (InputStream stream = GrafanaClient.class.getResourceAsStream(JSON_RESOURCES + jsonResource)){
+            String string = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            String replaced = string.replaceAll("\\$\\$SimulationRunName\\$\\$", simulationRunName).replaceAll("/?\\^?\\$SimulationRun\\$/?", simulationRunName);
+            return (ObjectNode) ESSimEngine.getObjectMapper().readTree(replaced);
         } catch (IOException e) {
             log.warn("Could not read json resource {}", jsonResource, e);
         }
@@ -221,7 +221,7 @@ public class GrafanaClient {
     }
 
     @NotNull
-    private static ObjectNode createDashboardJson(String user, String timeString, String energySystemId, LocalDateTime simStartDate, LocalDateTime simEndDate) {
+    private ObjectNode createDashboardJson(String user, String timeString, String energySystemId, LocalDateTime simStartDate, LocalDateTime simEndDate) {
         ObjectNode dashboardJSON = readJson("dashboard.json");
         dashboardJSON.set("id", NullNode.getInstance());
         dashboardJSON.set("uid", NullNode.getInstance());
@@ -243,13 +243,6 @@ public class GrafanaClient {
     }
 
     private static void setSimulationRun(ObjectNode panelNode, String simulationRunName) {
-        panelNode.path("targets").forEach(target -> {
-            target.path("tags").forEach(tag -> {
-                if (tag.path("key").asText().equals("simulationRun")) {
-                    ((ObjectNode) tag).put("value", simulationRunName);
-                }
-            });
-        });
     }
 
     private static ArrayNode addPanelArray(ObjectNode dashboardJSON) {

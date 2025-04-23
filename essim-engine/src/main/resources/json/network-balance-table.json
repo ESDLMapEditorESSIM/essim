@@ -12,41 +12,10 @@
   "links": [],
   "targets": [
     {
-      "alias": "$tag_transportNetworkId",
-      "groupBy": [
-        {
-          "params": [
-            "transportNetworkId"
-          ],
-          "type": "tag"
-        }
-      ],
-      "measurement": "",
-      "orderByTime": "ASC",
-      "policy": "default",
       "refId": "A",
-      "resultFormat": "time_series",
-      "select": [
-        [
-          {
-            "params": [
-              "imbalanceEnergy"
-            ],
-            "type": "field"
-          },
-          {
-            "params": [],
-            "type": "mean"
-          }
-        ]
-      ],
-      "tags": [
-        {
-          "key": "simulationRun",
-          "operator": "=",
-          "value": "/^$SimulationRun$/"
-        }
-      ]
+      "query": "SELECT MEAN(imbalanceEnergy) AS average_imbalance_energy FROM /.*/ WHERE simulationRun =~ /^$SimulationRun$/ GROUP BY transportNetworkId ORDER BY time ASC",
+      "alias": "$tag_transportNetworkId",
+      "resultFormat": "time_series"
     }
   ],
   "options": {

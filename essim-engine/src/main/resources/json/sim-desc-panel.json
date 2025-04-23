@@ -16,31 +16,12 @@
   "interval": null,
   "targets": [
     {
-      "groupBy": [],
-      "measurement": "ESSIM",
-      "orderByTime": "ASC",
-      "policy": "default",
       "refId": "A",
-      "resultFormat": "time_series",
-      "select": [
-        [
-          {
-            "type": "field",
-            "params": [
-              "SimDescription"
-            ]
-          }
-        ]
-      ],
-      "tags": [
-        {
-          "key": "simulationRun",
-          "operator": "=",
-          "value": "/^$SimulationRun$/"
-        }
-      ]
+      "query": "SELECT SimDescription FROM ESSIM WHERE simulationRun =~ /^$SimulationRun$/ ORDER BY time ASC",
+      "resultFormat": "time_series"
     }
-  ],
+  ]
+,
   "transparent": true,
   "fieldConfig": {
     "defaults": {
