@@ -10,6 +10,7 @@ import nl.tno.essim.ESSimEngine;
 public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
     private static final String DATASOURCES_URL = "/api/datasources";
     private final String influxDBURL;
+    private String databaseUid;
 
     InfluxDBDataSourceGenerator(String influxDBURL) {
         this.influxDBURL = influxDBURL;
@@ -21,17 +22,31 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
     }
 
     @Override
-    public ObjectNode getDataSource(GrafanaClient grafanaClient, String databaseName) {
+    public ObjectNode createDataSource(GrafanaClient grafanaClient, String databaseName) {
         ObjectNode dsInput = ESSimEngine.getObjectMapper().createObjectNode();
-        String databaseLabel = createDatabase(grafanaClient, databaseName);
-        dsInput.put("name", DS_HANDLE);
-        dsInput.put("label", databaseLabel);
-        dsInput.put("description", "");
-        dsInput.put("type", "datasource");
-        dsInput.put("pluginId", "influxdb");
-        dsInput.put("pluginName", "InfluxDB");
-
+        try {
+            if (databaseUid == null) {
+                databaseUid = createDatabase(grafanaClient, databaseName);
+            }
+            dsInput.put("name", DS_HANDLE);
+//            dsInput.put("label", databaseLabel);
+            dsInput.put("uid", databaseUid);
+            dsInput.put("description", "");
+            dsInput.put("type", "datasource");
+            dsInput.put("pluginId", "influxdb");
+            dsInput.put("pluginName", "InfluxDB");
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         return dsInput;
+    }
+
+    @Override
+    public void addDataSourceReference(ObjectNode node) {
+        ObjectNode dsNode = ESSimEngine.getObjectMapper().createObjectNode();
+        dsNode.put("uid", databaseUid);
+        dsNode.put("type", "influxdb");
+        node.set("datasource", dsNode);
     }
 
 
@@ -44,7 +59,7 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
                 String dbName = db.get("database").asText();
 
                 if (dbName.contains(databaseName)) {
-                    return db.get("name").asText();
+                    return db.get("uid").asText();
                 }
             }
         } catch (JsonProcessingException e) {
@@ -54,7 +69,7 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
         return null;
     }
 
-    private String createDatabase(GrafanaClient client, String database) {
+    private String createDatabase(GrafanaClient client, String database) throws JsonProcessingException {
         String databaseName = checkDatabase(client, database);
 
         if (databaseName == null) {
@@ -70,7 +85,8 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
             log.debug("Sending to Grafana: {}", dbJSON);
             String response = client.post(DATASOURCES_URL, dbJSON.toString());
             log.debug("Response: {}", response);
-            return database;
+            JsonNode db = ESSimEngine.getObjectMapper().readTree(response);
+            return db.path("datasource").get("uid").asText();
         } else {
             log.trace("Database {} already exists and is called {}!", database, databaseName);
             return databaseName;

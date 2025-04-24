@@ -56,7 +56,7 @@ public class GrafanaClient {
                 br = new BufferedReader(new InputStreamReader((conn.getInputStream())));
             } catch (IOException e) {
                 throw new IllegalArgumentException("Attempt to connect to Grafana at " + url.toString()
-                        + " failed. Please check if the service is up and running.");
+                        + " failed. Please check if the service is up and running.", e);
             }
 
             String output;

@@ -52,8 +52,8 @@ public class GrafanaDashboardGenerator {
     private static final String GRAFANA_LOAD_PANEL_WATT = "GRAFANA_LOAD_PANEL_WATT";
     private static final String GRAFANA_LOAD_PANEL_PERCENT = "GRAFANA_LOAD_PANEL_PERCENT";
     private static final String DASHBOARDS_URL = "/api/dashboards/db";
+    private DataSourceGenerator dataSourceGenerator;
     private GrafanaClient grafanaClient;
-    private String databaseLabel;
 
     @Getter
     private String dashboardUrl;
@@ -81,10 +81,9 @@ public class GrafanaDashboardGenerator {
         }
         grafanaClient = new GrafanaClient(mongo);
         ObjectNode dashboardJSON = createDashboardJson(user, timeString, energySystemId, simStartDate, simEndDate);
-        DataSourceGenerator dataSourceGenerator = DataSourceGenerator.getDataSourceGenerator(databaseURL);
-        ObjectNode dataSource = dataSourceGenerator.getDataSource(grafanaClient, scenarioName);
+        dataSourceGenerator = DataSourceGenerator.getDataSourceGenerator(databaseURL);
+        ObjectNode dataSource = dataSourceGenerator.createDataSource(grafanaClient, scenarioName);
         dashboardJSON.set("__inputs", ESSimEngine.getObjectMapper().createArrayNode().add(dataSource));
-        databaseLabel = dataSource.get("label").asText();
 
         ArrayList<PanelInfo> panels = createPanelList(haveLoadflow);
 
@@ -181,14 +180,16 @@ public class GrafanaDashboardGenerator {
         }
         replacements.put("\\$\\$SimulationRunName\\$\\$", simulationRunName);
         replacements.put("/?\\^?\\$SimulationRun\\$/?", simulationRunName);
+        String jsonString = null;
         try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(JSON_RESOURCES + jsonResource)) {
-            String string = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            jsonString = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             for (Map.Entry<String, String> entry : replacements.entrySet()) {
-                string = string.replaceAll(entry.getKey(), entry.getValue());
+                jsonString = jsonString.replaceAll(entry.getKey(), entry.getValue());
             }
-            return (ObjectNode) ESSimEngine.getObjectMapper().readTree(string);
+            return (ObjectNode) ESSimEngine.getObjectMapper().readTree(jsonString);
         } catch (IOException e) {
-            log.warn("Could not read json resource {}", jsonResource, e);
+            log.warn("Could not read or parse json resource {}", jsonResource, e);
+            log.debug("JSON resource content: {}", jsonString);
         }
         return null;
     }
@@ -198,7 +199,7 @@ public class GrafanaDashboardGenerator {
         replacements.put("\\${3}TRANSPORT-SOLVER-NAME\\${3}", solverId);
         ObjectNode solverPanelNode = readJson(solverPanelJson, replacements);
         solverPanelNode.put("title", solverId + titlePostfix);
-        solverPanelNode.put("datasource", databaseLabel);
+        addDataSource(solverPanelNode);
 
         ObjectNode gridPos = (ObjectNode) solverPanelNode.get("gridPos");
         int solverPanelY = 25 + index * gridPos.get("h").asInt();
@@ -207,13 +208,15 @@ public class GrafanaDashboardGenerator {
         gridPos.put("y", solverPanelY);
         solverPanelNode.put("id", solverPanelId);
         setSimulationRun(solverPanelNode, simulationRunName);
-        solverPanelNode.path("targets").forEach(target -> ((ObjectNode) target).put("measurement", solverId));
+        solverPanelNode.path("targets").forEach(target -> {
+            ((ObjectNode) target).put("measurement", solverId);
+        });
         panelArray.add(solverPanelNode);
     }
 
     private void addNetworkBalanceTable(ArrayNode panelArray, String energySystemId) {
         ObjectNode netBalPanel = readJson("network-balance-table.json");
-        netBalPanel.put("datasource", databaseLabel);
+        addDataSource(netBalPanel);
         setSimulationRun(netBalPanel, simulationRunName);
         netBalPanel.path("targets").forEach(target -> {
             ((ObjectNode) target).put("measurement", "/" + energySystemId + "(.*)/");
@@ -238,9 +241,13 @@ public class GrafanaDashboardGenerator {
     }
 
     private void addSimpelPanel(ArrayNode panelArray, ObjectNode panelNode) {
-        panelNode.put("datasource", databaseLabel);
+        addDataSource(panelNode);
         setSimulationRun(panelNode, simulationRunName);
         panelArray.add(panelNode);
+    }
+
+    private void addDataSource(ObjectNode node) {
+        dataSourceGenerator.addDataSourceReference(node);
     }
 
     private static void setSimulationRun(ObjectNode panelNode, String simulationRunName) {

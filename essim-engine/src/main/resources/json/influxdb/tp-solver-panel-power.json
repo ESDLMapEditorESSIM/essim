@@ -110,14 +110,18 @@
   "pluginVersion": "8.2.5",
   "targets": [
     {
+      "measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
       "refId": "A",
-      "query": "SELECT allocationPower FROM $$$TRANSPORT-SOLVER-NAME$$$ WHERE simulationRun =~ /^$SimulationRun$/ AND capability <> 'Transport' GROUP BY assetName, assetClass, address ORDER BY time ASC",
+      "query": "SELECT allocationPower FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE (simulationRun = '$SimulationRun$' AND capability <> 'Transport') GROUP BY assetName, assetClass, address ORDER BY time ASC",
+      "rawQuery": true,
       "resultFormat": "time_series",
       "alias": "$tag_assetClass ($tag_assetName, $tag_address)"
     },
     {
+      "measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
       "refId": "B",
-      "query": "SELECT imbalancePower * -1 AS Imbalance FROM $$$TRANSPORT-SOLVER-NAME$$$ WHERE simulationRun =~ /^$SimulationRun$/ ORDER BY time ASC",
+      "query": "SELECT imbalancePower * -1 AS Imbalance FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun = '$SimulationRun$' ORDER BY time ASC",
+      "rawQuery": true,
       "resultFormat": "time_series",
       "alias": "Imbalance"
     }

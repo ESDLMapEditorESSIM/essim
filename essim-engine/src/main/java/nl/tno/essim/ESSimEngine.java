@@ -76,6 +76,9 @@ public class ESSimEngine implements IStatusProvider {
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
+    static {
+//        objectMapper.
+    }
     private final XMIResourceImpl esdlResource;
     private EssimLoadFlowController loadFlowController;
     private List<EnergyAsset> energyAssets;

@@ -13,7 +13,7 @@
   "targets": [
     {
       "refId": "A",
-      "query": "SELECT MEAN(imbalanceEnergy) AS average_imbalance_energy FROM /.*/ WHERE simulationRun =~ /^$SimulationRun$/ GROUP BY transportNetworkId ORDER BY time ASC",
+      "query": "SELECT MEAN(imbalanceEnergy) AS average_imbalance_energy FROM /.*/ WHERE simulationRun ='$SimulationRun$' GROUP BY transportNetworkId ORDER BY time ASC",
       "alias": "$tag_transportNetworkId",
       "resultFormat": "time_series"
     }

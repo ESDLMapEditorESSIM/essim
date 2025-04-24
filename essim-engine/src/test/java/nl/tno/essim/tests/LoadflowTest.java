@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,7 +80,7 @@ class LoadflowTest {
 		sim.setEsdlContents(esdl);
 		sim.setStartDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 1, 0, 0, 0)));
 		sim.setEndDate(EssimTime.localDateTimeToDate(LocalDateTime.of(2015, 1, 2, 0, 0, 0)));
-		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "2a");
+		sim.setScenarioID(LoadflowTest.class.getSimpleName() + "2a_" + Integer.toHexString(UUID.randomUUID().hashCode()));
 
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
 	}

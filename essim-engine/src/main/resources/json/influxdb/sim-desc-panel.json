@@ -17,7 +17,7 @@
   "targets": [
     {
       "refId": "A",
-      "query": "SELECT SimDescription FROM ESSIM WHERE simulationRun =~ /^$SimulationRun$/ ORDER BY time ASC",
+      "query": "SELECT SimDescription FROM ESSIM WHERE simulationRun ='$SimulationRun$' ORDER BY time ASC",
       "resultFormat": "time_series"
     }
   ]

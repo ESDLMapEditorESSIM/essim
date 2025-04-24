@@ -7,7 +7,8 @@ public interface DataSourceGenerator {
 
     String getDBName(String resourceName);
 
-    ObjectNode getDataSource(GrafanaClient grafanaClient, String databaseName);
+    ObjectNode createDataSource(GrafanaClient grafanaClient, String databaseName);
+    void addDataSourceReference(ObjectNode node);
 
     static DataSourceGenerator getDataSourceGenerator(String dbUrl) {
         return new InfluxDBDataSourceGenerator(dbUrl);
