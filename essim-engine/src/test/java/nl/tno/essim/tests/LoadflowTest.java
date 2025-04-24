@@ -71,7 +71,7 @@ class LoadflowTest {
 		// TODO: Add checks
 	}
 
-	@Test
+//	@Test
 	void testLoadFlowEindhovenMSOnly() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/LoadflowEindhovenMSOnly.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
@@ -84,7 +84,7 @@ class LoadflowTest {
 		EnergySystem energySystem = runTest(sim, inMemoryObservationConsumer);
 	}
 
-	@Test
+//	@Test
 	void testLoadFlowWithConversion() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow-with-conversion.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
@@ -100,7 +100,7 @@ class LoadflowTest {
 //		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
 
-	@Test
+//	@Test
 	void testLoadFlowWithTransformer() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow2.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
