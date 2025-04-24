@@ -17,7 +17,7 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
 
     @Override
     public String getDBName(String resourceName) {
-        return resourceName;
+        return "\"" + resourceName + "\"";
     }
 
     @Override

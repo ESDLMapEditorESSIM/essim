@@ -36,7 +36,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class GrafanaDashboardGenerator {
@@ -57,7 +59,7 @@ public class GrafanaDashboardGenerator {
     private String dashboardUrl;
     private final String simulationRunName;
 
-    record PanelInfo(ObjectNode panel,
+    record PanelInfo(String panelJson,
                      boolean isTransportPanel,
                      String titlePostfix
     ) {
@@ -101,7 +103,7 @@ public class GrafanaDashboardGenerator {
             String solverId = solver.getId();
             for (PanelInfo panel : panels) {
                 if (!panel.isTransportPanel || solver.hasAnyTransportAsset()) {
-                    addSolverPanel(panelArray, panel.panel(), solverId, panel.titlePostfix, index);
+                    addSolverPanel(panelArray, panel.panelJson(), solverId, panel.titlePostfix, index);
                 }
             }
         }
@@ -141,25 +143,25 @@ public class GrafanaDashboardGenerator {
     private ArrayList<PanelInfo> createPanelList(boolean haveLoadflow) {
         ArrayList<PanelInfo> panels = new ArrayList<>();
         if (showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE, true)) {
-            panels.add(new PanelInfo(readJson("tp-solver-panel.json"), false, " (in J)"));
+            panels.add(new PanelInfo("tp-solver-panel.json", false, " (in J)"));
         }
         if (showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
-            panels.add(new PanelInfo(readJson("tp-solver-panel-power.json"), false, " (in W)"));
+            panels.add(new PanelInfo("tp-solver-panel-power.json", false, " (in W)"));
         }
         if (haveLoadflow && showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
-            panels.add(new PanelInfo(readJson("tp-solver-panel-loadflow-power.json"), false, " (loadflow in W)"));
+            panels.add(new PanelInfo("tp-solver-panel-loadflow-power.json", false, " (loadflow in W)"));
         }
         if (showPanel(GRAFANA_LOAD_PANEL_JOULE, false)) {
-            panels.add(new PanelInfo(readJson("transport-loads-joule.json"), true, " Transport flows (in J)"));
+            panels.add(new PanelInfo("transport-loads-joule.json", true, " Transport flows (in J)"));
         }
         if (showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
-            panels.add(new PanelInfo(readJson("transport-loads-watt.json"), true, " Transport flows (in W)"));
+            panels.add(new PanelInfo("transport-loads-watt.json", true, " Transport flows (in W)"));
         }
         if (haveLoadflow && showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
-            panels.add(new PanelInfo(readJson("transport-losses-watt.json"), true, " Transport losses (in W)"));
+            panels.add(new PanelInfo("transport-losses-watt.json", true, " Transport losses (in W)"));
         }
         if (showPanel(GRAFANA_LOAD_PANEL_PERCENT, true)) {
-            panels.add(new PanelInfo(readJson("transport-loads-percent.json"), true, " Transport loads (in %)"));
+            panels.add(new PanelInfo("transport-loads-percent.json", true, " Transport loads (in %)"));
         }
         return panels;
     }
@@ -170,9 +172,20 @@ public class GrafanaDashboardGenerator {
     }
 
     private ObjectNode readJson(String jsonResource) {
+        return readJson(jsonResource, new HashMap<>());
+    }
+
+    private ObjectNode readJson(String jsonResource, Map<String, String> replacements) {
+        if (replacements == null) {
+            replacements = new HashMap<>();
+        }
+        replacements.put("\\$\\$SimulationRunName\\$\\$", simulationRunName);
+        replacements.put("/?\\^?\\$SimulationRun\\$/?", simulationRunName);
         try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(JSON_RESOURCES + jsonResource)) {
             String string = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-//            String replaced = string.replaceAll("\\$\\$SimulationRunName\\$\\$", simulationRunName).replaceAll("/?\\^?\\$SimulationRun\\$/?", simulationRunName);
+            for (Map.Entry<String, String> entry : replacements.entrySet()) {
+                string = string.replaceAll(entry.getKey(), entry.getValue());
+            }
             return (ObjectNode) ESSimEngine.getObjectMapper().readTree(string);
         } catch (IOException e) {
             log.warn("Could not read json resource {}", jsonResource, e);
@@ -180,7 +193,10 @@ public class GrafanaDashboardGenerator {
         return null;
     }
 
-    private void addSolverPanel(ArrayNode panelArray, ObjectNode solverPanelNode, String solverId, String titlePostfix, int index) {
+    private void addSolverPanel(ArrayNode panelArray, String solverPanelJson, String solverId, String titlePostfix, int index) {
+        HashMap<String, String> replacements = new HashMap<>();
+        replacements.put("\\${3}TRANSPORT-SOLVER-NAME\\${3}", solverId);
+        ObjectNode solverPanelNode = readJson(solverPanelJson, replacements);
         solverPanelNode.put("title", solverId + titlePostfix);
         solverPanelNode.put("datasource", databaseLabel);
 
