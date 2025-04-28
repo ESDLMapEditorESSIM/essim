@@ -18,6 +18,7 @@
     {
       "refId": "A",
       "query": "SELECT SimDescription FROM ESSIM WHERE simulationRun ='$SimulationRun$' ORDER BY time ASC",
+      "rawQuery": true,
       "resultFormat": "time_series"
     }
   ]

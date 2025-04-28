@@ -14,6 +14,7 @@
     {
       "refId": "A",
       "query": "SELECT emission / 1000 AS emission_tonnes FROM /.*/ WHERE simulationRun = '$$SimulationRunName$$' AND capability = 'Producer' GROUP BY assetName, assetClass ORDER BY time ASC",
+      "rawQuery": true,
       "alias": "$tag_assetClass ($tag_assetName)",
       "resultFormat": "time_series"
     }

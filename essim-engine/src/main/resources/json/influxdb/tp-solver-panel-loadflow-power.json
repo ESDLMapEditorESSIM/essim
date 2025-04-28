@@ -97,6 +97,7 @@
     {
       "refId": "A",
       "query": "SELECT loadflowPower FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun = '$SimulationRun$' AND capability <> 'Transport' GROUP BY assetName, assetClass, address ORDER BY time ASC",
+      "rawQuery": true,
       "resultFormat": "time_series",
       "alias": "$tag_assetClass ($tag_assetName, $tag_address)"
     }

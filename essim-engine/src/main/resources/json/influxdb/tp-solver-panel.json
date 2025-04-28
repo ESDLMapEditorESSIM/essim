@@ -113,13 +113,15 @@
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"refId": "A",
 			"query": "SELECT allocationEnergy FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE (simulationRun ='$SimulationRun$' AND capability <> 'Transport') GROUP BY assetName, assetClass, address ORDER BY time ASC",
+			"rawQuery": true,
 			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
 			"resultFormat": "time_series"
 		},
 		{
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"refId": "B",
-			"query": "SELECT imbalanceEnergy * -1 FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun ='$SimulationRun$' ORDER BY time ASC",
+			"query": "SELECT imbalanceEnergy * -1 AS Imbalance FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun ='$SimulationRun$' ORDER BY time ASC",
+			"rawQuery": true,
 			"alias": "Imbalance",
 			"resultFormat": "time_series"
 		},
@@ -127,6 +129,7 @@
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"refId": "C",
 			"query": "SELECT soc FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun ='$SimulationRun$' AND capability = 'Storage' ORDER BY time ASC",
+			"rawQuery": true,
 			"alias": "SOC",
 			"resultFormat": "time_series"
 				}

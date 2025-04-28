@@ -64,6 +64,7 @@
     {
       "refId": "A",
       "query": "SELECT sum(emission) / 1000 AS emission_kg FROM /.*/ WHERE simulationRun = '$$SimulationRunName$$' AND capability = 'Producer' GROUP BY carrierName ORDER BY time ASC",
+      "rawQuery": true,
       "alias": "$tag_carrierName",
       "resultFormat": "time_series"
     }
