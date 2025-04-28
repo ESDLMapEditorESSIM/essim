@@ -104,6 +104,7 @@ public class GrafanaDashboardGenerator {
                 if (!panel.isTransportPanel || solver.hasAnyTransportAsset()) {
                     addSolverPanel(panelArray, panel.panelJson(), solverId, panel.titlePostfix, index);
                 }
+                ++index;
             }
         }
 
