@@ -52,9 +52,8 @@ public class GrafanaDashboardGenerator {
     private static final String GRAFANA_LOAD_PANEL_WATT = "GRAFANA_LOAD_PANEL_WATT";
     private static final String GRAFANA_LOAD_PANEL_PERCENT = "GRAFANA_LOAD_PANEL_PERCENT";
     private static final String DASHBOARDS_URL = "/api/dashboards/db";
-    private DataSourceGenerator dataSourceGenerator;
-    private GrafanaClient grafanaClient;
 
+    private DataSourceGenerator dataSourceGenerator;
     @Getter
     private String dashboardUrl;
     private final String simulationRunName;
@@ -79,7 +78,7 @@ public class GrafanaDashboardGenerator {
             log.warn("No internal Grafana URL defined! Dashboard will not be created!");
             return;
         }
-        grafanaClient = new GrafanaClient(mongo);
+        GrafanaClient grafanaClient = new GrafanaClient(mongo);
         ObjectNode dashboardJSON = createDashboardJson(user, timeString, energySystemId, simStartDate, simEndDate);
         dataSourceGenerator = DataSourceGenerator.getDataSourceGenerator(databaseURL);
         ObjectNode dataSource = dataSourceGenerator.createDataSource(grafanaClient, scenarioName);
@@ -180,7 +179,7 @@ public class GrafanaDashboardGenerator {
             replacements = new HashMap<>();
         }
         replacements.put("\\$\\$SimulationRunName\\$\\$", simulationRunName);
-        replacements.put("/?\\^?\\$SimulationRun\\$/?", simulationRunName);
+        replacements.put("\\$SimulationRun\\$", simulationRunName);
         String jsonString = null;
         try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(JSON_RESOURCES + jsonResource)) {
             jsonString = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
