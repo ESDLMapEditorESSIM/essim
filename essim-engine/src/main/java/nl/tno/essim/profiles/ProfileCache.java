@@ -34,7 +34,7 @@ public class ProfileCache extends TimerTask {
 
 	private ProfileCache() {
 		// Check every 10 minutes
-		new Timer("ProfileCacheCleanupTimer").scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10));
+		new Timer("ProfileCacheCleanupTimer", true).scheduleAtFixedRate(this, 0, TimeUnit.MINUTES.toMillis(10));
 	}
 
 	public static synchronized ProfileCache getInstance() {

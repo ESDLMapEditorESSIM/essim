@@ -20,34 +20,33 @@ public class InfluxToDataTableProfileConverter {
     public static void main(String[] args) throws IOException {
         String esdl = Files.readString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue.esdl"));
 
-        InfluxToDataTableProfileConverter converter = new InfluxToDataTableProfileConverter();
-        convertInfluxToPostgres(converter, (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
-        convertInfluxToInflux(converter, (EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
+        convertInfluxToPostgres((EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
+        convertInfluxToInflux((EnergySystem) ESSimEngine.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
     }
 
     @NotNull
-    private static String convertInfluxToPostgres(InfluxToDataTableProfileConverter converter, EnergySystem energySystem) throws IOException {
+    static String convertInfluxToPostgres(EnergySystem energySystem) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
         postgresMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");
         postgresMap.put("http://influxdb:8086", "postgresql://localhost:15432/essim");
-        converter.convert(energySystem, postgresMap, DatabaseTypeEnum.POSTGRESQL);
+        convert(energySystem, postgresMap, DatabaseTypeEnum.POSTGRESQL);
         String newEsdl = ESSimEngine.ecoreResourceToString(energySystem);
         Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_to_postgres.esdl"), newEsdl);
         return newEsdl;
     }
 
     @NotNull
-    private static String convertInfluxToInflux(InfluxToDataTableProfileConverter converter, EnergySystem energySystem) throws IOException {
+    static String convertInfluxToInflux(EnergySystem energySystem) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
         postgresMap.put("http://localhost:8086", "http://localhost:8086");
         postgresMap.put("http://influxdb:8086", "http://localhost:8086");
-        converter.convert(energySystem, postgresMap, DatabaseTypeEnum.INFLUXDB);
+        convert(energySystem, postgresMap, DatabaseTypeEnum.INFLUXDB);
         String newEsdl = ESSimEngine.ecoreResourceToString(energySystem);
         Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_to_influx.esdl"), newEsdl);
         return newEsdl;
     }
 
-    private void convert(EnergySystem energySystem, HashMap<String, String> urlMap, DatabaseTypeEnum type) {
+    static void convert(EnergySystem energySystem, HashMap<String, String> urlMap, DatabaseTypeEnum type) {
         Instance instance = energySystem.getInstance().getFirst();
         if (instance.getArea() == null) {
             throw new IllegalArgumentException("No area found in ESDL energy instance !");
@@ -118,7 +117,7 @@ public class InfluxToDataTableProfileConverter {
         });
     }
 
-    private DataConfigurations getDataConfigurations(EnergySystem energySystem) {
+    static DataConfigurations getDataConfigurations(EnergySystem energySystem) {
         DataConfigurations dataConfigurations = energySystem.getEnergySystemInformation().getDataconfigurations();
         if (dataConfigurations == null) {
             dataConfigurations = EsdlFactory.eINSTANCE.createDataConfigurations();
