@@ -112,7 +112,7 @@
 		{
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"refId": "A",
-			"query": "SELECT allocationEnergy FROM $SimulationRun$.\"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE (tags->>'capability' <> 'Transport') GROUP BY tags->>'assetName', tags->>'assetClass', tags->>'address'",
+			"query": "SELECT allocationEnergy FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' <> 'Transport') GROUP BY tags->>'assetName', tags->>'assetClass', tags->>'address', allocationenergy",
 			"rawQuery": true,
 			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
 			"resultFormat": "time_series"
@@ -120,7 +120,7 @@
 		{
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"refId": "B",
-			"query": "SELECT imbalanceEnergy * -1 AS Imbalance FROM $SimulationRun$.\"$$$TRANSPORT-SOLVER-NAME$$$\" ORDER BY time ASC",
+			"query": "SELECT imbalanceEnergy * -1 AS Imbalance FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$') ORDER BY time ASC",
 			"rawQuery": true,
 			"alias": "Imbalance",
 			"resultFormat": "time_series"
@@ -128,7 +128,7 @@
 		{
 			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
 			"refId": "C",
-			"query": "SELECT soc FROM $SimulationRun$.\"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE tags->>'capability' = 'Storage' ORDER BY time ASC",
+			"query": "SELECT soc FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Storage' ORDER BY time ASC",
 			"rawQuery": true,
 			"alias": "SOC",
 			"resultFormat": "time_series"

@@ -178,8 +178,8 @@ public class GrafanaDashboardGenerator {
         if (replacements == null) {
             replacements = new HashMap<>();
         }
-        replacements.put("\\$\\$SimulationRunName\\$\\$", dataSourceGenerator.getDBName(simulationRunName));
-        replacements.put("\\$SimulationRun\\$", dataSourceGenerator.getDBName(simulationRunName));
+        replacements.put("\\$\\$SimulationRunName\\$\\$", simulationRunName);
+        replacements.put("\\$SimulationRun\\$", simulationRunName);
         replacements.put("\\$ScenarioName\\$", scenarioName);
         String jsonString = null;
         try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(dataSourceGenerator.getJsonPath() + jsonResource)) {
