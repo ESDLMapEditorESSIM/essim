@@ -13,44 +13,9 @@
   "targets": [
     {
       "refId": "A",
-      "policy": "default",
       "resultFormat": "time_series",
-      "orderByTime": "ASC",
-      "tags": [
-        {
-          "key": "simulationRun",
-          "operator": "=",
-          "value": "$$SimulationRunName$$"
-        },
-        {
-          "condition": "AND",
-          "key": "capability",
-          "operator": "=",
-          "value": "Producer"
-        }
-      ],
-      "groupBy": [],
-      "select": [
-        [
-          {
-            "type": "field",
-            "params": [
-              "emission"
-            ]
-          },
-          {
-            "type": "sum",
-            "params": []
-          },
-          {
-            "type": "math",
-            "params": [
-              " / 1000"
-            ]
-          }
-        ]
-      ],
-      "measurement": "/.*/"
+      "query": "SELECT sum(emission)  / 1000 FROM /.*/ WHERE (simulationRun = '$$SimulationRunName$$' AND capability = 'Producer')",
+      "rawQuery": true
     }
   ],
   "options": {},
