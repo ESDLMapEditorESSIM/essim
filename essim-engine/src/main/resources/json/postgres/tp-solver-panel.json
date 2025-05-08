@@ -1,143 +1,163 @@
 {
-	"datasource": "${DS_ESSIM}",
-	"fieldConfig": {
-		"defaults": {
-			"custom": {
-				"drawStyle": "line",
-				"lineInterpolation": "stepAfter",
-				"barAlignment": 0,
-				"lineWidth": 1,
-				"fillOpacity": 10,
-				"gradientMode": "none",
-				"spanNulls": true,
-				"showPoints": "never",
-				"pointSize": 5,
-				"stacking": {
-					"mode": "none",
-					"group": "A"
-				},
-				"axisPlacement": "auto",
-				"axisLabel": "",
-				"scaleDistribution": {
-					"type": "linear"
-				},
-				"hideFrom": {
-					"tooltip": false,
-					"viz": false,
-					"legend": false
-				},
-				"thresholdsStyle": {
-					"mode": "off"
-				}
-			},
-			"color": {
-				"mode": "palette-classic"
-			},
-			"thresholds": {
-				"mode": "absolute",
-				"steps": [
-					{
-						"value": null,
-						"color": "green"
-					},
-					{
-						"value": 80,
-						"color": "red"
-					}
-				]
-			},
-			"mappings": [],
-			"unit": "joule"
-		},
-		"overrides": [
-			{
-				"matcher": {
-					"id": "byName",
-					"options": "Imbalance"
-				},
-				"properties": [
-					{
-						"id": "color",
-						"value": {
-							"mode": "fixed",
-							"fixedColor": "#ffffff"
-						}
-					}
-				]
-			},
-			{
-				"matcher": {
-					"id": "byName",
-					"options": "SOC"
-				},
-				"properties": [
-					{
-						"id": "unit",
-						"value": "percentunit"
-					},
-					{
-						"id": "min",
-						"value": 0
-					},
-					{
-						"id": "custom.axisPlacement",
-						"value": "right"
-					}
-				]
-			}
-		]
-	},
-	"gridPos": {
-		"h": 8,
-		"w": 24,
-		"x": 0,
-		"y": 25
-	},
-	"id": 7,
-	"links": [],
-	"options": {
-		"tooltip": {
-			"mode": "single"
-		},
-		"legend": {
-			"displayMode": "table",
-			"placement": "right",
-			"calcs": [
-				"sum"
-			]
-		}
-	},
-	"pluginVersion": "8.2.5",
-	"targets": [
-		{
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"refId": "A",
-			"query": "SELECT allocationEnergy FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' <> 'Transport') GROUP BY tags->>'assetName', tags->>'assetClass', tags->>'address', allocationenergy",
-			"rawQuery": true,
-			"alias": "$tag_assetClass ($tag_assetName, $tag_address)",
-			"resultFormat": "time_series"
-		},
-		{
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"refId": "B",
-			"query": "SELECT imbalanceEnergy * -1 AS Imbalance FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$') ORDER BY time ASC",
-			"rawQuery": true,
-			"alias": "Imbalance",
-			"resultFormat": "time_series"
-		},
-		{
-			"measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
-			"refId": "C",
-			"query": "SELECT soc FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Storage' ORDER BY time ASC",
-			"rawQuery": true,
-			"alias": "SOC",
-			"resultFormat": "time_series"
-				}
-			]
-,
-	"timeFrom": null,
-	"timeShift": null,
-	"title": "$$$TRANSPORT-SOLVER-NAME$$$",
-	"transparent": true,
-	"type": "timeseries"
+  "datasource": "${DS_ESSIM}",
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "lineInterpolation": "stepAfter",
+        "barAlignment": 0,
+        "lineWidth": 1,
+        "fillOpacity": 10,
+        "gradientMode": "none",
+        "spanNulls": true,
+        "showPoints": "never",
+        "pointSize": 5,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        },
+        "axisPlacement": "auto",
+        "axisLabel": "",
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "mappings": [],
+      "unit": "joule"
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Imbalance"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "mode": "fixed",
+              "fixedColor": "#ffffff"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "SOC"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "percentunit"
+          },
+          {
+            "id": "min",
+            "value": 0
+          },
+          {
+            "id": "custom.axisPlacement",
+            "value": "right"
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 25
+  },
+  "id": 7,
+  "links": [],
+  "options": {
+    "tooltip": {
+      "mode": "single"
+    },
+    "legend": {
+      "displayMode": "table",
+      "placement": "right",
+      "calcs": [
+        "sum"
+      ]
+    }
+  },
+  "pluginVersion": "8.2.5",
+  "targets": [
+    {
+      "measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
+      "refId": "A",
+      "rawSql": "SELECT time, tags->>'assetName' AS assetName, tags->>'assetClass' AS assetClass, tags->>'address' AS address,allocationEnergy FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' != 'Transport' AND $__timeFilter(time)) ORDER BY time ASC",
+      "rawQuery": true,
+      "alias": "$assetClass ($assetName, $address)",
+      "resultFormat": "time_series",
+      "format": "time_series",
+      "group": [],
+      "metricColumn": "none",
+      "select": [
+        [
+          {
+            "params": [
+              "value"
+            ],
+            "type": "column"
+          }
+        ]
+      ],
+      "timeColumn": "time",
+      "where": [
+        {
+          "name": "$__timeFilter",
+          "params": [],
+          "type": "macro"
+        }
+      ]
+    },
+    {
+      "measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
+      "refId": "B",
+      "rawSql": "SELECT time,imbalanceEnergy * -1 AS Imbalance FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$') ORDER BY time ASC",
+      "rawQuery": true,
+      "alias": "Imbalance",
+      "resultFormat": "time_series"
+    },
+    {
+      "measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
+      "refId": "C",
+      "rawSql": "SELECT time,soc FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Storage' ORDER BY time ASC",
+      "rawQuery": true,
+      "alias": "SOC",
+      "resultFormat": "time_series"
+    }
+  ],
+  "timeFrom": null,
+  "timeShift": null,
+  "title": "$$$TRANSPORT-SOLVER-NAME$$$",
+  "transparent": true,
+  "type": "timeseries"
 }

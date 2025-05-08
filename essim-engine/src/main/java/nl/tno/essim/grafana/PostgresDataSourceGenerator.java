@@ -32,10 +32,12 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
             if (databaseUid == null) {
                 databaseUid = createDatabase(grafanaClient, databaseName);
             }
-            dsInput.put("name", DS_HANDLE);
+            dsInput.put("name", databaseName);
             dsInput.put("uid", databaseUid);
             dsInput.put("description", "");
-            dsInput.put("type", "postgres");
+            dsInput.put("type", "datasource");
+            dsInput.put("pluginId", "postgres");
+            dsInput.put("pluginName", "PostgreSQL");
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -90,19 +92,36 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
             if (port > 0) {
                 grafanaUrl += ":" + port;
             }
+//            "jsonData": {
+//                "postgresVersion": 903,
+//                        "sslmode": "disable",
+//                        "tlsAuth": false,
+//                        "tlsAuthWithCACert": false,
+//                        "tlsConfigurationMethod": "file-path",
+//                        "tlsSkipVerify": true
+//            },
+
 
             dbJSON.put("name", database);
-            dbJSON.put("database", database);
-//            dbJSON.put("uid", databaseUid);
+            dbJSON.put("database", uri.getPath().substring(1));
             dbJSON.put("type", "postgres");
+            dbJSON.put("typeName", "PostgreSQL");
             dbJSON.put("access", "proxy");
             dbJSON.put("url", grafanaUrl);
             dbJSON.put("user", username);
-            dbJSON.put("password", password);
+//            dbJSON.put("password", password);
             dbJSON.put("basicAuth", false);
-            dbJSON.set("jsonData", ESSimEngine.getObjectMapper().createObjectNode().set("keepCookies", ESSimEngine.getObjectMapper().createArrayNode()));
-            dbJSON.set("secureJsonFields", ESSimEngine.getObjectMapper().createArrayNode());
-
+            ObjectNode jsonData = ESSimEngine.getObjectMapper().createObjectNode();
+            jsonData.put("postgresVersion", 903);
+            jsonData.put("sslmode", "disable");
+            jsonData.put("tlsAuth", false);
+            jsonData.put("tlsAuthWithCACert", false);
+            jsonData.put("tlsConfigurationMethod", "file-path");
+            jsonData.put("tlsSkipVerify", true);
+            dbJSON.set("jsonData", jsonData);
+            ObjectNode secureJsonData = ESSimEngine.getObjectMapper().createObjectNode();
+            secureJsonData.put("password", password);
+            dbJSON.set("secureJsonData", secureJsonData);
             log.debug("Sending to Grafana: {}", dbJSON);
             String response = client.post(DATASOURCES_URL, dbJSON.toString());
             log.debug("Response: {}", response);
