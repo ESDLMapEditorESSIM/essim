@@ -8,7 +8,7 @@ import nl.tno.essim.ESSimEngine;
 
 @Slf4j
 public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
-    private static final String DATASOURCES_URL = "/api/datasources";
+    private final static String DS_HANDLE = "DS_ESSIM";
     private final String influxDBURL;
     private String databaseUid;
 
@@ -18,7 +18,7 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
 
     @Override
     public String getDBName(String resourceName) {
-        return "\"" + resourceName + "\"";
+        return resourceName;
     }
 
     @Override
@@ -47,6 +47,11 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
         dsNode.put("uid", databaseUid);
         dsNode.put("type", "influxdb");
         node.set("datasource", dsNode);
+    }
+
+    @Override
+    public String getJsonPath() {
+        return "/json/influxdb/";
     }
 
 

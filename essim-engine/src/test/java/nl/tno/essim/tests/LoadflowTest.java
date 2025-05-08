@@ -34,6 +34,9 @@ class LoadflowTest {
 		if (System.getenv("INFLUX_URL") != null) {
 			sim.setInfluxURL(System.getenv("INFLUX_URL"));
 		}
+		if (System.getenv("POSTGRES_URL") != null) {
+			sim.setPostgresURL(System.getenv("POSTGRES_URL"));
+		}
 
 		String simId = mongo.addSimulation(sim);
 		ESSimEngine essimEngine = new ESSimEngine("local-test", simId, sim, sim.getEsdlContents(), mongo);
@@ -74,7 +77,7 @@ class LoadflowTest {
 
 	@Test
 	void testLoadFlowEindhovenMSOnly() throws Exception {
-		String esdl = new String(LoadflowTest.class.getResourceAsStream("/LoadflowEindhovenMSOnly.esdl").readAllBytes(), StandardCharsets.UTF_8);
+		String esdl = new String(LoadflowTest.class.getResourceAsStream("/LoadflowEindhovenMSOnly_timeseries.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
 		EssimSimulation sim = new EssimSimulation();
 		sim.setEsdlContents(esdl);

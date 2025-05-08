@@ -1,0 +1,75 @@
+{
+  "id": 23763571993,
+  "gridPos": {
+    "h": 9,
+    "w": 8,
+    "x": 7,
+    "y": 0
+  },
+  "type": "stat",
+  "title": "Simulation Description",
+  "datasource": "${DS_ESSIM}",
+  "pluginVersion": "8.2.5",
+  "maxDataPoints": 100,
+  "links": [],
+  "cacheTimeout": null,
+  "interval": null,
+  "targets": [
+    {
+      "refId": "A",
+      "query": "SELECT SimDescription FROM ESSIM WHERE simulationRun ='$SimulationRun$' ORDER BY time ASC",
+      "rawQuery": true,
+      "resultFormat": "time_series"
+    }
+  ]
+,
+  "transparent": true,
+  "fieldConfig": {
+    "defaults": {
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "mappings": [
+        {
+          "type": "special",
+          "options": {
+            "match": "null",
+            "result": {
+              "text": "N/A"
+            }
+          }
+        }
+      ],
+      "unit": "none",
+      "color": {
+        "mode": "thresholds"
+      }
+    },
+    "overrides": []
+  },
+  "options": {
+    "reduceOptions": {
+      "values": false,
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "/^ESSIM\\.SimDescription$/"
+    },
+    "orientation": "horizontal",
+    "text": {},
+    "textMode": "auto",
+    "colorMode": "none",
+    "graphMode": "none",
+    "justifyMode": "auto"
+  }
+}

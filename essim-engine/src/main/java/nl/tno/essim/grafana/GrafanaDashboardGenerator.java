@@ -44,8 +44,6 @@ import java.util.Map;
 public class GrafanaDashboardGenerator {
     static final String GRAFANA_EXTERNAL_URL_ENV = "GRAFANA_EXTERNAL_URL";
 
-    private static final String JSON_RESOURCES = "/json/influxdb/";
-
     private static final String GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE = "GRAFANA_TRANSPORT_SOLVER_PANEL_JOULE";
     private static final String GRAFANA_TRANSPORT_SOLVER_PANEL_WATT = "GRAFANA_TRANSPORT_SOLVER_PANEL_WATT";
     private static final String GRAFANA_LOAD_PANEL_JOULE = "GRAFANA_LOAD_PANEL_JOULE";
@@ -56,6 +54,7 @@ public class GrafanaDashboardGenerator {
     private DataSourceGenerator dataSourceGenerator;
     @Getter
     private String dashboardUrl;
+    private final String scenarioName;
     private final String simulationRunName;
 
     record PanelInfo(String panelJson,
@@ -67,6 +66,7 @@ public class GrafanaDashboardGenerator {
     public GrafanaDashboardGenerator(String user, String timeString, String databaseURL, List<TransportSolver> solversList,
                                      String energySystemId, String scenarioName, String simulationRunName, LocalDateTime simStartDate,
                                      LocalDateTime simEndDate, boolean emissionRow, boolean haveLoadflow, IMongoBackend mongo) {
+        this.scenarioName = scenarioName;
         this.simulationRunName = simulationRunName;
 
         if (databaseURL == null) {
@@ -79,8 +79,8 @@ public class GrafanaDashboardGenerator {
             return;
         }
         GrafanaClient grafanaClient = new GrafanaClient(mongo);
-        ObjectNode dashboardJSON = createDashboardJson(user, timeString, energySystemId, simStartDate, simEndDate);
         dataSourceGenerator = DataSourceGenerator.getDataSourceGenerator(databaseURL);
+        ObjectNode dashboardJSON = createDashboardJson(user, timeString, energySystemId, simStartDate, simEndDate);
         ObjectNode dataSource = dataSourceGenerator.createDataSource(grafanaClient, scenarioName);
         dashboardJSON.set("__inputs", ESSimEngine.getObjectMapper().createArrayNode().add(dataSource));
 
@@ -178,10 +178,11 @@ public class GrafanaDashboardGenerator {
         if (replacements == null) {
             replacements = new HashMap<>();
         }
-        replacements.put("\\$\\$SimulationRunName\\$\\$", simulationRunName);
-        replacements.put("\\$SimulationRun\\$", simulationRunName);
+        replacements.put("\\$\\$SimulationRunName\\$\\$", dataSourceGenerator.getDBName(simulationRunName));
+        replacements.put("\\$SimulationRun\\$", dataSourceGenerator.getDBName(simulationRunName));
+        replacements.put("\\$ScenarioName\\$", scenarioName);
         String jsonString = null;
-        try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(JSON_RESOURCES + jsonResource)) {
+        try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(dataSourceGenerator.getJsonPath() + jsonResource)) {
             jsonString = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             for (Map.Entry<String, String> entry : replacements.entrySet()) {
                 jsonString = jsonString.replaceAll(entry.getKey(), entry.getValue());
@@ -196,7 +197,7 @@ public class GrafanaDashboardGenerator {
 
     private void addSolverPanel(ArrayNode panelArray, String solverPanelJson, String solverId, String titlePostfix, int index) {
         HashMap<String, String> replacements = new HashMap<>();
-        replacements.put("\\${3}TRANSPORT-SOLVER-NAME\\${3}", solverId);
+        replacements.put("\\${3}TRANSPORT-SOLVER-NAME\\${3}", dataSourceGenerator.getDBName(solverId));
         ObjectNode solverPanelNode = readJson(solverPanelJson, replacements);
         solverPanelNode.put("title", solverId + titlePostfix);
         addDataSource(solverPanelNode);

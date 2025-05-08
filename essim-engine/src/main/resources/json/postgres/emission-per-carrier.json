@@ -1,0 +1,75 @@
+{
+  "columns": [
+  ],
+  "datasource": "${DS_ESSIM}",
+  "fontSize": "100%",
+  "gridPos": {
+    "h": 9,
+    "w": 4,
+    "x": 3,
+    "y": 0
+  },
+  "id": 2,
+  "links": [
+  ],
+  "pageSize": null,
+  "scroll": true,
+  "transparent": true,
+  "showHeader": true,
+  "sort": {
+    "col": 0,
+    "desc": true
+  },
+  "styles": [
+    {
+      "alias": "Time",
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "pattern": "Time",
+      "type": "hidden"
+    },
+    {
+      "alias": "FuelType",
+      "colorMode": null,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "dateFormat": "YYYY-MM-DD HH:mm:ss",
+      "decimals": 2,
+      "mappingType": 1,
+      "pattern": "Metric",
+      "thresholds": [
+      ],
+      "type": "number",
+      "unit": "masst"
+    },
+    {
+      "alias": "tonnes of CO₂",
+      "colorMode": null,
+      "colors": [
+        "rgba(245, 54, 54, 0.9)",
+        "rgba(237, 129, 40, 0.89)",
+        "rgba(50, 172, 45, 0.97)"
+      ],
+      "decimals": 2,
+      "pattern": "Value",
+      "thresholds": [
+      ],
+      "type": "number",
+      "unit": "short"
+    }
+  ],
+  "targets": [
+    {
+      "refId": "A",
+      "query": "SELECT sum(emission) / 1000 AS emission_kg FROM $$SimulationRunName$$./.*/ WHERE tags->>'capability' = 'Producer'  GROUP BY tags->>'carrierName'",
+      "rawQuery": true,
+      "alias": "$tag_carrierName",
+      "resultFormat": "time_series"
+    }
+  ],
+  "title": "Emission per Carrier",
+  "transform": "timeseries_to_rows",
+  "type": "table"
+}

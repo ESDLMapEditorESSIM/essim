@@ -67,7 +67,7 @@ public class PostgresObservationConsumer implements IObservationConsumer {
 
         } catch (Exception e) {
             // Log and rethrow the exception for further handling
-            throw new RuntimeException("Failed to initialize schema: " + schemaName, e);
+            throw new RuntimeException("Failed to initialize schema (): " + schemaName, e);
         }
     }
 
@@ -100,6 +100,7 @@ public class PostgresObservationConsumer implements IObservationConsumer {
         if (tableCache == null) {
             tableCache = createTable(source, observation);
         }
+        observation.getTags().put("simulationRun", simulationRunName);
         tableCache.addObservation(schemaConnection, observation);
     }
 

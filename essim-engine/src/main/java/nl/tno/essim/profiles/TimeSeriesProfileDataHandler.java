@@ -92,14 +92,18 @@ public class TimeSeriesProfileDataHandler implements ProfileDataHandler {
                     throw new IllegalArgumentException("Cannot add an element to a TimeSeriesProfile with a different step size");
                 }
                 int elementIndex = (int) ((elementStartSeconds - profileStart) / profile.getTimestep());
+
+                double profileValue = Converter.fromDidoUnit(profileElement.getValue(), profile.getProfileType());
                 if (elementIndex < values.size()) {
                     values.set(elementIndex, profileElement.getValue());
+                    profile.getValues().set(elementIndex, profileValue);
                 } else {
                     // Fill until the element
                     while (elementIndex > values.size()) {
                         values.add(0.0);
                     }
                     values.add(profileElement.getValue());
+                    profile.getValues().add(profileValue);
                 }
             }
         }

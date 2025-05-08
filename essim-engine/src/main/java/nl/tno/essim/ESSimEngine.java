@@ -319,6 +319,7 @@ public class ESSimEngine implements IStatusProvider {
                 PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
                 observationManager.registerConsumer(postgresObservationConsumer);
                 postgresObservationConsumer.init(scenarioName);
+                log.debug("Registering Postgres Observation Consumer");
             }
 
         } catch (Exception e) {
