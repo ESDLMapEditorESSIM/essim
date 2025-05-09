@@ -93,7 +93,7 @@
         "properties": [
           {
             "id": "displayName",
-            "value": "${__field.labels[\"assetclass\"]} (${__field.labels[\"assetname\"]} ${__field.labels[\"address\"]})"
+            "value": "${__field.labels[\"assetclass\"]} (${__field.labels[\"assetname\"]}, ${__field.labels[\"address\"]})"
           }
         ]
       }
