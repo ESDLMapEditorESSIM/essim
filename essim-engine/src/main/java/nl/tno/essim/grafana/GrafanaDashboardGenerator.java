@@ -87,7 +87,7 @@ public class GrafanaDashboardGenerator {
         ArrayList<PanelInfo> panels = createPanelList(haveLoadflow);
 
         ArrayNode panelArray = addPanelArray(dashboardJSON);
-//        addSimpelPanel(panelArray, readJson("total-emissions.json"));
+        addSimpelPanel(panelArray, readJson("total-emissions.json"));
 //        addSimpelPanel(panelArray, readJson("emission-per-carrier.json"));
         addSimpelPanel(panelArray, readJson("sim-desc-panel.json"));
         addNetworkBalanceTable(panelArray, energySystemId);
