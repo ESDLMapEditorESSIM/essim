@@ -147,21 +147,21 @@ public class GrafanaDashboardGenerator {
         if (showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
             panels.add(new PanelInfo("tp-solver-panel-power.json", false, " (in W)"));
         }
-//        if (haveLoadflow && showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
-//            panels.add(new PanelInfo("tp-solver-panel-loadflow-power.json", false, " (loadflow in W)"));
-//        }
-//        if (showPanel(GRAFANA_LOAD_PANEL_JOULE, false)) {
-//            panels.add(new PanelInfo("transport-loads-joule.json", true, " Transport flows (in J)"));
-//        }
-//        if (showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
-//            panels.add(new PanelInfo("transport-loads-watt.json", true, " Transport flows (in W)"));
-//        }
-//        if (haveLoadflow && showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
-//            panels.add(new PanelInfo("transport-losses-watt.json", true, " Transport losses (in W)"));
-//        }
-//        if (showPanel(GRAFANA_LOAD_PANEL_PERCENT, true)) {
-//            panels.add(new PanelInfo("transport-loads-percent.json", true, " Transport loads (in %)"));
-//        }
+        if (haveLoadflow && showPanel(GRAFANA_TRANSPORT_SOLVER_PANEL_WATT, true)) {
+            panels.add(new PanelInfo("tp-solver-panel-loadflow-power.json", false, " (loadflow in W)"));
+        }
+        if (showPanel(GRAFANA_LOAD_PANEL_JOULE, false)) {
+            panels.add(new PanelInfo("transport-loads-joule.json", true, " Transport flows (in J)"));
+        }
+        if (showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
+            panels.add(new PanelInfo("transport-loads-watt.json", true, " Transport flows (in W)"));
+        }
+        if (haveLoadflow && showPanel(GRAFANA_LOAD_PANEL_WATT, true)) {
+            panels.add(new PanelInfo("transport-losses-watt.json", true, " Transport losses (in W)"));
+        }
+        if (showPanel(GRAFANA_LOAD_PANEL_PERCENT, true)) {
+            panels.add(new PanelInfo("transport-loads-percent.json", true, " Transport loads (in %)"));
+        }
         return panels;
     }
 

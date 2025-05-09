@@ -71,10 +71,31 @@
   "targets": [
     {
       "refId": "B",
-      "query": "SELECT load FROM \"$$$TRANSPORT-SOLVER-NAME$$$\" WHERE simulationRun ='$SimulationRun$' AND capability = 'Transport' GROUP BY assetClass, assetName, address ORDER BY time ASC",
+      "rawSql": "SELECT time, tags->>'assetName' AS assetName, tags->>'assetClass' AS assetClass, tags->>'address' AS address,load FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Transport' AND $__timeFilter(time)) ORDER BY time ASC",
       "rawQuery": true,
+      "alias": "$assetClass ($assetName, $address)",
       "resultFormat": "time_series",
-      "alias": "$tag_assetClass ($tag_assetName, $tag_address)"
+      "format": "time_series",
+      "group": [],
+      "metricColumn": "none",
+      "select": [
+        [
+          {
+            "params": [
+              "value"
+            ],
+            "type": "column"
+          }
+        ]
+      ],
+      "timeColumn": "time",
+      "where": [
+        {
+          "name": "$__timeFilter",
+          "params": [],
+          "type": "macro"
+        }
+      ]
     }
   ],
   "timeFrom": null,
