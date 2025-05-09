@@ -5,12 +5,16 @@ import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.ObservationField;
+import nl.tno.essim.utils.ResourceUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,6 +30,7 @@ public class PostgresObservationConsumer implements IObservationConsumer {
     private Connection schemaConnection;
     private String schemaName;
     private HashMap<String, PostgresTableCache> tables = new HashMap<>();
+
     static {
         try {
             Class.forName("org.postgresql.Driver");
@@ -64,11 +69,32 @@ public class PostgresObservationConsumer implements IObservationConsumer {
 
             log.debug("Connected to schema: {}", schemaName);
             tables = collectTableNames();
+            createStoredFunctions(schemaConnection);
 
         } catch (Exception e) {
             // Log and rethrow the exception for further handling
             throw new RuntimeException("Failed to initialize schema (): " + schemaName, e);
         }
+    }
+
+    private void createStoredFunctions(Connection schemaConnection) {
+        try {
+            List<String> resourcePaths = ResourceUtils.getResourcePaths("/plpgsql");
+            for (String resourcePath : resourcePaths) {
+                try (InputStream stream = ResourceUtils.class.getResourceAsStream(resourcePath); Statement statement = schemaConnection.createStatement()) {
+                    String sql = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                    statement.execute(sql);
+                    log.trace("Executed SQL: {}", sql);
+                } catch (Exception e) {
+                    log.error("Failed to execute SQL statements.", e);
+                }
+
+            }
+        } catch (Exception e) {
+            log.error("Failed to execute SQL files", e);
+            throw new RuntimeException(e);
+        }
+
     }
 
     public HashMap<String, PostgresTableCache> collectTableNames() {

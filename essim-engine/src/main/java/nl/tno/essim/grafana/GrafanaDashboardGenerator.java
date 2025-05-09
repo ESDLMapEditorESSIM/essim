@@ -89,8 +89,8 @@ public class GrafanaDashboardGenerator {
         ArrayNode panelArray = addPanelArray(dashboardJSON);
 //        addSimpelPanel(panelArray, readJson("total-emissions.json"));
 //        addSimpelPanel(panelArray, readJson("emission-per-carrier.json"));
-//        addSimpelPanel(panelArray, readJson("sim-desc-panel.json"));
-//        addNetworkBalanceTable(panelArray, energySystemId);
+        addSimpelPanel(panelArray, readJson("sim-desc-panel.json"));
+        addNetworkBalanceTable(panelArray, energySystemId);
 //        if (emissionRow) {
 //            addSimpelPanel(panelArray, readJson("emission-row-prod.json"));
 //        }
@@ -180,7 +180,7 @@ public class GrafanaDashboardGenerator {
         }
         replacements.put("\\$\\$SimulationRunName\\$\\$", simulationRunName);
         replacements.put("\\$SimulationRun\\$", simulationRunName);
-        replacements.put("\\$ScenarioName\\$", scenarioName);
+        replacements.put("\\$ScenarioName\\$", dataSourceGenerator.getDBName(scenarioName));
         String jsonString = null;
         try (InputStream stream = GrafanaDashboardGenerator.class.getResourceAsStream(dataSourceGenerator.getJsonPath() + jsonResource)) {
             jsonString = new String(stream.readAllBytes(), StandardCharsets.UTF_8);

@@ -14,7 +14,7 @@
     {
       "refId": "A",
       "resultFormat": "time_series",
-      "query": "SELECT sum(emission)  / 1000 FROM /.*/ WHERE (simulationRun = '$$SimulationRunName$$' AND capability = 'Producer')",
+      "rawSql": "SELECT sum(emission)  / 1000 FROM /.*/ WHERE (tags->>'simulationRun' = '$$SimulationRunName$$' AND tags->>'capability' = 'Producer')",
       "rawQuery": true
     }
   ],

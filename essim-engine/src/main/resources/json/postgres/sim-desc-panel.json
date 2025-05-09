@@ -17,7 +17,7 @@
   "targets": [
     {
       "refId": "A",
-      "query": "SELECT SimDescription FROM ESSIM WHERE simulationRun ='$SimulationRun$' ORDER BY time ASC",
+      "rawSql": "SELECT SimDescription FROM $ScenarioName$.ESSIM WHERE tags->>simulationRun ='$SimulationRun$' ORDER BY time ASC",
       "rawQuery": true,
       "resultFormat": "time_series"
     }
