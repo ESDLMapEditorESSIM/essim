@@ -49,7 +49,20 @@
       "mappings": [],
       "unit": "joule"
     },
-    "overrides": []
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byFrameRefID",
+          "options": "A"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "${__field.labels[\"assetclass\"]} (${__field.labels[\"assetname\"]} ${__field.labels[\"address\"]})"
+          }
+        ]
+      }
+    ]
   },
   "gridPos": {
     "h": 8,
@@ -74,7 +87,7 @@
   "pluginVersion": "8.2.5",
   "targets": [
     {
-      "refId": "B",
+      "refId": "A",
       "rawSql": "SELECT time, tags->>'assetName' AS assetName, tags->>'assetClass' AS assetClass, tags->>'address' AS address,allocationEnergy FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Transport' AND $__timeFilter(time)) ORDER BY time ASC",
       "rawQuery": true,
       "alias": "$assetClass ($assetName, $address)",

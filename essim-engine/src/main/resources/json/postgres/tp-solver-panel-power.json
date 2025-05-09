@@ -84,6 +84,18 @@
             "value": "right"
           }
         ]
+      },
+      {
+        "matcher": {
+          "id": "byFrameRefID",
+          "options": "A"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "${__field.labels[\"assetclass\"]} (${__field.labels[\"assetname\"]} ${__field.labels[\"address\"]})"
+          }
+        ]
       }
     ]
   },
