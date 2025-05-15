@@ -63,7 +63,7 @@
   "targets": [
     {
       "refId": "A",
-      "query": "SELECT sum(emission) / 1000 AS emission_kg FROM $$SimulationRunName$$./.*/ WHERE tags->>'capability' = 'Producer'  GROUP BY tags->>'carrierName'",
+      "rawSql": "SELECT timestamp '1970-01-01' as time, result_value FROM $ScenarioName$.execute_query_on_multiple_tables('$ScenarioName$', 'SELECT tags->>''carrierName'' as group_by_label, SUM(emission)/1000 AS result_value FROM {TABLE_NAME} WHERE (tags->>''simulationRun'' = ''$$SimulationRunName$$'' AND tags->>''capability'' = ''Producer'') GROUP BY tags->>''carrierName''') WHERE result_value IS NOT NULL",
       "rawQuery": true,
       "alias": "$tag_carrierName",
       "resultFormat": "time_series"

@@ -88,12 +88,12 @@ public class GrafanaDashboardGenerator {
 
         ArrayNode panelArray = addPanelArray(dashboardJSON);
         addSimpelPanel(panelArray, readJson("total-emissions.json"));
-//        addSimpelPanel(panelArray, readJson("emission-per-carrier.json"));
+        addSimpelPanel(panelArray, readJson("emission-per-carrier.json"));
         addSimpelPanel(panelArray, readJson("sim-desc-panel.json"));
         addNetworkBalanceTable(panelArray, energySystemId);
-//        if (emissionRow) {
-//            addSimpelPanel(panelArray, readJson("emission-row-prod.json"));
-//        }
+        if (emissionRow) {
+            addSimpelPanel(panelArray, readJson("emission-row-prod.json"));
+        }
 
         // Add solver panels
         int index = 0;
