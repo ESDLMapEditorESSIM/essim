@@ -76,9 +76,11 @@ public class ESSimEngine implements IStatusProvider {
     private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
+
     static {
 //        objectMapper.
     }
+
     private final XMIResourceImpl esdlResource;
     private EssimLoadFlowController loadFlowController;
     private List<EnergyAsset> energyAssets;
@@ -142,8 +144,7 @@ public class ESSimEngine implements IStatusProvider {
         msoConfiguration = simulation.getMso();
         if (simulation.getPostgresURL() != null && !simulation.getPostgresURL().isEmpty()) {
             databaseURL = simulation.getPostgresURL();
-        }
-        else {
+        } else {
             databaseURL = simulation.getInfluxURL();
         }
 
@@ -195,13 +196,15 @@ public class ESSimEngine implements IStatusProvider {
 
 
         // Publish Simulation Description
-        if (simulationDescription != null) {
-            observationManager.publish(generalObservationProvider,
-                    Observation.builder()
-                            .observedAt(simulationStartTime)
-                            .value(ObservationField.SIM_DESCRIPTION, simulationDescription)
-                            .build());
+        if (simulationDescription == null) {
+            simulationDescription = "";
         }
+        observationManager.publish(generalObservationProvider,
+                Observation.builder()
+                        .observedAt(simulationStartTime)
+                        .value(ObservationField.SIM_DESCRIPTION, simulationDescription)
+                        .build());
+
         energySystemId = "UnnamedEnergySystem";
         if (energySystem.getName() != null) {
             if (!energySystem.getName().isEmpty()) {
@@ -228,15 +231,15 @@ public class ESSimEngine implements IStatusProvider {
         if (esInformation == null) {
             throw new IllegalArgumentException("No Energy System Information specified! Cannot read carrier information.");
         }
-            Carriers carriers = esInformation.getCarriers();
+        Carriers carriers = esInformation.getCarriers();
         if (carriers == null) {
             throw new IllegalArgumentException("No Carrier Information specified!");
 
         }
-                TreeMap<Integer, List<TransportSolver>> transportSolveOrder = createTransportSolvers(carriers);
-                if (transportSolveOrder.isEmpty()) {
-                    throw new IllegalStateException("Conflicting Control Strategies found!!");
-                }
+        TreeMap<Integer, List<TransportSolver>> transportSolveOrder = createTransportSolvers(carriers);
+        if (transportSolveOrder.isEmpty()) {
+            throw new IllegalStateException("Conflicting Control Strategies found!!");
+        }
         // Here we have all the information to build the powsybl network
         if (loadFlowController != null) {
             List<TransportSolver> electricityTransportSolvers = transportSolveOrder.entrySet().stream().flatMap(entry -> entry.getValue().stream()).filter(solver -> solver.getCarriers().stream().anyMatch(c -> c instanceof ElectricityCommodity)).toList();
@@ -244,21 +247,21 @@ public class ESSimEngine implements IStatusProvider {
         }
 
 
-                log.debug("Going with this parallelised order:");
+        log.debug("Going with this parallelised order:");
 
-                // Add to simulation manager the transport solvers in the order we determined.
-                for (int k : transportSolveOrder.keySet()) {
-                    List<TransportSolver> solvers = transportSolveOrder.get(k);
-                    log.debug(" - {}: {}", k, solvers.toString());
-                    for (TransportSolver solver : solvers) {
-                        solver.setSimulationManager(simulationManager);
-                        solver.setObservationManager(observationManager);
-                    }
-                    simulationManager.addSolvers(solvers);
-                }
-                EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
-                emissionManager.setObservationManager(observationManager);
-                simulationManager.addOtherSimulatable(emissionManager);
+        // Add to simulation manager the transport solvers in the order we determined.
+        for (int k : transportSolveOrder.keySet()) {
+            List<TransportSolver> solvers = transportSolveOrder.get(k);
+            log.debug(" - {}: {}", k, solvers.toString());
+            for (TransportSolver solver : solvers) {
+                solver.setSimulationManager(simulationManager);
+                solver.setObservationManager(observationManager);
+            }
+            simulationManager.addSolvers(solvers);
+        }
+        EmissionManager emissionManager = EmissionManager.getInstance(simulationId);
+        emissionManager.setObservationManager(observationManager);
+        simulationManager.addOtherSimulatable(emissionManager);
         int numAssets = 0;
         for (TransportSolver solver : solversList) {
             numAssets += solver.getProcessedList().size();
@@ -476,11 +479,11 @@ public class ESSimEngine implements IStatusProvider {
 
     public interface EnergyAssetVisitor {
         void visit(EnergyAsset energyAsset);
-                }
+    }
 
     public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
         visitAllEnergyAssets(area, assetList::add);
-            }
+    }
 
     public static void visitAllEnergyAssets(Area area, EnergyAssetVisitor visitor) {
         // Process assets within the current area

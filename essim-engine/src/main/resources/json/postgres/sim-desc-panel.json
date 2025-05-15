@@ -17,7 +17,7 @@
   "targets": [
     {
       "refId": "A",
-      "rawSql": "SELECT SimDescription FROM $ScenarioName$.ESSIM WHERE tags->>simulationRun ='$SimulationRun$' ORDER BY time ASC",
+      "rawSql": "SELECT timestamp '1-1-1970' as time, simDescription FROM $ScenarioName$.ESSIM WHERE tags->>'simulationRun' = '$SimulationRun$'",
       "rawQuery": true,
       "resultFormat": "time_series"
     }
@@ -63,7 +63,7 @@
       "calcs": [
         "lastNotNull"
       ],
-      "fields": "/^ESSIM\\.SimDescription$/"
+      "fields": "/^simdescription$/"
     },
     "orientation": "horizontal",
     "text": {},

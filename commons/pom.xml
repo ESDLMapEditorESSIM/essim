@@ -5,6 +5,12 @@
 
     <artifactId>commons</artifactId>
     <name>ESSIM Common Classes</name>
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
 
     <parent>
         <groupId>nl.tno.essim</groupId>

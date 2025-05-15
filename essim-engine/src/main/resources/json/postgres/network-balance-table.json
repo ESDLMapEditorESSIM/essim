@@ -144,7 +144,7 @@
       {
         "matcher": {
           "id": "byName",
-          "options": "Value"
+          "options": "average_imbalance_energy"
         },
         "properties": [
           {
@@ -192,7 +192,7 @@
       {
         "matcher": {
           "id": "byName",
-          "options": "Network"
+          "options": "average_imbalance_energy"
         },
         "properties": [
           {
@@ -204,7 +204,7 @@
       {
         "matcher": {
           "id": "byName",
-          "options": "Balance"
+          "options": "average_imbalance_energy"
         },
         "properties": [
           {
