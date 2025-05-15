@@ -651,6 +651,7 @@ public class EssimLoadFlowController {
                 double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double q = q1 > q2 ? q1 - q2 : q2 - q1;
                 Observation observation = builder.value(ObservationField.LOADFLOW_POWER, p * 1000)
+                        .value(ObservationField.LOADFLOW_ENERGY, p * 1000 * timestamp.getSimulationStepLength().getSeconds())
                         .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000)
                         .value(ObservationField.LOADFLOW_CURRENT, line.getTerminal(side).getI())
                         .build();
@@ -680,8 +681,8 @@ public class EssimLoadFlowController {
         Carrier carrier = carrierMap.get(id);
         Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
         Observation observation = builder.value(ObservationField.LOADFLOW_POWER, terminal.getP() * 1000)
+                .value(ObservationField.LOADFLOW_ENERGY, terminal.getP() * 1000 * timestamp.getSimulationStepLength().getSeconds())
                 .value(ObservationField.LOADFLOW_REACTIVE_POWER, terminal.getQ() * 1000)
-//                .value("loadflowCurrent", terminal.getI())
                 .build();
         return observation;
     }

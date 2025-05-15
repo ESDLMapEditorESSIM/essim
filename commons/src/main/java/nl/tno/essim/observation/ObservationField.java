@@ -20,6 +20,7 @@ public enum ObservationField {
     LOAD("load", Double.class),
     SOC("soc", Double.class),
     LOADFLOW_POWER("loadflowPower", Double.class),
+    LOADFLOW_ENERGY("loadflowEnergy", Double.class),
     LOADFLOW_REACTIVE_POWER("loadflowReactivePower", Double.class),
     LOADFLOW_CURRENT("loadflowCurrent", Double.class),
     ;
