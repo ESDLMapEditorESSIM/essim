@@ -11,6 +11,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.Test;
@@ -78,7 +79,7 @@ class TimeStepTest {
         checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
         checkResultsDBD(inMemoryObservationConsumer, energySystem);
 
-        String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+        String resultESDL = ESDLUtil.ecoreResourceToString(energySystem);
         System.out.println("Resulting ESDL: \n" + resultESDL);
     }
 
@@ -91,7 +92,7 @@ class TimeStepTest {
         checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
         checkResultsDBD(inMemoryObservationConsumer, energySystem);
 
-        String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+        String resultESDL = ESDLUtil.ecoreResourceToString(energySystem);
         System.out.println("Resulting ESDL: \n" + resultESDL);
     }
 
@@ -104,7 +105,7 @@ class TimeStepTest {
         checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
         checkResultsDBD(inMemoryObservationConsumer, energySystem);
 
-        String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+        String resultESDL = ESDLUtil.ecoreResourceToString(energySystem);
         System.out.println("Resulting ESDL: \n" + resultESDL);
     }
 

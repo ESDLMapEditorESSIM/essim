@@ -48,9 +48,8 @@ import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
 import nl.tno.essim.transportsolver.TransportSolver;
+import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.jetbrains.annotations.NotNull;
 
@@ -73,7 +72,7 @@ public class ESSimEngine implements IStatusProvider {
         EsdlPackage.eINSTANCE.eClass();
     }
 
-    private static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
+    public static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -172,7 +171,7 @@ public class ESSimEngine implements IStatusProvider {
 
         esdlString = esdl;
         ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
-        esdlResource = loadEcoreResource(esdlStream);
+        esdlResource = ESDLUtil.loadEcoreResource(esdlStream);
         energySystem = (EnergySystem) esdlResource.getContents().getFirst();
         if (energySystem == null) {
             log.error("Failed to load Energy System");
@@ -225,7 +224,7 @@ public class ESSimEngine implements IStatusProvider {
         Area mainArea = instance.getArea();
 
         energyAssets = new ArrayList<EnergyAsset>();
-        findAllEnergyAssets(mainArea, energyAssets);
+        ESDLUtil.findAllEnergyAssets(mainArea, energyAssets);
 
         EnergySystemInformation esInformation = energySystem.getEnergySystemInformation();
         if (esInformation == null) {
@@ -477,68 +476,6 @@ public class ESSimEngine implements IStatusProvider {
         return grafanaDashboardGenerator.getDashboardUrl();
     }
 
-    public interface EnergyAssetVisitor {
-        void visit(EnergyAsset energyAsset);
-    }
-
-    public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
-        visitAllEnergyAssets(area, assetList::add);
-    }
-
-    public static void visitAllEnergyAssets(Area area, EnergyAssetVisitor visitor) {
-        // Process assets within the current area
-        processAssets(area.getAsset(), visitor);
-
-        // Recursively process sub-areas
-        EList<Area> subAreas = area.getArea();
-        if (subAreas != null) {
-            for (Area subArea : subAreas) {
-                visitAllEnergyAssets(subArea, visitor);
-            }
-        }
-    }
-
-    public static void visitAllEnergyAssets(AbstractBuilding building, EnergyAssetVisitor visitor) {
-        // Process assets within the current building
-        processAssets(building.getAsset(), visitor);
-    }
-
-    // Refactored shared code logic to handle any type of asset list
-    private static void processAssets(EList<Asset> assets, EnergyAssetVisitor visitor) {
-        if (assets != null) {
-            for (Asset asset : assets) {
-                if (asset instanceof EnergyAsset) {
-                    EnergyAsset energyAsset = (EnergyAsset) asset;
-                    visitor.visit(energyAsset);
-                } else if (asset instanceof AbstractBuilding) {
-                    AbstractBuilding subBuilding = (AbstractBuilding) asset;
-                    visitAllEnergyAssets(subBuilding, visitor);
-                }
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    public static XMIResourceImpl loadEcoreResource(InputStream stream) throws IOException {
-
-        XMIResourceImpl resource = new XMIResourceImpl();
-        resource.getDefaultLoadOptions().put(XMIResource.OPTION_DEFER_IDREF_RESOLUTION, Boolean.TRUE);
-        resource.setIntrinsicIDToEObjectMap(new HashMap<String, EObject>());
-        resource.load(stream, null);
-
-        return resource;
-    }
-
-    public static <T extends EObject> String ecoreResourceToString(T ecoreResource) throws IOException {
-        XMIResource xmiResource = new XMIResourceImpl();
-        xmiResource.getContents().add(ecoreResource);
-        HashMap<String, Object> opts = new HashMap<String, Object>();
-        opts.put(XMIResource.OPTION_SCHEMA_LOCATION, true);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        xmiResource.save(stream, opts);
-        return stream.toString(StandardCharsets.UTF_8);
-    }
-
     private List<List<String>> printableSolversList(Solvers x) {
         List<String> firsts = printableSolverList(x.getFirst());
         List<String> laters = printableSolverList(x.getLater());
@@ -687,7 +624,7 @@ public class ESSimEngine implements IStatusProvider {
         return list;
     }
 
-    private EssimDuration parseTimeStep(String timeStep) {
+    public static EssimDuration parseTimeStep(String timeStep) {
         String regex = "([0-9]+)([smhdMy]{1})";
         Pattern p = Pattern.compile(regex);
         Matcher matcher = p.matcher(timeStep);

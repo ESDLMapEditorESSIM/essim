@@ -3,6 +3,7 @@ package nl.tno.essim.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import esdl.EnergySystem;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,7 +26,12 @@ import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.rest.util.MongoInject;
+import nl.tno.essim.time.EssimDuration;
+import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.utils.ESDLUtil;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -132,6 +138,55 @@ public class SimulationService {
 
         return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
 
+    }
+
+    @POST
+    @Path("/convert")
+    @Produces("application/json")
+    @Consumes("application/json")
+    @Operation(
+            summary = "Convert external profiles to time series",
+            description = "Converts external profiles in ESDL to time series profiles using the specified time parameters",
+            requestBody = @RequestBody(
+                    description = "ESDL profile conversion parameters",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = ESDLProfileConversion.class))
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Successfully converted profiles",
+                            content = @Content(schema = @Schema(implementation = ObjectNode.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Invalid input parameters",
+                            content = @Content(schema = @Schema(implementation = ErrorStatus.class))
+                    )
+            }
+    )
+    public Response convertExternalToTimeSeriesProfiles(ESDLProfileConversion conversion) {
+        ErrorStatus error = new ErrorStatus();
+        error.setStatus(Status.ERROR);
+        try {
+            String timeStep = conversion.getTimeStep();
+            EssimDuration profileStep = ESSimEngine.SIMULATION_STEP;
+            if (timeStep != null) {
+                profileStep = ESSimEngine.parseTimeStep(timeStep);
+            }
+            EssimTime essimTime = new EssimTime(EssimTime.dateToLocalDateTime(conversion.getStartDate()), EssimTime.dateToLocalDateTime(conversion.getEndDate()), profileStep);
+            XMIResourceImpl xmiResource = ESDLUtil.loadEcoreResource(new ByteArrayInputStream(conversion.getEsdlContents().getBytes(StandardCharsets.UTF_8)));
+            ESDLUtil.convertExternalToTimeSeriesProfiles(xmiResource, essimTime);
+            String newEsdl = ESDLUtil.ecoreResourceToString((EnergySystem) xmiResource.getContents().getFirst());
+            ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();
+            statusJson.put("esdl", Base64.getEncoder().encodeToString(newEsdl.getBytes(StandardCharsets.UTF_8)));
+            return Response.status(Response.Status.OK).entity(statusJson).build();
+
+        } catch (Exception e) {
+            log.error("Error converting ESDL to time series profiles", e);
+            error.setDescription(e.getMessage());
+        }
+        return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
     }
 
     @GET

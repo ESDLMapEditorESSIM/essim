@@ -1,0 +1,141 @@
+package nl.tno.essim.utils;
+
+import esdl.*;
+import nl.tno.essim.profiles.ProfileDataManager;
+import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.time.Horizon;
+import org.eclipse.emf.common.util.BasicEList;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.xmi.XMIResource;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+public class ESDLUtil {
+    public interface EnergyAssetVisitor {
+        void visit(EnergyAsset energyAsset);
+    }
+
+    public static void findAllEnergyAssets(Area area, List<EnergyAsset> assetList) {
+        visitAllEnergyAssets(area, assetList::add);
+    }
+
+    public static void visitAllEnergyAssets(Area area, EnergyAssetVisitor visitor) {
+        // Process assets within the current area
+        processAssets(area.getAsset(), visitor);
+
+        // Recursively process sub-areas
+        EList<Area> subAreas = area.getArea();
+        if (subAreas != null) {
+            for (Area subArea : subAreas) {
+                visitAllEnergyAssets(subArea, visitor);
+            }
+        }
+    }
+
+    public static void visitAllEnergyAssets(AbstractBuilding building, EnergyAssetVisitor visitor) {
+        // Process assets within the current building
+        processAssets(building.getAsset(), visitor);
+    }
+
+    // Refactored shared code logic to handle any type of asset list
+    private static void processAssets(EList<Asset> assets, EnergyAssetVisitor visitor) {
+        if (assets != null) {
+            for (Asset asset : assets) {
+                if (asset instanceof EnergyAsset) {
+                    EnergyAsset energyAsset = (EnergyAsset) asset;
+                    visitor.visit(energyAsset);
+                } else if (asset instanceof AbstractBuilding) {
+                    AbstractBuilding subBuilding = (AbstractBuilding) asset;
+                    visitAllEnergyAssets(subBuilding, visitor);
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static XMIResourceImpl loadEcoreResource(InputStream stream) throws IOException {
+
+        XMIResourceImpl resource = new XMIResourceImpl();
+        resource.getDefaultLoadOptions().put(XMIResource.OPTION_DEFER_IDREF_RESOLUTION, Boolean.TRUE);
+        resource.setIntrinsicIDToEObjectMap(new HashMap<>());
+        resource.load(stream, null);
+
+        return resource;
+    }
+
+    public static <T extends EObject> String ecoreResourceToString(T ecoreResource) throws IOException {
+        XMIResource xmiResource = new XMIResourceImpl();
+        xmiResource.getContents().add(ecoreResource);
+        HashMap<String, Object> opts = new HashMap<>();
+        opts.put(XMIResource.OPTION_SCHEMA_LOCATION, true);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        xmiResource.save(stream, opts);
+        return stream.toString(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Converts all external profiles in an ESDL energy system to time series profiles.
+     * This transformation updates the profiles of energy assets by replacing any
+     * {@code ExternalProfile} instances with {@code TimeSeriesProfile} instances, which are
+     * compatible with the simulation time step and duration provided by {@code EssimTime}.
+     *
+     * The method iterates through all energy assets and their associated ports in the
+     * given energy system, creating time series profiles with interpolated values based on
+     * the simulation time and step length. Each external profile's data is processed and
+     * incorporated into a new time series format suitable for simulations.
+     *
+     * @param xmiResource The {@code XMIResourceImpl} object representing the ESDL energy system
+     *                    resource. It serves as the container for the energy system model.
+     * @param essimTime   An instance of {@code EssimTime}, which contains simulation parameters
+     *                    such as the simulation start time, end time, and time step. These parameters
+     *                    are used to generate the time series profiles and timestamp elements.
+     * @throws IllegalArgumentException If no area is found in the given energy system instance.
+     */
+    public static void convertExternalToTimeSeriesProfiles(XMIResourceImpl xmiResource, EssimTime essimTime) {
+        EnergySystem energySystem = (EnergySystem) xmiResource.getContents().getFirst();
+        Instance instance = energySystem.getInstance().getFirst();
+        if (instance.getArea() == null) {
+            throw new IllegalArgumentException("No area found in ESDL energy instance !");
+        }
+        Area mainArea = instance.getArea();
+        ProfileDataManager profileDataManager = new ProfileDataManager(xmiResource, essimTime);
+        visitAllEnergyAssets(mainArea, energyAsset -> {
+            for (Port port : energyAsset.getPort()) {
+                ArrayList<GenericProfile> newProfiles = new ArrayList<>();
+                for (var i = port.getProfile().iterator(); i.hasNext(); ) {
+                    GenericProfile origProfile = i.next();
+                    if (origProfile instanceof ExternalProfile) {
+                        TimeSeriesProfile profile = EsdlFactory.eINSTANCE.createTimeSeriesProfile();
+                        profile.setTimestep((int) essimTime.getSimulationStepLength().getSeconds());
+                        profile.setStartDateTime(EssimTime.localDateTimeToDate(essimTime.getSimulationStartTime()));
+                        profile.setProfileType(origProfile.getProfileType());
+                        profile.setProfileQuantityAndUnit(profile.getProfileQuantityAndUnit());
+                        profile.setInterpolationMethod(profile.getInterpolationMethod());
+                        EList<ProfileElement> profileElements = new BasicEList<>();
+                        for (var t = essimTime.getSimulationStartTime() ; t.isBefore(essimTime.getSimulationEndTime()) ; t = t.plus(essimTime.getSimulationStepLength().toDuration()) ) {
+                            double v = profileDataManager.readProfile(origProfile, new Horizon(t, essimTime.getSimulationStepLength()));
+                            ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
+                            profileElement.setFrom(EssimTime.localDateTimeToDate(t));
+                            profileElement.setTo(EssimTime.localDateTimeToDate(t.plus(essimTime.getSimulationStepLength().toDuration())));
+                            profileElement.setValue(v);
+                            profileElements.add(profileElement);
+                        }
+                        profileDataManager.getProfileDataSupplier(profile).setProfileElements(profileElements);
+                        i.remove();
+                        newProfiles.add(profile);
+                    }
+                }
+                port.getProfile().addAll(newProfiles);
+            }
+        });
+    }
+
+}

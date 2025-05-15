@@ -12,6 +12,7 @@ import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.nodes.Node;
+import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
@@ -196,7 +197,7 @@ class ConversionTest {
 		checkResultsDBD(inMemoryObservationConsumer, energySystem);
 		checkImbalance(inMemoryObservationConsumer, 4 * 3600000);
 
-		String resultESDL = ESSimEngine.ecoreResourceToString(energySystem);
+		String resultESDL = ESDLUtil.ecoreResourceToString(energySystem);
 		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
 
