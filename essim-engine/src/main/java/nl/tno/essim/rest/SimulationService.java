@@ -146,7 +146,7 @@ public class SimulationService {
     @Consumes("application/json")
     @Operation(
             summary = "Convert external profiles to time series",
-            description = "Converts external profiles in ESDL to time series profiles using the specified time parameters",
+            description = "Converts external profiles in the provided ESDL to time series profiles using the specified time parameters",
             requestBody = @RequestBody(
                     description = "ESDL profile conversion parameters",
                     required = true,
@@ -175,7 +175,7 @@ public class SimulationService {
                 profileStep = ESSimEngine.parseTimeStep(timeStep);
             }
             EssimTime essimTime = new EssimTime(EssimTime.dateToLocalDateTime(conversion.getStartDate()), EssimTime.dateToLocalDateTime(conversion.getEndDate()), profileStep);
-            XMIResourceImpl xmiResource = ESDLUtil.loadEcoreResource(new ByteArrayInputStream(conversion.getEsdlContents().getBytes(StandardCharsets.UTF_8)));
+            XMIResourceImpl xmiResource = ESDLUtil.loadEcoreResource(new ByteArrayInputStream(Base64.getDecoder().decode(conversion.getEsdlContents())));
             ESDLUtil.convertExternalToTimeSeriesProfiles(xmiResource, essimTime);
             String newEsdl = ESDLUtil.ecoreResourceToString((EnergySystem) xmiResource.getContents().getFirst());
             ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();

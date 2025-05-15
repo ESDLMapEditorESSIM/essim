@@ -96,4 +96,9 @@ public class DateTimeProfileDataHandler implements ProfileDataHandler {
         }
         return true;
     }
+
+    @Override
+    public ProfileCacheKey getProfileCacheKey() {
+        return null;
+    }
 }

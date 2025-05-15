@@ -110,6 +110,11 @@ public class TimeSeriesProfileDataHandler implements ProfileDataHandler {
         return true;
     }
 
+    @Override
+    public ProfileCacheKey getProfileCacheKey() {
+        return null;
+    }
+
 
     @Override
     public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {

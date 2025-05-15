@@ -19,6 +19,11 @@ import java.util.HashMap;
 import java.util.List;
 
 public class ESDLUtil {
+    static {
+        // Initialize the models
+        EsdlPackage.eINSTANCE.eClass();
+    }
+
     public interface EnergyAssetVisitor {
         void visit(EnergyAsset energyAsset);
     }

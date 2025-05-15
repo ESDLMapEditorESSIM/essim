@@ -8,6 +8,7 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Date;
 
@@ -36,8 +37,7 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
     @Override
     public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {
         if (dataCache == null) {
-            String uri = cacheSupplier.createUri(profile.getConfiguration());
-            ProfileCacheKey profileCacheKey = new ProfileCacheKey(uri, profile.getSchema(), profile.getTableName(), profile.getColumnName(), 0d);
+            ProfileCacheKey profileCacheKey = getProfileCacheKey();
             synchronized (ProfileCache.getInstance()) {
                 dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
                 if (dataCache == null) {
@@ -49,6 +49,12 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
         }
         return dataCache == null ? ECollections.newBasicEList() : dataCache.get(EssimTime.dateToLocalDateTime(from), EssimTime.dateToLocalDateTime(to), dataProcessor);
 
+    }
+
+    @Override
+    public ProfileCacheKey getProfileCacheKey() {
+        String uri = cacheSupplier.createUri(profile.getConfiguration());
+        return new ProfileCacheKey(uri, profile.getSchema(), profile.getTableName(), profile.getColumnName(), 0d);
     }
 
     private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) {

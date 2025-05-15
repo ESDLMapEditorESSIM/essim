@@ -9,4 +9,5 @@ import java.util.Date;
 public interface ProfileDataHandler {
     EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision);
     boolean setProfileElements(EList<ProfileElement> profileElementList);
+    ProfileCacheKey getProfileCacheKey();
 }

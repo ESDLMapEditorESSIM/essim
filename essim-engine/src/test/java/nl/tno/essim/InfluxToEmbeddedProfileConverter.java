@@ -32,8 +32,8 @@ public class InfluxToEmbeddedProfileConverter {
 
         XMIResourceImpl xmiResource = ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8)));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSXX");
-        LocalDateTime start = OffsetDateTime.parse("2015-01-01T00:00:00.000000+0100", formatter).toLocalDateTime();
-        LocalDateTime end = OffsetDateTime.parse("2015-01-02T00:00:00.000000+0100", formatter).toLocalDateTime();
+        LocalDateTime start = OffsetDateTime.parse("2019-01-01T00:00:00.000000+0100", formatter).toLocalDateTime();
+        LocalDateTime end = OffsetDateTime.parse("2019-01-02T00:00:00.000000+0100", formatter).toLocalDateTime();
         EssimTime essimTime = new EssimTime(start, end, EssimDuration.of(15, ChronoUnit.MINUTES));
         ESDLUtil.convertExternalToTimeSeriesProfiles(xmiResource, essimTime);
         String newEsdl = ESDLUtil.ecoreResourceToString((EnergySystem) xmiResource.getContents().getFirst());

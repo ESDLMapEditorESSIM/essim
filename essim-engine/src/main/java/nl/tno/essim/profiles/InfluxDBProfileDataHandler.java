@@ -50,8 +50,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
     @Override
     public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {
         if (dataCache == null) {
-            String uri = "http://" + profile.getHost() + ":" + profile.getPort();
-            ProfileCacheKey profileCacheKey = new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), 0d);
+            ProfileCacheKey profileCacheKey = getProfileCacheKey();
             synchronized (ProfileCache.getInstance()) {
                 dataCache = ProfileCache.getInstance().getDataCache(profileCacheKey);
                 if (dataCache == null) {
@@ -62,6 +61,12 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
             }
         }
         return dataCache.get(EssimTime.dateToLocalDateTime(from), EssimTime.dateToLocalDateTime(to), dataProcessor);
+    }
+
+    @Override
+    public ProfileCacheKey getProfileCacheKey() {
+        String uri = "http://" + profile.getHost() + ":" + profile.getPort();
+        return new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), 0d);
     }
 
     private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) {

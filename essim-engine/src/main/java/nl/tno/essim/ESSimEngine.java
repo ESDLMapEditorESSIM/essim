@@ -67,11 +67,6 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
-    static {
-        // Initialize the models
-        EsdlPackage.eINSTANCE.eClass();
-    }
-
     public static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
