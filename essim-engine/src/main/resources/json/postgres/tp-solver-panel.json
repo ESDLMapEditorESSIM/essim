@@ -96,6 +96,18 @@
             "value": "${__field.labels[\"assetclass\"]} (${__field.labels[\"assetname\"]}, ${__field.labels[\"address\"]})"
           }
         ]
+      },
+      {
+        "matcher": {
+          "id": "byFrameRefID",
+          "options": "D"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "${__field.labels[\"assetclass\"]} (${__field.labels[\"assetname\"]}, ${__field.labels[\"address\"]})"
+          }
+        ]
       }
     ]
   },
@@ -165,6 +177,34 @@
       "rawQuery": true,
       "alias": "SOC",
       "resultFormat": "time_series"
+    },
+    {
+      "refId": "D",
+      "rawSql": "SELECT time, tags->>'assetName' AS assetName, tags->>'assetClass' AS assetClass, tags->>'address' AS address,loadflowEnergy as loss FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Transport' AND $__timeFilter(time)) ORDER BY time ASC",
+      "rawQuery": true,
+      "alias": "$assetClass ($assetName, $address)",
+      "resultFormat": "time_series",
+      "format": "time_series",
+      "group": [],
+      "metricColumn": "none",
+      "select": [
+        [
+          {
+            "params": [
+              "value"
+            ],
+            "type": "column"
+          }
+        ]
+      ],
+      "timeColumn": "time",
+      "where": [
+        {
+          "name": "$__timeFilter",
+          "params": [],
+          "type": "macro"
+        }
+      ]
     }
   ],
   "timeFrom": null,
