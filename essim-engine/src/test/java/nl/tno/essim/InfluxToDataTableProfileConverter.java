@@ -106,6 +106,7 @@ public class InfluxToDataTableProfileConverter {
                         dataTableProfile.setTimeColumnName("time");
                         dataTableProfile.setSchema(((InfluxDBProfile) profile).getDatabase());
                         dataTableProfile.setProfileQuantityAndUnit(profile.getProfileQuantityAndUnit());
+                        dataTableProfile.setProfileType(profile.getProfileType());
                         dataTableProfile.setStartDate(((InfluxDBProfile) profile).getStartDate());
                         dataTableProfile.setEndDate(((InfluxDBProfile) profile).getEndDate());
                         dataTableProfile.setMultiplier(((InfluxDBProfile) profile).getMultiplier());
