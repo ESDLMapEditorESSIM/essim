@@ -647,8 +647,8 @@ public class EssimLoadFlowController {
                 double p1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
                 double p2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
                 double p = p1 > p2 ? p1 - p2 : p2 - p1;
-                double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
-                double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
+                double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getQ());
+                double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getQ());
                 double q = q1 > q2 ? q1 - q2 : q2 - q1;
                 Observation observation = builder.value(ObservationField.LOADFLOW_POWER, p * 1000)
                         .value(ObservationField.LOADFLOW_ENERGY, p * 1000 * timestamp.getSimulationStepLength().getSeconds())
