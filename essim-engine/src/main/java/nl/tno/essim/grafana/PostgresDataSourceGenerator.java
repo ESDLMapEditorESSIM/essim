@@ -26,7 +26,8 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
     }
 
     @Override
-    public ObjectNode createDataSource(GrafanaClient grafanaClient, String databaseName) {
+    public ObjectNode createDataSource(GrafanaClient grafanaClient, String scenarioName) {
+        String databaseName = scenarioName + "-postgres";
         ObjectNode dsInput = ESSimEngine.getObjectMapper().createObjectNode();
         try {
             if (databaseUid == null) {
@@ -79,7 +80,6 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
 
     private String createDatabase(GrafanaClient client, String database) throws JsonProcessingException {
         String databaseName = checkDatabase(client, database);
-
         if (databaseName == null) {
             ObjectNode dbJSON = ESSimEngine.getObjectMapper().createObjectNode();
             CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(postgresUrl);
