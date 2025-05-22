@@ -14,14 +14,13 @@ import com.powsybl.openloadflow.OpenLoadFlowProvider;
 import com.powsybl.openloadflow.network.SlackBusSelectionMode;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.SimulationStatus;
 import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
-import org.eclipse.emf.common.util.BasicEList;
-import org.eclipse.emf.common.util.EList;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Paths;
@@ -194,8 +193,8 @@ public class EssimLoadFlowController {
             Port port1 = iterator.next();
             Port port2 = iterator.next();
             Carrier carrier = port1.getCarrier();
-            Port connected1 = getConnectedPorts(port1).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
-            Port connected2 = getConnectedPorts(port2).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
+            Port connected1 = Commons.getConnectedPorts(port1).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
+            Port connected2 = Commons.getConnectedPorts(port2).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
             VoltageLevel voltageLevel1 = getVoltageLevel(getSubStation(connected1.getEnergyasset()), (ElectricityCommodity) connected1.getCarrier());
             VoltageLevel voltageLevel2 = getVoltageLevel(getSubStation(connected2.getEnergyasset()), (ElectricityCommodity) connected2.getCarrier());
             Bus bus1 = getBus((ElectricityCommodity) carrier, voltageLevel1, cable);
@@ -228,24 +227,14 @@ public class EssimLoadFlowController {
 
     }
 
-    void addConnectedPortsToSet(Set<Port> portSet) {
-        Set<Port> connected = portSet.stream().flatMap(p -> getConnectedPorts(p).stream()).collect(Collectors.toSet());
-        connected.addAll(portSet.stream().filter(p -> isSubstationInternalConnection(p.getEnergyasset())).flatMap(p -> p.getEnergyasset().getPort().stream()).toList());
-        int prevSize = portSet.size();
-        portSet.addAll(connected);
-        if (portSet.size() > prevSize) {
-            addConnectedPortsToSet(portSet);
-        }
-    }
-
     List<Port> getSortedBusPortList(Port port) {
         Set<Port> portSet = new HashSet<>();
         portSet.add(port);
-        addConnectedPortsToSet(portSet);
+        Commons.addConnectedPortsToSet(portSet, EssimLoadFlowController::isSubstationInternalConnection);
         return portSet.stream().sorted(Comparator.comparing(Port::getId)).toList();
     }
 
-    boolean isSubstationInternalConnection(EnergyAsset asset) {
+    public static boolean isSubstationInternalConnection(EnergyAsset asset) {
         return asset instanceof EConnection || asset instanceof esdl.Bus;
     }
 
@@ -258,31 +247,6 @@ public class EssimLoadFlowController {
      */
     Optional<Port> getFirstPortForCarrier(EnergyAsset asset, ElectricityCommodity carrier) {
         return asset.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).min(Comparator.comparing(Port::getId));
-    }
-
-    /**
-     * Retrieves the list of ports that are connected to the specified port. Depending on the type of the input port
-     * (either InPort or OutPort), it gathers the connected OutPorts or InPorts, respectively.
-     *
-     * @param port the port for which the connected ports are to be retrieved. This port should be an instance of either
-     *             InPort or OutPort.
-     * @return a list containing the ports that are directly connected to the specified port. If the input is of type
-     * InPort, the result will include connected OutPorts; if it is of type OutPort, the result will include
-     * connected InPorts.
-     * @throws IllegalStateException if the specified port is not of type InPort or OutPort.
-     */
-    EList<Port> getConnectedPorts(Port port) {
-        EList<Port> ports = new BasicEList<>();
-        if (port instanceof InPort) {
-            EList<OutPort> connectedTo = ((InPort) port).getConnectedTo();
-            ports.addAll(connectedTo);
-        } else if (port instanceof OutPort) {
-            EList<InPort> connectedTo = ((OutPort) port).getConnectedTo();
-            ports.addAll(connectedTo);
-        } else {
-            throw new IllegalStateException("Port type " + port.getClass().getSimpleName() + " is not supported");
-        }
-        return ports;
     }
 
     /**
@@ -359,7 +323,7 @@ public class EssimLoadFlowController {
 
     private void addSubstationInternalPorts(List<Port> ports, HashSet<Port> portSet) {
         portSet.addAll(ports);
-        Stream<Port> portStream = ports.stream().filter(p -> p.getCarrier() instanceof ElectricityCommodity).flatMap(p -> getConnectedPorts(p).stream());
+        Stream<Port> portStream = ports.stream().filter(p -> p.getCarrier() instanceof ElectricityCommodity).flatMap(p -> Commons.getConnectedPorts(p).stream());
         portStream.forEach(p -> {
             if (!portSet.contains(p)) {
                 EnergyAsset energyAsset = p.getEnergyasset();
@@ -414,32 +378,6 @@ public class EssimLoadFlowController {
         }
         return voltageLevel;
     }
-
-//
-//    private VoltageLevel getVoltageLevel(ElectricityCommodity carrier, EnergyAsset asset) {
-//        Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
-//        if (firstPortForCarrier.isEmpty()) {
-//            throw new IllegalStateException(String.format("Asset %s is not connected to carrier %s", asset.getName(), carrier.getName()));
-//        }
-//        return getVoltageLevel(asset, firstPortForCarrier.get());
-//    }
-//
-//    private VoltageLevel getVoltageLevel(EnergyAsset asset, Port port) {
-//        Substation substation = getSubStation(asset);
-//        String carrierName = port.getCarrier().getName() == null ? port.getCarrier().getId() : port.getCarrier().getName();
-//        String voltageLevelId = "voltageLevel-" + carrierName + "-" + substation.getId();
-//        VoltageLevel voltageLevel = voltageLevelMap.get(voltageLevelId);
-//        if (voltageLevel == null) {
-//            voltageLevel = substation.newVoltageLevel()
-//                    .setId(voltageLevelId)
-//                    .setNominalV(((ElectricityCommodity) port.getCarrier()).getVoltage() / 1000)
-//                    .setTopologyKind(TopologyKind.BUS_BREAKER)
-//                    .add();
-//            voltageLevelMap.put(voltageLevelId, voltageLevel);
-//            log.trace("Creating VoltageLevel {} for asset {} with carrier {}", voltageLevelId, asset.getName(), carrierName);
-//        }
-//        return voltageLevel;
-//    }
 
     private Object createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, String busId, AbstractBasicConversion conversion) {
         AtomicReference<Object> result = new AtomicReference<>();

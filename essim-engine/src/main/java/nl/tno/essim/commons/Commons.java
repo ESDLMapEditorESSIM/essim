@@ -17,12 +17,15 @@
 package nl.tno.essim.commons;
 
 import esdl.*;
+import org.eclipse.emf.common.util.BasicEList;
+import org.eclipse.emf.common.util.EList;
 
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -38,6 +41,52 @@ public class Commons {
     public static final double P_MAX = 1.0;
     public static final String RESOURCE = ".";
     public static final String ESSIM_REVISION = "ESSIM_REVISION";
+
+    /**
+     * Recursively adds all connected ports to the provided set of ports based on a predicate condition.
+     * Ports connected either directly or through the energy assets matching the given predicate
+     * are included in the set. The method ensures transitive connections are accounted for until
+     * no new ports can be added.
+     *
+     * @param portSet   the set of ports to which connected ports will be added. This set is updated
+     *                  in place, and must not be null.
+     * @param predicate a condition used to filter energy assets. Connected ports from energy assets
+     *                  that satisfy this predicate are added to the set. Must not be null.
+     */
+    public static void addConnectedPortsToSet(Set<Port> portSet, Predicate<EnergyAsset> predicate) {
+        Set<Port> connected = portSet.stream().flatMap(p -> getConnectedPorts(p).stream()).collect(Collectors.toSet());
+        connected.addAll(portSet.stream().filter(p -> predicate.test(p.getEnergyasset())).flatMap(p -> p.getEnergyasset().getPort().stream()).toList());
+        int prevSize = portSet.size();
+        portSet.addAll(connected);
+        if (portSet.size() > prevSize) {
+            addConnectedPortsToSet(portSet, predicate);
+        }
+    }
+
+    /**
+     * Retrieves the list of ports that are connected to the specified port. Depending on the type of the input port
+     * (either InPort or OutPort), it gathers the connected OutPorts or InPorts, respectively.
+     *
+     * @param port the port for which the connected ports are to be retrieved. This port should be an instance of either
+     *             InPort or OutPort.
+     * @return a list containing the ports that are directly connected to the specified port. If the input is of type
+     * InPort, the result will include connected OutPorts; if it is of type OutPort, the result will include
+     * connected InPorts.
+     * @throws IllegalStateException if the specified port is not of type InPort or OutPort.
+     */
+    public static EList<Port> getConnectedPorts(Port port) {
+        EList<Port> ports = new BasicEList<>();
+        if (port instanceof InPort) {
+            EList<OutPort> connectedTo = ((InPort) port).getConnectedTo();
+            ports.addAll(connectedTo);
+        } else if (port instanceof OutPort) {
+            EList<InPort> connectedTo = ((OutPort) port).getConnectedTo();
+            ports.addAll(connectedTo);
+        } else {
+            throw new IllegalStateException("Port type " + port.getClass().getSimpleName() + " is not supported");
+        }
+        return ports;
+    }
 
     public static enum Role {
         TRANSPORT, PRODUCER, CONSUMER, BOTH
