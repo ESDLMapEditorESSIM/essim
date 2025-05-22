@@ -120,11 +120,9 @@ public class EssimLoadFlowController {
 
         // Now we create the assets per carrier
         solvers.stream().filter(s -> s.getCarriers().iterator().next() instanceof ElectricityCommodity).forEach(solver -> {
-            List<EnergyAsset> connectedAssets = assetList.stream().filter(a -> !a.getPort().stream().filter(p -> p.getCarrier() != null && solver.getCarriers().contains(p.getCarrier())).toList().isEmpty()).toList();
-            // Create the network elements for the connected assets
-            solver.getCarriers().forEach(c -> {
-                createAssets(connectedAssets, (ElectricityCommodity) c);
-            });
+            Set<EnergyAsset> connectedAssets = solver.getRoleMap().keySet();
+            // Create the network elements for solvers
+            createAssets(connectedAssets, solver.getCarriers());
         });
         // Create the transformers connecting the carriers
         createTransformers(assetList);
@@ -261,13 +259,23 @@ public class EssimLoadFlowController {
         return busIdMap.get(id);
     }
 
+    private Carrier getConnectedCarrier(EnergyAsset energyAsset, Set<Carrier> carriers) {
+        for (Port port : energyAsset.getPort()) {
+            if (carriers.contains(port.getCarrier())) {
+                return port.getCarrier();
+            }
+        }
+        return null;
+    }
 
-    private void createAssets(List<EnergyAsset> assetList, ElectricityCommodity carrier) {
+
+    private void createAssets(Collection<EnergyAsset> assetList, Set<Carrier> carriers) {
         AtomicInteger producerCounter = new AtomicInteger();
         AtomicInteger consumerCounter = new AtomicInteger();
         AtomicInteger storageCounter = new AtomicInteger();
         AtomicInteger conversionCounter = new AtomicInteger();
         assetList.stream().filter(a -> a instanceof Producer).forEach(producer -> {
+            ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(producer, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(producer), carrier);
             Bus bus = getBus(carrier, voltageLevel, producer);
             Generator generator = createProducer(voltageLevel, bus.getId(), (Producer) producer);
@@ -275,6 +283,7 @@ public class EssimLoadFlowController {
             producerCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof Consumer).forEach(consumer -> {
+            ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(consumer, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(consumer), carrier);
             Bus bus = getBus(carrier, voltageLevel, consumer);
             Load load = createConsumer(voltageLevel, bus.getId(), consumer);
@@ -282,6 +291,7 @@ public class EssimLoadFlowController {
             consumerCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof Storage).forEach(storage -> {
+            ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(storage, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(storage), carrier);
             Bus bus = getBus(carrier, voltageLevel, storage);
             Battery battery = createStorage(voltageLevel, bus.getId(), (Storage) storage);
@@ -289,6 +299,7 @@ public class EssimLoadFlowController {
             storageCounter.incrementAndGet();
         });
         assetList.stream().filter(a -> a instanceof AbstractBasicConversion).forEach(conversion -> {
+            ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(conversion, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(conversion), carrier);
             Bus bus = getBus(carrier, voltageLevel, conversion);
             createConversion(voltageLevel, carrier, bus.getId(), (AbstractBasicConversion) conversion);
