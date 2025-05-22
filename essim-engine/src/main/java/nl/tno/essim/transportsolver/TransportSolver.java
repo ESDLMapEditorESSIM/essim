@@ -70,6 +70,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private LocalDateTime simulationStartTime;
     private LocalDateTime simulationEndTime;
     private EssimDuration simulationStepLength;
+    @Getter
     private HashMap<EnergyAsset, Role> roleMap;
     private int transportCount;
     private int transportWithCapacityCount;
@@ -80,11 +81,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private ISimulationManager simulationManager;
     private Network network;
 
-    public TransportSolver(String name, Carrier carrier, IObservationProvider generalObservationProvider,
-                           Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem,
-                           Market market) {
+    public TransportSolver(String name, IObservationProvider generalObservationProvider, Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem, Market market, Collection<Carrier> carriers) {
         this.id = name;
-        this.carriers.add(carrier);
+        this.carriers.addAll(carriers);
         this.nodeConfig = nodeConfig;
         this.esdlString = energySystem;
         this.market = market;
@@ -158,8 +157,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                 assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
                         + roleMap.get(asset));
             }
-            log.error("Cannot find a producer or consumer in network " + getId() + " for carrier: "
-                    + carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")) + "!! Assets in this network are: " + String.join(", ", assetListString));
+            log.error("Cannot find a producer or consumer in network {} for carriers: {}!! Assets in this network are: {}", getId(), carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")), String.join(", ", assetListString));
             log.error("This network ({}) will not be created!", getId());
             return null;
         }
@@ -208,7 +206,6 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private EnergyAsset getRootAsset() {
         EnergyAsset rootAsset = null;
         double maxCapacity = Double.NEGATIVE_INFINITY;
-        Role rootRole = Role.TRANSPORT;
 
         // Choose the biggest producer as the root node
         for (EnergyAsset asset : assetList) {
@@ -235,7 +232,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
         if (rootAsset == null) {
             log.warn(
-                    "Network {} for carrier {} ({}) has no energy producers in it! Please check if this was intentional!",
+                    "Network {} for carriers {} ({}) has no energy producers in it! Please check if this was intentional!",
                     getId(), carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")), carriers.stream().map(Carrier::getName).collect(Collectors.joining(", ")));
             for (EnergyAsset asset : assetList) {
                 if (roleMap.get(asset).equals(Role.CONSUMER)) {

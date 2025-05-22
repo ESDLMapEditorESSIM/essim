@@ -64,6 +64,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
@@ -341,51 +342,46 @@ public class ESSimEngine implements IStatusProvider {
     }
 
     public TreeMap<Integer, List<TransportSolver>> createTransportSolvers(Carriers carriers) throws Exception {
-
-        // Create all Transport Solvers based on carriers.
-        // There could be isolated networks also. So repeat this process till we get a
-        // TransportSolver for all networks.
-
-        for (Carrier carrier : carriers.getCarrier()) {
-            List<EnergyAsset> remainingAssets = new ArrayList<EnergyAsset>(energyAssets);
-            int i = 0;
-            List<EnergyAsset> filteredAssets = filterAssetsAndAssignRoles(remainingAssets, carrier);
-            do {
-                String solverId = energySystemId + " "
-                        + (carrier.getName() == null ? carrier.getId() : carrier.getName()) + " Network " + i;
-                TransportSolver solver = new TransportSolver(solverId, carrier, generalObservationProvider, nodeConfig,
-                        energyAssetRoles, esdlString, this.market);
-                solver.setSimulationManager(simulationManager);
-                for (EnergyAsset filteredAsset : filteredAssets) {
-                    solver.addToNetwork(filteredAsset);
-                }
-                remainingAssets = solver.createTree();
-                filteredAssets = remainingAssets;
-                if (remainingAssets != null) {
-                    if (solver.getDeviceNodes().size() > 1) {
-                        String networkDiag = solver.getNetworkDiag();
-                        if (networkDiag != null) {
-                            try {
-                                networkDiags.put(solverId, Base64.getEncoder().encodeToString(networkDiag.getBytes()));
-                            } catch (Exception e) {
-                                log.error("Error while creating network diagram for {}", solverId);
-                                networkDiags.put(solverId, "");
-                            }
+        ArrayList<Port> allPorts = new ArrayList<>();
+        ESDLUtil.visitAllEnergyAssets(energySystem.getInstance().getFirst().getArea(), a -> allPorts.addAll(a.getPort()));
+        int i = 0;
+        while (!allPorts.isEmpty()) {
+            Port port = allPorts.getFirst();
+            if (port.getCarrier() == null) {
+                allPorts.remove(port);
+                continue;
+            }
+            HashSet<Port> networkPorts = new HashSet<>();
+            networkPorts.add(port);
+            Commons.addConnectedPortsToSet(networkPorts, a -> a instanceof Transport);
+            HashSet<Carrier> connectedCarriers = new HashSet<>();
+            HashMap<EnergyAsset, Role> connectedAssets = new HashMap<>();
+            for (Port networkPort : networkPorts) {
+                connectedCarriers.add(networkPort.getCarrier());
+            }
+            for (Port networkPort : networkPorts) {
+                Carrier portCarrier = networkPort.getCarrier();
+                if (portCarrier != null && connectedCarriers.contains(portCarrier)) {
+                    Role role;
+                    EnergyAsset energyAsset = networkPort.getEnergyasset();
+                    if (energyAsset instanceof Transport) {
+                        role = Role.TRANSPORT;
+                    } else {
+                        if (port instanceof InPort) {
+                            role = Role.CONSUMER;
                         } else {
-                            log.debug("No network diagram for {}", solverId);
-                            networkDiags.put(solverId, "");
+                            role = Role.PRODUCER;
                         }
-
-                        solversList.add(solver);
-                        i++;
                     }
-                } else {
-                    remainingAssets = new ArrayList<EnergyAsset>();
+                    connectedAssets.put(energyAsset, role);
                 }
-            } while (!remainingAssets.isEmpty());
+            }
+            createTransportSolver(connectedAssets, connectedCarriers, i);
+            allPorts.removeAll(networkPorts);
+            ++i;
         }
 
-        log.debug(solversList.toString());
+        log.debug("Created {} solvers: {}", solversList.size(), solversList);
 
         // WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
         // simulation.setTransport(getNetworkDiags());
@@ -414,6 +410,35 @@ public class ESSimEngine implements IStatusProvider {
         }
 
         return new ChocoOptimiser(solversList, constrIndices).solve();
+
+    }
+
+    private void createTransportSolver(HashMap<EnergyAsset, Role> connectedAssets, HashSet<Carrier> connectedCarriers, int solverIndex) throws Exception {
+        String carriersName = connectedCarriers.stream().map(c -> c.getName() == null ? c.getId() : c.getName()).collect(Collectors.joining(", "));
+
+        String solverId = energySystemId + " " + carriersName + " Network " + solverIndex;
+
+        TransportSolver solver = new TransportSolver(solverId, generalObservationProvider, nodeConfig, connectedAssets, esdlString, this.market, connectedCarriers);
+        solver.setSimulationManager(simulationManager);
+        for (EnergyAsset filteredAsset : connectedAssets.keySet()) {
+            solver.addToNetwork(filteredAsset);
+        }
+        solver.createTree();
+        if (solver.getDeviceNodes().size() > 1) {
+            String networkDiag = solver.getNetworkDiag();
+            if (networkDiag != null) {
+                try {
+                    networkDiags.put(solverId, Base64.getEncoder().encodeToString(networkDiag.getBytes()));
+                } catch (Exception e) {
+                    log.error("Error while creating network diagram for {}", solverId);
+                    networkDiags.put(solverId, "");
+                }
+            } else {
+                log.debug("No network diagram for {}", solverId);
+                networkDiags.put(solverId, "");
+            }
+            solversList.add(solver);
+        }
     }
 
     public void startSimulation() {
