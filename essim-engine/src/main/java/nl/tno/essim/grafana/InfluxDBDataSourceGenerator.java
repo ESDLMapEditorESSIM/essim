@@ -22,7 +22,8 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
     }
 
     @Override
-    public ObjectNode createDataSource(GrafanaClient grafanaClient, String databaseName) {
+    public ObjectNode createDataSource(GrafanaClient grafanaClient, String scenarioName) {
+        String databaseName = scenarioName;
         ObjectNode dsInput = ESSimEngine.getObjectMapper().createObjectNode();
         try {
             if (databaseUid == null) {
@@ -63,7 +64,7 @@ public class InfluxDBDataSourceGenerator implements DataSourceGenerator {
                 ObjectNode db = (ObjectNode) dbObj;
                 String dbName = db.get("database").asText();
 
-                if (dbName.contains(databaseName)) {
+                if (dbName.equalsIgnoreCase(databaseName)) {
                     return db.get("uid").asText();
                 }
             }

@@ -67,7 +67,7 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
                 ObjectNode db = (ObjectNode) dbObj;
                 String dbName = db.get("database").asText();
 
-                if (dbName.contains(databaseName)) {
+                if (dbName.equalsIgnoreCase(databaseName)) {
                     return db.get("uid").asText();
                 }
             }
