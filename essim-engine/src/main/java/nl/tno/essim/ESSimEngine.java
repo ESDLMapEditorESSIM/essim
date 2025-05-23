@@ -326,21 +326,6 @@ public class ESSimEngine implements IStatusProvider {
         }
     }
 
-    @NotNull
-    private InfluxDBObservationConsumer getInfluxDBObservationConsumer(DatabaseConfiguration configuration) {
-        String host = configuration.getHost();
-        int port = configuration.getPort();
-        boolean tls = configuration.isTls();
-        if (port == 0) {
-            port = tls ? 443 : 80;
-        }
-        String influxUrl = String.format("http%s://%s:%d", tls ? "s" : "", host, port);
-
-        InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(influxUrl);
-        influxObservationConsumer.init(scenarioName);
-        return influxObservationConsumer;
-    }
-
     public TreeMap<Integer, List<TransportSolver>> createTransportSolvers(Carriers carriers) throws Exception {
         ArrayList<Port> allPorts = new ArrayList<>();
         ESDLUtil.visitAllEnergyAssets(energySystem.getInstance().getFirst().getArea(), a -> allPorts.addAll(a.getPort()));
@@ -414,7 +399,7 @@ public class ESSimEngine implements IStatusProvider {
     }
 
     private void createTransportSolver(HashMap<EnergyAsset, Role> connectedAssets, HashSet<Carrier> connectedCarriers, int solverIndex) throws Exception {
-        String carriersName = connectedCarriers.stream().map(c -> c.getName() == null ? c.getId() : c.getName()).collect(Collectors.joining(", "));
+        String carriersName = connectedCarriers.stream().sorted(Comparator.comparing(o -> (o.getName() == null ? o.getId() : o.getName()))).map(c -> c.getName() == null ? c.getId() : c.getName()).collect(Collectors.joining(", "));
 
         String solverId = energySystemId + " " + carriersName + " Network " + solverIndex;
 
