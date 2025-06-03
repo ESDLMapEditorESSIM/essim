@@ -352,7 +352,7 @@ public class ESSimEngine implements IStatusProvider {
                     if (energyAsset instanceof Transport) {
                         role = Role.TRANSPORT;
                     } else {
-                        if (port instanceof InPort) {
+                        if (networkPort instanceof InPort) {
                             role = Role.CONSUMER;
                         } else {
                             role = Role.PRODUCER;
