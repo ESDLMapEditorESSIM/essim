@@ -182,7 +182,7 @@ class ConversionTest {
 	private void checkImbalance(InMemoryObservationConsumer inMemoryObservationConsumer,
 			double expectedElectricityImbalance) {
 		HashMap<String, Table> networks = inMemoryObservationConsumer.getNetworks();
-		double electricitySum = networks.get("Test conversion Electricity Network 0").doubleColumn("imbalanceEnergy")
+		double electricitySum = networks.get("Test conversion Electricity Network 1").doubleColumn("imbalanceEnergy")
 				.sum();
 		assertEquals(expectedElectricityImbalance, electricitySum, 1e3);
 		double gasSum = networks.get("Test conversion Gas Network 0").doubleColumn("imbalanceEnergy").sum();

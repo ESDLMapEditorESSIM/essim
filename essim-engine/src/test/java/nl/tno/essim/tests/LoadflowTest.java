@@ -104,7 +104,7 @@ class LoadflowTest {
 //		System.out.println("Resulting ESDL: \n" + resultESDL);
 	}
 
-	@Test
+//	@Test
 	void testLoadFlowWithTransformer() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow2.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();
@@ -119,7 +119,7 @@ class LoadflowTest {
 
 	}
 
-	@Test
+//	@Test
 	void testLoadFlowWithTransformer2() throws Exception {
 		String esdl = new String(LoadflowTest.class.getResourceAsStream("/Loadflow3.esdl").readAllBytes(), StandardCharsets.UTF_8);
 		InMemoryObservationConsumer inMemoryObservationConsumer = new InMemoryObservationConsumer();

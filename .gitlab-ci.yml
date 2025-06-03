@@ -39,7 +39,6 @@ build-and-push-essim:
     - echo $COMMIT_SHA > version.txt
     - docker build --no-cache 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_BRANCH 
-      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:master
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
       .
     - docker push  --all-tags
