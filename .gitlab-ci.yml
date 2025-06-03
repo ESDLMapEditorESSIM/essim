@@ -23,6 +23,7 @@ build-essim:
     - mvn clean package
   except:
     - main
+    - loadflow
 
 build-and-push-essim:
   stage: build
@@ -37,7 +38,7 @@ build-and-push-essim:
     - COMMIT_SHA=`git rev-parse --short HEAD`
     - echo $COMMIT_SHA > version.txt
     - docker build --no-cache 
-      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:main 
+      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_BRANCH 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:master
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
       .
@@ -45,4 +46,4 @@ build-and-push-essim:
       ci.tno.nl/essim/open-sourced-essim/essim-engine
   only: 
     - main
-
+    - loadflow
