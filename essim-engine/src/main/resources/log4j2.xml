@@ -35,7 +35,8 @@
         <Logger name="nl.tno" level="debug" />
         <Logger name="org.glassfish.grizzly" level="Info"/>
         <Logger name="org.glassfish.jersey" level="INFO"/>
-        <Logger name="com.powsybl.openloadflow.OpenLoadFlowParameters" level="WARN"/>
+        <Logger name="com.powsybl.openloadflow" level="WARN"/>
+        <Logger name="com.powsybl.openloadflow.network.impl.LfNetworkLoaderImpl" level="ERROR"/>
         <logger name="nl.tno.essim.grafana" level="TRACE"/>
 <!--        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>-->
 <!--        <logger name="nl.tno.essim.observation.consumers.PostgresTableCache" level="TRACE"/>-->

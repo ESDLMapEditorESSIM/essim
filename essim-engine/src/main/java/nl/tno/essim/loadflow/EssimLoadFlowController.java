@@ -23,6 +23,9 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -84,16 +87,23 @@ public class EssimLoadFlowController {
     }
 
     public void createNetwork(List<TransportSolver> solvers, List<EnergyAsset> assetList) {
-        Future<?> future = executor.submit(() -> createNetworkInternal(solvers, assetList));
         try {
+            Future<?> future = executor.submit(new Callable<>() {
+
+                @Override
+                public Object call() throws Exception {
+                    createNetworkInternal(solvers, assetList);
+                    return null;
+                }
+            });
             future.get();
-        } catch (InterruptedException e) {
-        } catch (ExecutionException e) {
+        } catch (InterruptedException ignored) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void createNetworkInternal(List<TransportSolver> solvers, List<EnergyAsset> assetList) {
+    private void createNetworkInternal(List<TransportSolver> solvers, List<EnergyAsset> assetList) throws IOException {
         /*
          * We may need a substation, because many elements can only be created in a substation
          * Substations contain voltagelevels and transformers
@@ -132,12 +142,15 @@ public class EssimLoadFlowController {
         exportNetwork();
     }
 
-    private void exportNetwork() {
+    private void exportNetwork() throws IOException {
         Exporter ex = new XMLExporter();
-        DataSource dataSource = Exporters.createDataSource(Paths.get("diagrams", "essim-network-" + networkName + ".xml"));
+        Path diagramsDir = Paths.get(System.getProperty("java.io.tmpdir"), "diagrams");
+        if (!Files.exists(diagramsDir)) {
+            Files.createDirectories(diagramsDir);
+        }
+        DataSource dataSource = Exporters.createDataSource(diagramsDir.resolve("essim-network-" + networkName + ".xml"));
         ex.export(network, new Properties(), dataSource);
-        NetworkAreaDiagram.draw(network, Paths.get("diagrams", "essim-network-" + networkName + "-diagram.svg"));
-//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
+        NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
     private void createTransformers(List<EnergyAsset> assetList) {
