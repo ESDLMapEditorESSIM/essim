@@ -331,18 +331,20 @@ public class ESSimEngine implements IStatusProvider {
         ESDLUtil.visitAllEnergyAssets(energySystem.getInstance().getFirst().getArea(), a -> allPorts.addAll(a.getPort()));
         int i = 0;
         while (!allPorts.isEmpty()) {
-            Port port = allPorts.getFirst();
-            if (port.getCarrier() == null) {
-                allPorts.remove(port);
+            Port firstPort = allPorts.getFirst();
+            if (firstPort.getCarrier() == null) {
+                allPorts.remove(firstPort);
                 continue;
             }
             HashSet<Port> networkPorts = new HashSet<>();
-            networkPorts.add(port);
+            networkPorts.add(firstPort);
             Commons.addConnectedPortsToSet(networkPorts, a -> a instanceof Transport);
             HashSet<Carrier> connectedCarriers = new HashSet<>();
             HashMap<EnergyAsset, Role> connectedAssets = new HashMap<>();
             for (Port networkPort : networkPorts) {
-                connectedCarriers.add(networkPort.getCarrier());
+                if (networkPort.getCarrier() != null) {
+                    connectedCarriers.add(networkPort.getCarrier());
+                }
             }
             for (Port networkPort : networkPorts) {
                 Carrier portCarrier = networkPort.getCarrier();
