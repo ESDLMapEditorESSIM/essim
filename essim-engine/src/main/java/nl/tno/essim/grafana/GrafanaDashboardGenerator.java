@@ -27,6 +27,8 @@ import nl.tno.essim.commons.ITransportSolver;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,13 +71,14 @@ public class GrafanaDashboardGenerator {
         this.scenarioName = scenarioName;
         this.simulationRunName = simulationRunName;
 
+        Marker marker = MarkerFactory.getMarker(simulationRunName);
         if (databaseURL == null) {
-            log.warn("No database Observation Consumer defined! Dashboard will not be created!");
+            log.warn(marker, "No database Observation Consumer defined! Dashboard will not be created!");
             return;
         }
 
         if (System.getenv(GrafanaClient.GRAFANA_INTERNAL_URL_ENV) == null) {
-            log.warn("No internal Grafana URL defined! Dashboard will not be created!");
+            log.warn(marker, "No internal Grafana URL defined! Dashboard will not be created!");
             return;
         }
         GrafanaClient grafanaClient = new GrafanaClient(mongo);
@@ -112,7 +115,7 @@ public class GrafanaDashboardGenerator {
         makeDashboardJSON.put("folderId", 0);
         makeDashboardJSON.put("overwrite", true);
 
-        log.debug("Grafana: POSTing to {} with content: \n{}", DASHBOARDS_URL, makeDashboardJSON.toString());
+        log.debug(marker, "Grafana: POSTing to {} with content: \n{}", DASHBOARDS_URL, makeDashboardJSON.toString());
 
         String response = grafanaClient.post(DASHBOARDS_URL, makeDashboardJSON.toString());
         ObjectNode respJSON = null;
@@ -121,16 +124,16 @@ public class GrafanaDashboardGenerator {
             respJSON = (ObjectNode) ESSimEngine.getObjectMapper().readTree(response);
             if (respJSON.has("status")) {
                 if (respJSON.get("status").asText().equals("success")) {
-                    log.debug("Dashboard successfully created!!");
+                    log.debug(marker, "Dashboard successfully created!!");
                     String grafanaExternalUrl = System.getenv(GRAFANA_EXTERNAL_URL_ENV);
 
                     if (grafanaExternalUrl == null) {
                         grafanaExternalUrl = System.getenv(GrafanaClient.GRAFANA_INTERNAL_URL_ENV);
-                        log.warn("No external Grafana URL defined! Going to use {} in dashboard URL!", grafanaExternalUrl);
+                        log.warn(marker, "No external Grafana URL defined! Going to use {} in dashboard URL!", grafanaExternalUrl);
                     }
 
                     dashboardUrl = grafanaExternalUrl + respJSON.get("url").asText();
-                    log.debug("Go to {}", dashboardUrl);
+                    log.debug(marker, "Go to {}", dashboardUrl);
                 }
             }
         } catch (JsonProcessingException e) {
@@ -189,8 +192,8 @@ public class GrafanaDashboardGenerator {
             }
             return (ObjectNode) ESSimEngine.getObjectMapper().readTree(jsonString);
         } catch (IOException e) {
-            log.warn("Could not read or parse json resource {}", jsonResource, e);
-            log.debug("JSON resource content: {}", jsonString);
+            log.warn(MarkerFactory.getMarker(simulationRunName), "Could not read or parse json resource {}", jsonResource, e);
+            log.debug(MarkerFactory.getMarker(simulationRunName), "JSON resource content: {}", jsonString);
         }
         return null;
     }

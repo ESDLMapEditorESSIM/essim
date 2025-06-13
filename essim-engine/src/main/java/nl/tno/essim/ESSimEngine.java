@@ -52,6 +52,8 @@ import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -77,6 +79,7 @@ public class ESSimEngine implements IStatusProvider {
     }
 
     private final XMIResourceImpl esdlResource;
+    private final Marker marker;
     private EssimLoadFlowController loadFlowController;
     private List<EnergyAsset> energyAssets;
     @Getter
@@ -129,7 +132,11 @@ public class ESSimEngine implements IStatusProvider {
 
     public ESSimEngine(String essimId, String simulationId, EssimSimulation simulation, String esdl, IMongoBackend mongo)
             throws Exception {
-        log.debug("ESSIM Revision: {}", essimId);
+        // See for logging:
+        // https://stackoverflow.com/questions/60659731/slf4j-logging-to-different-files-based-on-a-tag
+        // For appender per marker: https://logging.apache.org/log4j/2.x/manual/appenders/delegating.html#RoutingAppender
+        marker = MarkerFactory.getMarker(simulationId);
+        log.debug(marker, "ESSIM Revision: {}", essimId);
         this.mongo = mongo;
         simulationDescription = simulation.getSimulationDescription();
         user = simulation.getUser();
@@ -163,14 +170,14 @@ public class ESSimEngine implements IStatusProvider {
             market.setDeltaPrice(Commons.MIN_DELTA_PRICE);
         }
         this.market = market;
-        log.info("Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice() + "]");
+        log.info(marker, "Using market price boundaries: [" + market.getMinPrice() + ", " + market.getMaxPrice() + "]");
 
         esdlString = esdl;
         ByteArrayInputStream esdlStream = new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8));
         esdlResource = ESDLUtil.loadEcoreResource(esdlStream);
         energySystem = (EnergySystem) esdlResource.getContents().getFirst();
         if (energySystem == null) {
-            log.error("Failed to load Energy System");
+            log.error(marker, "Failed to load Energy System");
             throw new IllegalStateException("Failed to load ESDL!");
         }
 
@@ -207,7 +214,7 @@ public class ESSimEngine implements IStatusProvider {
             }
         }
 
-        log.debug("Successfully loaded Energy System {}", energySystemId);
+        log.debug(marker, "Successfully loaded Energy System {}", energySystemId);
 
         if (energySystem.getInstance() == null) {
             throw new IllegalArgumentException("No energy instance found in ESDL file!");
@@ -242,12 +249,12 @@ public class ESSimEngine implements IStatusProvider {
         }
 
 
-        log.debug("Going with this parallelised order:");
+        log.debug(marker, "Going with this parallelised order:");
 
         // Add to simulation manager the transport solvers in the order we determined.
         for (int k : transportSolveOrder.keySet()) {
             List<TransportSolver> solvers = transportSolveOrder.get(k);
-            log.debug(" - {}: {}", k, solvers.toString());
+            log.debug(marker, " - {}: {}", k, solvers.toString());
             for (TransportSolver solver : solvers) {
                 solver.setSimulationManager(simulationManager);
                 solver.setObservationManager(observationManager);
@@ -271,12 +278,12 @@ public class ESSimEngine implements IStatusProvider {
                 KPIObservationConsumer kpiObservationConsumer = new KPIObservationConsumer(kpiCommunicator);
                 kpiObservationConsumer.init(simulationId);
                 observationManager.registerConsumer(kpiObservationConsumer);
-                log.debug("Registering KPI Observation Consumer for {}", kpiCommunicator.getType());
+                log.debug(marker, "Registering KPI Observation Consumer for {}", kpiCommunicator.getType());
                 List<KPIModule> modules = simulation.getKpiModule().getModules();
                 KPIInfo.KPIInfoBuilder kpiInfoBuilder = KPIInfo.builder().simulationId(simulationId).noOfMessages((long) messages);
                 for (KPIModule module : modules) {
                     Object config = module.getConfig();
-                    log.debug("Config for module {}: {}", module.getId(), config);
+                    log.debug(marker, "Config for module {}: {}", module.getId(), config);
                     JsonNode jsonNodeConfig = objectMapper.valueToTree(config);
                     kpiInfoBuilder.kpiCalculator(new KPIInfo.KpiCalculator(module.getId(), jsonNodeConfig));
                 }
@@ -300,14 +307,14 @@ public class ESSimEngine implements IStatusProvider {
                         simulation.getInfluxURL());
                 influxObservationConsumer.init(scenarioName);
                 observationManager.registerConsumer(influxObservationConsumer);
-                log.debug("Registering InfluxDB Observation Consumer: {}", scenarioName);
+                log.debug(marker, "Registering InfluxDB Observation Consumer: {}", scenarioName);
             }
             if (simulation.getCsvFilesLocation() != null) {
                 CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
                         simulation.getCsvFilesLocation());
                 observationManager.registerConsumer(csvObservationConsumer);
                 csvObservationConsumer.init(scenarioName);
-                log.debug("Registering CSV Observation Consumer");
+                log.debug(marker, "Registering CSV Observation Consumer");
             }
             if (simulation.getPostgresURL() != null) {
                 String jdbcUri = "jdbc:" + simulation.getPostgresURL();
@@ -317,7 +324,7 @@ public class ESSimEngine implements IStatusProvider {
                 PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
                 observationManager.registerConsumer(postgresObservationConsumer);
                 postgresObservationConsumer.init(scenarioName);
-                log.debug("Registering Postgres Observation Consumer");
+                log.debug(marker, "Registering Postgres Observation Consumer");
             }
 
         } catch (Exception e) {
@@ -368,7 +375,7 @@ public class ESSimEngine implements IStatusProvider {
             ++i;
         }
 
-        log.debug("Created {} solvers: {}", solversList.size(), solversList);
+        log.debug(marker, "Created {} solvers: {}", solversList.size(), solversList);
 
         // WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
         // simulation.setTransport(getNetworkDiags());
@@ -393,7 +400,7 @@ public class ESSimEngine implements IStatusProvider {
                     constraintList.add(new Integer[]{solversList.indexOf(first), solversList.indexOf(later)});
                 }
             }
-            log.debug(convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
+            log.debug(marker, convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
         }
 
         return new ChocoOptimiser(solversList, constrIndices).solve();
@@ -405,7 +412,7 @@ public class ESSimEngine implements IStatusProvider {
 
         String solverId = energySystemId + " " + carriersName + " Network " + solverIndex;
 
-        TransportSolver solver = new TransportSolver(solverId, generalObservationProvider, nodeConfig, connectedAssets, esdlString, this.market, connectedCarriers);
+        TransportSolver solver = new TransportSolver(solverId, simulationId, generalObservationProvider, nodeConfig, connectedAssets, esdlString, this.market, connectedCarriers);
         solver.setSimulationManager(simulationManager);
         for (EnergyAsset filteredAsset : connectedAssets.keySet()) {
             solver.addToNetwork(filteredAsset);
@@ -417,11 +424,11 @@ public class ESSimEngine implements IStatusProvider {
                 try {
                     networkDiags.put(solverId, Base64.getEncoder().encodeToString(networkDiag.getBytes()));
                 } catch (Exception e) {
-                    log.error("Error while creating network diagram for {}", solverId);
+                    log.error(marker, "Error while creating network diagram for {}", solverId);
                     networkDiags.put(solverId, "");
                 }
             } else {
-                log.debug("No network diagram for {}", solverId);
+                log.debug(marker, "No network diagram for {}", solverId);
                 networkDiags.put(solverId, "");
             }
             solversList.add(solver);
@@ -450,7 +457,7 @@ public class ESSimEngine implements IStatusProvider {
 
     public String createGrafanaDashboard() {
         // Make a Grafana Dashboard:
-        log.debug("Building Grafana Dashboard now!");
+        log.debug(marker, "Building Grafana Dashboard now!");
         if (user == null) {
             user = "ESSIM_USER";
         }
@@ -586,7 +593,7 @@ public class ESSimEngine implements IStatusProvider {
                                                 : (" with name " + conversion.getName()))
                                                 + " has no control strategy defined!!");
                             } else {
-                                log.warn(conversion.getClass().getInterfaces()[0].getSimpleName() + " asset "
+                                log.warn(marker, conversion.getClass().getInterfaces()[0].getSimpleName() + " asset "
                                         + (conversion.getName() == null
                                         ? (" with ID " + conversion.getId())
                                         : (" with name " + conversion.getName()))

@@ -32,6 +32,8 @@ import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -48,7 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 	private final static long TIME_OUT_IN_SEC = getTimeout();
-	private String simulationId;
+	private final String simulationId;
     private final ObservationManager observationManager;
     private final ProfileDataManager profileDataManager;
 	private EssimTime time;
@@ -101,7 +103,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				() -> mongo.updateSimulationStatus(simulationId, Status.RUNNING, String.valueOf(status)), 0, 1,
 				TimeUnit.SECONDS);
 
-		log.debug("Simulation " + simulationId + " is initialised!");
+		log.debug(MarkerFactory.getMarker(simulationId), "Simulation " + simulationId + " is initialised!");
 	}
 
 	/**
@@ -159,9 +161,10 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	}
 
 	public void startSimulation(Duration precheckTime) {
+		Marker marker = MarkerFactory.getMarker(simulationId);
 		try {
 			if (msoClient != null) {
-				log.debug("Waiting for {} seconds for external models to be deployed.", modelDeployTimeout);
+				log.debug(marker, "Waiting for {} seconds for external models to be deployed.", modelDeployTimeout);
 				boolean result = msoBarrier.await(modelDeployTimeout, TimeUnit.SECONDS);
 				if (!result) {
 					throw new IllegalStateException("Error in Simulation Init: " + description);
@@ -174,7 +177,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 			Instant startTime = Instant.now();
 
-			log.info("Starting simulation {}", simulationId);
+			log.info(marker, "Starting simulation {}", simulationId);
 			// Step through until end of simulation
 			long start = time.getTime().toEpochSecond(ZoneOffset.UTC);
 			long end = time.getSimulationEndTime().toEpochSecond(ZoneOffset.UTC);
@@ -188,7 +191,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				long step = time.getTime().toEpochSecond(ZoneOffset.UTC);
 				status = ((double) (step - start)) / ((double) (end - start));
 				if (status >= log_stat) {
-					log.debug("Next timestep {} [{} %]", time.getTime().toString(),
+					log.debug(marker, "Next timestep {} [{} %]", time.getTime().toString(),
 							String.format("%.0f", status * 100));
 					log_stat = log_stat + 0.1;
 				}
@@ -201,19 +204,19 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 			observationManager.cleanupConsumers();
 
 			if (msoClient != null) {
-				log.debug("Simulation done. Waiting for external models to terminate.");
+				log.debug(marker, "Simulation done. Waiting for external models to terminate.");
 				msoClient.simulationDone();
 			}
 
 			Instant endTime = Instant.now();
 			String simDuration = Duration.between(startTime, endTime).plus(precheckTime).toString();
-			log.debug("Simulation finished and took {}", simDuration);
+			log.debug(marker, "Simulation finished and took {}", simDuration);
 			mongo.updateSimulationStatus(simulationId, Status.COMPLETE, "Finished in " + simDuration);
 			mongo.updateStatus("Ready");
 			shutdown();
 		} catch (Exception e) {
 			statusUpdater.shutdownNow();
-			log.error("Error in scheduled runnable", e);
+			log.error(marker, "Error in scheduled runnable", e);
 			status = -1;
 			description = e.getMessage();
 			mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));
@@ -226,7 +229,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 
 	private void stopSolvers() throws InterruptedException {
 		CountDownLatch barrier = new CountDownLatch(numOfSolvers);
-		log.trace("Stopping {} solvers", numOfSolvers);
+		log.trace(MarkerFactory.getMarker(simulationId), "Stopping {} solvers", numOfSolvers);
 		for (Integer simTypeNumber : solverBlock.keySet()) {
 			for (Simulatable simulatable : solverBlock.get(simTypeNumber)) {
 				simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
@@ -238,7 +241,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	}
 
 	private void runOtherSimulatables() throws InterruptedException {
-		// log.trace("Running {} other simulatables", otherSims.size());
+		// log.trace(MarkerFactory.getMarker(simulationId), "Running {} other simulatables", otherSims.size());
 		CountDownLatch barrier = new CountDownLatch(otherSims.size());
 		for (Simulatable simulatable : otherSims) {
 			simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
@@ -252,7 +255,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	private void runStep() throws InterruptedException {
 		for (Integer simulatableType : solverBlock.keySet()) {
 			List<TransportSolver> simulatablesOfSameType = solverBlock.get(simulatableType);
-//					log.trace("Running {} steps", simulatablesOfSameType.size());
+//					log.trace(MarkerFactory.getMarker(simulationId), "Running {} steps", simulatablesOfSameType.size());
 			CountDownLatch barrier = new CountDownLatch(simulatablesOfSameType.size());
 			for (Simulatable simulatable : simulatablesOfSameType) {
 				simulationExecutor.submit(new ExceptionRunnable(barrier, () -> {
@@ -268,7 +271,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 	}
 
 	private void initializeSolvers() throws InterruptedException {
-		log.debug("Initializing {} solvers", numOfSolvers);
+		log.debug(MarkerFactory.getMarker(simulationId), "Initializing {} solvers", numOfSolvers);
 		CountDownLatch barrier = new CountDownLatch(numOfSolvers);
 		for (List<TransportSolver> simulatables : solverBlock.values()) {
 			for (TransportSolver solver : simulatables) {
@@ -316,7 +319,7 @@ public class SimulationManager implements ISimulationManager, IStatusProvider {
 				countDownLatch.countDown();
 			} catch (Throwable e) {
 				statusUpdater.shutdownNow();
-				log.error("Error in scheduled runnable", e);
+				log.error(MarkerFactory.getMarker(simulationId), "Error in scheduled runnable", e);
 				status = -1;
 				description = e.getMessage();
 				mongo.updateSimulationStatus(simulationId, Status.ERROR, String.valueOf(description));

@@ -30,6 +30,7 @@ import nl.tno.essim.externalmodel.protos.SimulationDone;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.MSOConfiguration;
 import nl.tno.essim.model.NodeConfiguration;
+import org.slf4j.MarkerFactory;
 
 @Slf4j
 public class MSOClient {
@@ -73,15 +74,15 @@ public class MSOClient {
 		@Override
 		public void messageArrived(String topic, MqttMessage message) throws Exception {
 			byte[] payload = message.getPayload();
-			log.debug("Received message: {} on topic {}", new String(payload), topic);
+			log.debug(MarkerFactory.getMarker(simulationId), "Received message: {} on topic {}", new String(payload), topic);
 			if (topic.contains("ModelsReady")) {
 				msoBarrier.countDown();
 			} else if (topic.contains("UnhealthyModel")) {
-				log.debug("Unhealthy model : {}", topic);
+				log.debug(MarkerFactory.getMarker(simulationId), "Unhealthy model : {}", topic);
 			} else if (topic.contains("ModelHasTerminated")) {
-				log.debug("Model has terminated : {}", topic);
+				log.debug(MarkerFactory.getMarker(simulationId), "Model has terminated : {}", topic);
 			} else if (topic.contains("AllModelsHaveTerminated")) {
-				log.debug("All models have terminated! MSOClient shutting down.");
+				log.debug(MarkerFactory.getMarker(simulationId), "All models have terminated! MSOClient shutting down.");
 				modelBarrier.countDown();
 			} else if (topic.contains("PongHealthMSOToEssim")) {
 				msoTimeoutCounter.set(msoTimeout);
@@ -171,10 +172,10 @@ public class MSOClient {
 			client.connect(connOpts);
 
 			while (!client.isConnected()) {
-				log.debug("Waiting to connect to MQTT Server");
+				log.debug(MarkerFactory.getMarker(simulationId), "Waiting to connect to MQTT Server");
 				Thread.sleep(1000);
 			}
-			log.debug("Connected to MQTT Server!");
+			log.debug(MarkerFactory.getMarker(simulationId), "Connected to MQTT Server!");
 
 			client.subscribe(subscribeTopic, AT_LEAST_ONCE, messageProcessor);
 		} catch (MqttException e) {
@@ -230,12 +231,12 @@ public class MSOClient {
 							.addEnvironmentVariables(influxCredentialsEnvVar).build();
 					deployModelsBuilder.addModelConfigurations(modelConfiguration);
 				} else {
-					log.warn("Ignored asset : " + energyAsset.getId());
+					log.warn(MarkerFactory.getMarker(simulationId), "Ignored asset : " + energyAsset.getId());
 				}
 			}
 		}
 		DeployModels deployModelsObject = deployModelsBuilder.build();
-		log.debug("Publishing to {} message: {}", deployModelsTopic, deployModelsObject);
+		log.debug(MarkerFactory.getMarker(simulationId), "Publishing to {} message: {}", deployModelsTopic, deployModelsObject);
 		byte[] deployModelsPayload = deployModelsObject.toByteArray();
 		MqttMessage deployModelsMessage = new MqttMessage(deployModelsPayload);
 		client.publish(deployModelsTopic, deployModelsMessage);
@@ -248,7 +249,7 @@ public class MSOClient {
 
 		boolean await = modelBarrier.await(MODEL_TERMINATE_TIMEOUT_SEC, TimeUnit.SECONDS);
 		if (!await) {
-			log.error("Timed out waiting for external models to terminate. Stopping simulation.");
+			log.error(MarkerFactory.getMarker(simulationId), "Timed out waiting for external models to terminate. Stopping simulation.");
 		}
 		shutdown();
 	}

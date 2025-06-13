@@ -22,6 +22,7 @@ import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.TransportSolver;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.MarkerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -81,8 +82,8 @@ public class EssimLoadFlowController {
     SimulationStatus status = SimulationStatus.UNDEFINED;
 
 
-    public EssimLoadFlowController(String networkName) {
-        this.networkName = networkName;
+    public EssimLoadFlowController(String simulationId) {
+        this.networkName = simulationId;
         executor = Executors.newSingleThreadExecutor(threadFactory);
     }
 
@@ -124,7 +125,7 @@ public class EssimLoadFlowController {
          * - A generator OR a load for a conversion, based of the type of conversion
          * - A line for each line
          */
-        log.info("Creating powsybl network {}", networkName);
+        log.info(MarkerFactory.getMarker(networkName), "Creating powsybl network {}", networkName);
         network = Network.create(networkName, "code");
         network.setMinimumAcceptableValidationLevel(ValidationLevel.STEADY_STATE_HYPOTHESIS);
 
@@ -213,10 +214,10 @@ public class EssimLoadFlowController {
             String cableTypeName = cable.getAssetType();
             if (cableTypeName == null || cableTypeName.isEmpty()) {
                 cableTypeName = "243-AL1/39-ST1A 20.0";
-                log.warn("No asset type for cable {} ({}) assuming default type '{}'", cable.getName(), cable.getId(), cableTypeName);
+                log.warn(MarkerFactory.getMarker(networkName), "No asset type for cable {} ({}) assuming default type '{}'", cable.getName(), cable.getId(), cableTypeName);
             }
             CableSpec cableSpec = CableSpec.getCableSpec(cableTypeName);
-            log.debug("Creating cable of type {}", cableTypeName);
+            log.debug(MarkerFactory.getMarker(networkName), "Creating cable of type {}", cableTypeName);
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / 1000.0;
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / 1000.0;
 
@@ -318,7 +319,7 @@ public class EssimLoadFlowController {
             createConversion(voltageLevel, carrier, bus.getId(), (AbstractBasicConversion) conversion);
             conversionCounter.incrementAndGet();
         });
-        log.debug("Created {} producers, {} consumers, {} storages and {} conversions", producerCounter.get(), consumerCounter.get(), storageCounter.get(), conversionCounter.get());
+        log.debug(MarkerFactory.getMarker(networkName), "Created {} producers, {} consumers, {} storages and {} conversions", producerCounter.get(), consumerCounter.get(), storageCounter.get(), conversionCounter.get());
     }
 
 
@@ -332,7 +333,7 @@ public class EssimLoadFlowController {
             String id = "substation-" + list.stream().map(a -> a.getName() == null || "".equals(a.getName()) ? a.getId().substring(0, 4) : a.getName()).collect(Collectors.joining("-"));
             Substation newSubstation = network.newSubstation().setId(id).setCountry(Country.NL).add();
             substationMap.putAll(list.stream().collect(Collectors.toMap(EnergyAsset::getId, a -> newSubstation)));
-            log.trace("Creating substation {} for assets: {}", id, list.stream().map(EnergyAsset::getName).collect(Collectors.joining(", ")));
+            log.trace(MarkerFactory.getMarker(networkName), "Creating substation {} for assets: {}", id, list.stream().map(EnergyAsset::getName).collect(Collectors.joining(", ")));
 
             substation = newSubstation;
         }
@@ -381,7 +382,7 @@ public class EssimLoadFlowController {
         Bus bus = busMap.get(busId);
         if (bus == null) {
             bus = voltageLevel.getBusBreakerView().newBus().setId(busId).setName(busId).add();
-            log.trace("Creating bus with id {} in voltagelevel {}", busId, voltageLevel.getId());
+            log.trace(MarkerFactory.getMarker(networkName), "Creating bus with id {} in voltagelevel {}", busId, voltageLevel.getId());
             busMap.put(busId, bus);
         }
         return bus;
@@ -398,7 +399,7 @@ public class EssimLoadFlowController {
                     .setTopologyKind(TopologyKind.BUS_BREAKER)
                     .add();
             voltageLevelMap.put(voltageLevelId, voltageLevel);
-            log.trace("Creating VoltageLevel {} for substation {} and carrier {}", voltageLevelId, substation.getId(), carrierName);
+            log.trace(MarkerFactory.getMarker(networkName), "Creating VoltageLevel {} for substation {} and carrier {}", voltageLevelId, substation.getId(), carrierName);
         }
         return voltageLevel;
     }
@@ -460,7 +461,7 @@ public class EssimLoadFlowController {
         translationMap.put(storage.getId(), battery);
         reverseTranslationMap.put(battery.getId(), storage);
 
-        log.trace("Asset {} is implemented as a storage: {}", storage.getClass().getInterfaces()[0].getSimpleName(), battery.toString());
+        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a storage: {}", storage.getClass().getInterfaces()[0].getSimpleName(), battery.toString());
         return battery;
     }
 
@@ -478,7 +479,7 @@ public class EssimLoadFlowController {
                 .add();
         translationMap.put(consumer.getId(), load);
         reverseTranslationMap.put(load.getId(), consumer);
-        log.trace("Asset {} is implemented as a load: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), load.toString());
+        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a load: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), load.toString());
         return load;
     }
 
@@ -502,7 +503,7 @@ public class EssimLoadFlowController {
         generator.newMinMaxReactiveLimits()
                 .setMinQ(-9999.99)
                 .setMaxQ(9999.99);
-        log.trace("Asset {} is implemented as a generator: {}", producer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
+        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a generator: {}", producer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
         translationMap.put(producer.getId(), generator);
         reverseTranslationMap.put(generator.getId(), producer);
         return generator;

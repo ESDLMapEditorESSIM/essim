@@ -20,6 +20,7 @@ import nl.tno.essim.observation.IObservation;
 import nl.tno.essim.observation.IObservationConsumer;
 import nl.tno.essim.observation.IObservationManager;
 import nl.tno.essim.observation.IObservationProvider;
+import org.slf4j.MarkerFactory;
 
 import java.util.ArrayList;
 
@@ -47,7 +48,7 @@ public class ObservationManager implements IObservationManager {
 
     @Override
     public void cleanupConsumers() {
-        log.debug("Please wait while the observations are being processed. This could take a few seconds...");
+        log.debug(MarkerFactory.getMarker(simulationRunName), "Please wait while the observations are being processed. This could take a few seconds...");
         for (IObservationConsumer consumer : consumers) {
             consumer.cleanup();
         }

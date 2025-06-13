@@ -39,6 +39,7 @@ import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.MarkerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -157,7 +158,7 @@ public abstract class Node implements INode {
             ;
             for (Node child : children) {
                 BidFunction nodeFunction = child.aggregateDemandFunction();
-//                log.debug("{} Aggregated demand function: {}", child.getAsset().getName(), nodeFunction);
+//                log.debug(MarkerFactory.getMarker(simulationId), "{} Aggregated demand function: {}", child.getAsset().getName(), nodeFunction);
                 aggregatedFunction = sumCurves(nodeFunction, aggregatedFunction);
             }
             if (this.asset instanceof Transport) {
@@ -386,7 +387,7 @@ public abstract class Node implements INode {
             return a;
         }
         BidFunction summedCurves = BidFunction.sumCurves(a, b);
-        log.trace("Adding:\n{}\n{}\nRESULT:\n{}", a, b, summedCurves);
+        log.trace(MarkerFactory.getMarker(simulationId), "Adding:\n{}\n{}\nRESULT:\n{}", a, b, summedCurves);
         return summedCurves;
     }
 
@@ -402,7 +403,7 @@ public abstract class Node implements INode {
     public void processAssignedEnergies(List<Observation> observations, EssimTime timestamp) {
 
         // print curve to stdout
-        // log.trace("{} - {}: {}, price={}, energy={}", timestamp.getTime(),
+        // log.trace(MarkerFactory.getMarker(simulationId), "{} - {}: {}, price={}, energy={}", timestamp.getTime(),
         // getAsset().getName(), demandFunction.toString(), price, energy);
         for (int i = 0; i < observations.size(); i++) {
             var o = observations.get(i);
@@ -584,7 +585,7 @@ public abstract class Node implements INode {
                     }
                 }
 
-                log.debug("Asset " + asset.getClass().getInterfaces()[0].getSimpleName() + " is implemented as : "
+                log.debug(MarkerFactory.getMarker(simulationId), "Asset " + asset.getClass().getInterfaces()[0].getSimpleName() + " is implemented as : "
                         + assetNodeClass.getSimpleName());
 
                 if (assetNodeClass != null) {

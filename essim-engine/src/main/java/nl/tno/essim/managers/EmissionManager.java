@@ -44,13 +44,15 @@ import nl.tno.essim.observation.IObservationProvider;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
+import org.slf4j.MarkerFactory;
 
 @Slf4j
 public class EmissionManager implements Simulatable, IObservationProvider {
 
 	private static final double eps = 1.0e-5;
 	private static HashMap<String, EmissionManager> instanceMap = new HashMap<String, EmissionManager>();
-	private IObservationManager observationManager;
+    private final String simulationId;
+    private IObservationManager observationManager;
 	private HashMap<String, List<ConsumerProducerPair>> consumerMap;
 	private HashMap<String, List<AssetEnergyPair>> producerMap;
 	private ConcurrentHashMap<AssetEnergyPair, List<AssetEnergyPair>> consumerProducerMap;
@@ -62,13 +64,14 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		if (instanceMap.containsKey(simulationId)) {
 			return instanceMap.get(simulationId);
 		}
-		EmissionManager newinstance = new EmissionManager();
+		EmissionManager newinstance = new EmissionManager(simulationId);
 		instanceMap.put(simulationId, newinstance);
 		return newinstance;
 	}
 
-	private EmissionManager() {
-		String enableString = System.getenv("EMISSION_MANAGER_ENABLE");
+	private EmissionManager(String simulationId) {
+        this.simulationId = simulationId;
+        String enableString = System.getenv("EMISSION_MANAGER_ENABLE");
 		if (enableString == null) {
 			enable = false;
 		} else if (enableString.trim().equalsIgnoreCase("true")) {
@@ -128,7 +131,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 
 		if (listOfConsumers == null) {
 			if (networkError.get(networkId) != null && !networkError.get(networkId)) {
-				log.warn("Network {} has no consumers!", networkId);
+				log.warn(MarkerFactory.getMarker(simulationId), "Network {} has no consumers!", networkId);
 			}
 			networkError.put(networkId, true);
 			overallError = true;
@@ -136,7 +139,7 @@ public class EmissionManager implements Simulatable, IObservationProvider {
 		}
 		if (listOfProducers == null) {
 			if (networkError.get(networkId) != null && !networkError.get(networkId)) {
-				log.warn("Network {} has no producers!", networkId);
+				log.warn(MarkerFactory.getMarker(simulationId), "Network {} has no producers!", networkId);
 			}
 			networkError.put(networkId, true);
 			overallError = true;

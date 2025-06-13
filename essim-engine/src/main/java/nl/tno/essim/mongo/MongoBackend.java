@@ -45,6 +45,7 @@ import org.bson.UuidRepresentation;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.mongojack.JacksonCodecRegistry;
+import org.slf4j.MarkerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -254,14 +255,14 @@ public class MongoBackend implements IMongoBackend {
         Bson filter = getIdFilter(simulationId);
         Bson set = Updates.combine(Updates.set("kpiModule.modules.$[ele].result", result), Updates.set("kpiModule.modules.$[ele].status", status));
         UpdateResult updateResult = essimCollection.updateOne(filter, set, options);
-        log.debug("Result: {}", updateResult);
+        log.debug(MarkerFactory.getMarker(simulationId), "Result: {}", updateResult);
     }
 
     @Override
     public void deleteSimulation(String simulationId) {
-        log.debug("Attempting to delete simulation with ID: {}", simulationId);
+        log.debug(MarkerFactory.getMarker(simulationId), "Attempting to delete simulation with ID: {}", simulationId);
         essimCollection.deleteOne(getIdFilter(simulationId));
-        log.debug("Deleted simulation with ID: {}", simulationId);
+        log.debug(MarkerFactory.getMarker(simulationId), "Deleted simulation with ID: {}", simulationId);
     }
 
     @Override

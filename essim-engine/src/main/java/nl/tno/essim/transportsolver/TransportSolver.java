@@ -38,6 +38,8 @@ import nl.tno.essim.transportsolver.nodes.Node;
 import nl.tno.essim.transportsolver.nodes.Node.NodeBuilder;
 import nl.tno.essim.transportsolver.nodes.RemoteLogicNode;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.io.PrintWriter;
 import java.math.BigDecimal;
@@ -53,6 +55,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private static final String D3_TREEDATA_VAR_PLACEHOLDER = "$$TREEDATA$$";
     private static final String D3_HEADER_PLACEHOLDER = "$$HEADER$$";
     private static final double eps = 1e-4;
+    private final Marker marker;
     @Getter
     private String id;
     @Getter
@@ -81,7 +84,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     private ISimulationManager simulationManager;
     private Network network;
 
-    public TransportSolver(String name, IObservationProvider generalObservationProvider, Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem, Market market, Collection<Carrier> carriers) {
+    public TransportSolver(String name, String simulationId,  IObservationProvider generalObservationProvider, Collection<NodeConfiguration> nodeConfig, HashMap<EnergyAsset, Role> roleMap, String energySystem, Market market, Collection<Carrier> carriers) {
         this.id = name;
         this.carriers.addAll(carriers);
         this.nodeConfig = nodeConfig;
@@ -91,6 +94,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         processedList = new ArrayList<EnergyAsset>();
         deviceNodes = new ArrayList<Node>();
         this.roleMap = roleMap;
+        marker = MarkerFactory.getMarker(simulationId);
     }
 
     public boolean isPartOfNetwork(Asset asset) {
@@ -108,7 +112,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     public void addToNetwork(EnergyAsset asset) {
         if (!assetList.contains(asset)) {
             if (asset instanceof Conversion && asset.getControlStrategy() == null) {
-                log.warn("Conversion asset {} has no Control Strategy. Defaulting to DrivenByDemand",
+                log.warn(marker, "Conversion asset {} has no Control Strategy. Defaulting to DrivenByDemand",
                         asset.getName() == null ? asset.getId() : asset.getName());
                 DrivenByDemand drivenByDemand = EsdlFactory.eINSTANCE.createDrivenByDemand();
                 drivenByDemand.setId(UUID.randomUUID().toString());
@@ -157,8 +161,8 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
                 assetListString.add(asset.getId() + " - " + asset.getClass().getInterfaces()[0].getSimpleName() + " : "
                         + roleMap.get(asset));
             }
-            log.error("Cannot find a producer or consumer in network {} for carriers: {}!! Assets in this network are: {}", getId(), carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")), String.join(", ", assetListString));
-            log.error("This network ({}) will not be created!", getId());
+            log.error(marker, "Cannot find a producer or consumer in network {} for carriers: {}!! Assets in this network are: {}", getId(), carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")), String.join(", ", assetListString));
+            log.error(marker, "This network ({}) will not be created!", getId());
             return null;
         }
 
@@ -189,9 +193,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         tree.findDeviceNodes(deviceNodes);
 
         if (deviceNodes.size() <= 1) {
-            log.error("Only one asset in network " + getId() + " for carrier: " + carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")) + "!! : "
+            log.error(marker, "Only one asset in network " + getId() + " for carrier: " + carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")) + "!! : "
                     + deviceNodes.get(0));
-            log.error("This network ({}) will not be created!", getId());
+            log.error(marker, "This network ({}) will not be created!", getId());
             return assetList;
         }
         // only generate tree HTML when PRINT_TREE environmental variable is present
@@ -231,7 +235,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         }
 
         if (rootAsset == null) {
-            log.warn(
+            log.warn(marker, 
                     "Network {} for carriers {} ({}) has no energy producers in it! Please check if this was intentional!",
                     getId(), carriers.stream().map(Carrier::getId).collect(Collectors.joining(", ")), carriers.stream().map(Carrier::getName).collect(Collectors.joining(", ")));
             for (EnergyAsset asset : assetList) {
@@ -355,7 +359,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
         try {
             String template = Commons.readFileIntoString(D3_TREE_PAGE_TEMPLATE);
             if (template == null) {
-                log.error("Could not read TREE template located at {}!", D3_TREE_PAGE_TEMPLATE);
+                log.error(marker, "Could not read TREE template located at {}!", D3_TREE_PAGE_TEMPLATE);
                 return;
             }
             ArrayNode jsonTree = ESSimEngine.getObjectMapper().createArrayNode();
@@ -368,9 +372,9 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
             out.println(networkDiag);
             out.close();
 
-            log.debug("Printed tree in {}", fileName);
+            log.debug(marker, "Printed tree in {}", fileName);
         } catch (Exception e) {
-            log.warn("Could not print the tree.");
+            log.warn(marker, "Could not print the tree.");
         }
     }
 
@@ -395,7 +399,7 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
     @Override
     public ArrayList<Observation> step(EssimTime timestamp) {
 
-        log.trace("{} received heartbeat : {}", getId(), timestamp.getTime());
+        log.trace(marker, "{} received heartbeat : {}", getId(), timestamp.getTime());
 
         EssimDuration timeStepinDT = timestamp.getSimulationStepLength();
         long timeStep = timeStepinDT.getSeconds();
@@ -416,14 +420,14 @@ public class TransportSolver implements ITransportSolver, Simulatable, IObservat
 
 //		if (normalise) {
 //			for (Node deviceNode : deviceNodes) {
-//				log.warn("Normalizing bid for " + deviceNode.getAsset().getName());
+//				log.warn(marker, "Normalizing bid for " + deviceNode.getAsset().getName());
 //				deviceNode.getDemandFunction().normaliseCurve(marginalCostSum);
 //			}
 //		}
 
         // Send demand functions upwards
         BidFunction summedFunction = tree.aggregateDemandFunction();
-//		log.debug("Summed function: {}", summedFunction);
+//		log.debug(marker, "Summed function: {}", summedFunction);
 
 
         BigDecimal balancingPrice = summedFunction.findPriceFromCurve(BigDecimal.ZERO);
