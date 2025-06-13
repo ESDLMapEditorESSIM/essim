@@ -25,6 +25,7 @@ import nl.tno.essim.commons.BidFunction;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.time.Horizon;
+import org.slf4j.MarkerFactory;
 
 import java.util.List;
 
@@ -50,7 +51,7 @@ public class HeatPumpNode extends AbstractBasicConversionNode {
         this.cop = heatPump.getCOP();
         if (cop < Commons.eps) {
             cop = DEFAULT_HP_COP;
-            log.warn("CoP for HP {} is not defined! Defaulting to 3.5", hpName);
+            log.warn(MarkerFactory.getMarker(simulationId), "CoP for HP {} is not defined! Defaulting to 3.5", hpName);
         }
 
 

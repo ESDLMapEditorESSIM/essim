@@ -45,6 +45,7 @@ import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
+import org.slf4j.MarkerFactory;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -116,7 +117,7 @@ public class HybridHeatPumpNode extends Node {
 		cop = HybridHeatPump.getHeatPumpCOP();
 		if (cop < Commons.eps) {
 			cop = DEFAULT_HP_COP;
-			log.warn("CoP for HHP {} is not defined! Defaulting to {}", hhpName, DEFAULT_HP_COP);
+			log.warn(MarkerFactory.getMarker(simulationId), "CoP for HHP {} is not defined! Defaulting to {}", hhpName, DEFAULT_HP_COP);
 		}
 
 		maxGasPowerThermal = HybridHeatPump.getGasHeaterThermalPower();
@@ -127,7 +128,7 @@ public class HybridHeatPumpNode extends Node {
 		efficiency = HybridHeatPump.getGasHeaterEfficiency();
 		if (efficiency < Commons.eps) {
 			efficiency = DEFAULT_EFFICIENCY;
-			log.warn("Efficiency for HHP {} is not defined! Defaulting to {}", hhpName, DEFAULT_EFFICIENCY);
+			log.warn(MarkerFactory.getMarker(simulationId), "Efficiency for HHP {} is not defined! Defaulting to {}", hhpName, DEFAULT_EFFICIENCY);
 		}
 	}
 

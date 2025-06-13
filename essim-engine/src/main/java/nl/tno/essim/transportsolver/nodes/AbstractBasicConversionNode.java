@@ -33,6 +33,7 @@ import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
 import org.eclipse.emf.common.util.EList;
+import org.slf4j.MarkerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -236,15 +237,15 @@ public class AbstractBasicConversionNode extends Node {
             }
         }
         if (!(allOutAvailable || allInAvailable)) {
-//			log.debug("Not enough cost information for {}, using normal bidcurves", getConversionName());
+//			log.debug(MarkerFactory.getMarker(simulationId), "Not enough cost information for {}, using normal bidcurves", getConversionName());
             return true;
         }
         if (sumOut < sumIn) {
             // It is too expensive to convert
-            log.trace("{}: generating flat bidcurve ", getConversionName());
+            log.trace(MarkerFactory.getMarker(simulationId), "{}: generating flat bidcurve ", getConversionName());
             return false;
         } else {
-            log.trace("{}: generating normal bidcurve ", getConversionName());
+            log.trace(MarkerFactory.getMarker(simulationId), "{}: generating normal bidcurve ", getConversionName());
 
         }
         return true;

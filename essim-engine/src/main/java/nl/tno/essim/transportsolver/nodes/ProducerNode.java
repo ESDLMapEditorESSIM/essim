@@ -31,6 +31,7 @@ import nl.tno.essim.observation.ObservationField;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
+import org.slf4j.MarkerFactory;
 
 import java.util.List;
 
@@ -129,7 +130,7 @@ public class ProducerNode extends Node {
                 }
                 setCost(aggregateCost);
             } else {
-                log.trace("Producer {} is missing cost information! Defaulting to {}", producerName,
+                log.trace(MarkerFactory.getMarker(simulationId), "Producer {} is missing cost information! Defaulting to {}", producerName,
                         getDefaultMarginalCost());
                 setCost(getDefaultMarginalCost());
             }

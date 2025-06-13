@@ -37,6 +37,7 @@ import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
+import org.slf4j.MarkerFactory;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -113,7 +114,7 @@ public class ConsumerNode extends Node {
 				}
 				setCost(aggregateCost);
 			} else {
-				log.trace("Consumer {} is missing cost information! Defaulting to {}", consumerName,
+				log.trace(MarkerFactory.getMarker(simulationId), "Consumer {} is missing cost information! Defaulting to {}", consumerName,
 						getDefaultMarginalCost());
 				setCost(getDefaultMarginalCost());
 			}

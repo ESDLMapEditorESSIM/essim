@@ -35,6 +35,7 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.slf4j.MarkerFactory;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -67,7 +68,7 @@ public class RemoteLogicNode extends Node {
         HashMap<String, ?> remoteConfigMap = (HashMap<String, ?>) config.getConfig();
         remoteConfig = ESSimEngine.getObjectMapper().valueToTree(remoteConfigMap);
 
-        log.debug("Creating Remote Logic Node for asset : {} ({})", asset.getId(),
+        log.debug(MarkerFactory.getMarker(simulationId), "Creating Remote Logic Node for asset : {} ({})", asset.getId(),
                 asset.getClass().getInterfaces()[0].getSimpleName());
 
         String serverURI = "tcp://" + config.getMqttHost() + ":" + config.getMqttPort();
@@ -98,7 +99,7 @@ public class RemoteLogicNode extends Node {
             this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
         } catch (MqttException e) {
             // FIXME this is now the default behavior
-            log.warn("Unable to send node asset info");
+            log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node asset info");
             e.printStackTrace();
         }
     }
@@ -175,7 +176,7 @@ public class RemoteLogicNode extends Node {
     }
 
     private void receiveMessage(String topic, MqttMessage message) {
-        log.trace("Received new message at topic: {}", topic);
+        log.trace(MarkerFactory.getMarker(simulationId), "Received new message at topic: {}", topic);
         try {
             if (topic.endsWith("bid")) {
                 ByteBuffer buf = ByteBuffer.wrap(message.getPayload());
@@ -192,7 +193,7 @@ public class RemoteLogicNode extends Node {
                     }
                     this.demandFunction = new BidFunction(getMinMarketPrice(), getMaxMarketPrice(), getDeltaPrice(),
                             list.toArray(new double[][]{}));
-                    log.debug("Received for timestep " + timestep + ", carrier " + carrierId + ", bid curve is "
+                    log.debug(MarkerFactory.getMarker(simulationId), "Received for timestep " + timestep + ", carrier " + carrierId + ", bid curve is "
                             + point.substring(0, point.length() - 1));
 
                     // Resume the createBidCurve thread
@@ -203,8 +204,8 @@ public class RemoteLogicNode extends Node {
                 }
             }
         } catch (Exception e) {
-            log.warn("Error handling MQTT message: {}", e.getMessage());
-            log.trace(e.getMessage(), e);
+            log.warn(MarkerFactory.getMarker(simulationId), "Error handling MQTT message: {}", e.getMessage());
+            log.trace(MarkerFactory.getMarker(simulationId), e.getMessage(), e);
         }
     }
 

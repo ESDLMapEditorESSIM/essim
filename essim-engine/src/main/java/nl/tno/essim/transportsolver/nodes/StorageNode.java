@@ -41,6 +41,7 @@ import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
+import org.slf4j.MarkerFactory;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -99,7 +100,7 @@ public class StorageNode extends Node {
 			double deltaSoC = energy / capacity;
 			double soc = storage.getFillLevel() + deltaSoC;
 			if (soc > 1) {
-				log.warn("SOC > 1 : {}", soc);
+				log.warn(MarkerFactory.getMarker(simulationId), "SOC > 1 : {}", soc);
 				soc = 1;
 			}
 			storage.setFillLevel(soc);
