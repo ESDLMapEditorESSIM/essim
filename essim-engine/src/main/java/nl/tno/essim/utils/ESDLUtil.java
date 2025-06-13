@@ -1,9 +1,11 @@
 package nl.tno.essim.utils;
 
 import esdl.*;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.profiles.ProfileDataManager;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+@Slf4j
 public class ESDLUtil {
     static {
         // Initialize the models
@@ -91,7 +94,7 @@ public class ESDLUtil {
      * This transformation updates the profiles of energy assets by replacing any
      * {@code ExternalProfile} instances with {@code TimeSeriesProfile} instances, which are
      * compatible with the simulation time step and duration provided by {@code EssimTime}.
-     *
+     * <p>
      * The method iterates through all energy assets and their associated ports in the
      * given energy system, creating time series profiles with interpolated values based on
      * the simulation time and step length. Each external profile's data is processed and
@@ -122,11 +125,31 @@ public class ESDLUtil {
                         profile.setTimestep((int) essimTime.getSimulationStepLength().getSeconds());
                         profile.setStartDateTime(EssimTime.localDateTimeToDate(essimTime.getSimulationStartTime()));
                         profile.setProfileType(origProfile.getProfileType());
-                        profile.setProfileQuantityAndUnit(profile.getProfileQuantityAndUnit());
-                        profile.setInterpolationMethod(profile.getInterpolationMethod());
+                        QuantityAndUnitReference newQaU = EsdlFactory.eINSTANCE.createQuantityAndUnitReference();
+                        if (origProfile.getProfileQuantityAndUnit() instanceof QuantityAndUnitReference) {
+                            newQaU.setReference(((QuantityAndUnitReference) origProfile.getProfileQuantityAndUnit()).getReference());
+                        } else if (origProfile.getProfileQuantityAndUnit() instanceof QuantityAndUnitType) {
+                            QuantityAndUnitType standardizedUnit = Converter.resolveAbstractQuantityAndUnit(origProfile.getProfileQuantityAndUnit());
+                            QuantityAndUnitType quantityAndUnitType = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+                            quantityAndUnitType.setUnit(standardizedUnit.getUnit());
+                            quantityAndUnitType.setDescription(standardizedUnit.getDescription());
+                            quantityAndUnitType.setMultiplier(MultiplierEnum.NONE);
+                            quantityAndUnitType.setPerUnit(standardizedUnit.getPerUnit());
+                            quantityAndUnitType.setPhysicalQuantity(standardizedUnit.getPhysicalQuantity());
+                            quantityAndUnitType.setPerTimeUnit(standardizedUnit.getPerTimeUnit());
+                            quantityAndUnitType.setPerMultiplier(standardizedUnit.getPerMultiplier());
+                            quantityAndUnitType.setPerScope(standardizedUnit.getPerScope());
+                            energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(quantityAndUnitType);
+                            newQaU.setReference((quantityAndUnitType));
+                        } else {
+                            throw new IllegalArgumentException("Unknown QuantityAndUnitType type: " + origProfile.getProfileQuantityAndUnit().getClass().getName());
+                        }
+                        profile.setProfileQuantityAndUnit(newQaU);
+                        profile.setInterpolationMethod(origProfile.getInterpolationMethod());
                         EList<ProfileElement> profileElements = new BasicEList<>();
-                        for (var t = essimTime.getSimulationStartTime() ; t.isBefore(essimTime.getSimulationEndTime()) ; t = t.plus(essimTime.getSimulationStepLength().toDuration()) ) {
-                            double v = profileDataManager.readProfile(origProfile, new Horizon(t, essimTime.getSimulationStepLength()));
+                        double div = Converter.abstractQuantityToStandardizedUnits(1, newQaU);
+                        for (var t = essimTime.getSimulationStartTime(); t.isBefore(essimTime.getSimulationEndTime()); t = t.plus(essimTime.getSimulationStepLength().toDuration())) {
+                            double v = profileDataManager.readProfile(origProfile, new Horizon(t, essimTime.getSimulationStepLength())) / div;
                             ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
                             profileElement.setFrom(EssimTime.localDateTimeToDate(t));
                             profileElement.setTo(EssimTime.localDateTimeToDate(t.plus(essimTime.getSimulationStepLength().toDuration())));
