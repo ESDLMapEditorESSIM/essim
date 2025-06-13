@@ -453,7 +453,7 @@ public class EssimLoadFlowController {
                 .setId("storage-" + storage.getId())
                 .setName(storage.getName())
                 .setMaxP(storage.getMaxChargeRate() / 1000)
-                .setMinP(0)
+                .setMinP(-storage.getMaxDischargeRate() / 1000)
                 .setTargetP(0)
                 .setTargetQ(0)
                 .add();
@@ -466,7 +466,7 @@ public class EssimLoadFlowController {
 
     private Load createConsumer(VoltageLevel voltageLevel, String busId, EnergyAsset consumer) {
         if (consumer.getPort().size() > 1) {
-            throw new IllegalStateException("Consumers with multiple ports not supported in loadflow");
+            throw new IllegalStateException("Consumers with multiple ports are not supported in loadflow");
         }
         Load load = voltageLevel.newLoad()
                 .setBus(busId)
@@ -484,12 +484,12 @@ public class EssimLoadFlowController {
 
     private Generator createProducer(VoltageLevel voltageLevel, String busId, Producer producer) {
         if (producer.getPort().size() > 1) {
-            throw new IllegalStateException("Producers with multiple ports not supported in loadflow");
+            throw new IllegalStateException("Producers with multiple are ports not supported in loadflow");
         }
 
         Generator generator = voltageLevel.newGenerator()
                 .setId("producer-" + producer.getId())
-                .setName(producer.getName() + "-" + producer.getName())
+                .setName(producer.getName())
                 .setMinP(0)
                 .setMaxP(producer.getPower() / 1000)
                 .setTargetP(0)
@@ -519,13 +519,12 @@ public class EssimLoadFlowController {
         // Set the initial variant so we can modify the power values
         network.getVariantManager().setWorkingVariant(VariantManagerConstants.INITIAL_VARIANT_ID);
         // Powsybl default unit is kW, so we divide by 1000
-        double power = Math.abs(powerVal / 1000);
         if (o instanceof Load load) {
-            load.setP0(power).setQ0(0);
+            load.setP0(Math.abs(powerVal / 1000)).setQ0(0);
         } else if (o instanceof Generator generator) {
-            generator.setTargetP(power);
+            generator.setTargetP(Math.abs(powerVal / 1000));
         } else if (o instanceof Battery battery) {
-            battery.setTargetP(-power);
+            battery.setTargetP(-powerVal / 1000);
         }
     }
 
@@ -539,6 +538,8 @@ public class EssimLoadFlowController {
                 .setUseReactiveLimits(false);
         parameters.getExtension(OpenLoadFlowParameters.class)
                 .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
+//                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
+//                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
                 .setUseActiveLimits(false)
                 .setPlausibleActivePowerLimit(Double.MAX_VALUE);
 
