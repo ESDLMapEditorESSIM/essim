@@ -30,6 +30,7 @@ import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.slf4j.MarkerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileWriter;
@@ -96,7 +97,7 @@ public class SimulationService {
                 simulation.setStatus(status);
             String simId = mongo.addSimulation(simulation);
 
-                log.debug("Simulation ID : {}", simId);
+                log.debug(MarkerFactory.getMarker(simId), "Simulation ID : {}", simId);
 
 
             String finalDecodedContents = decodedContents;

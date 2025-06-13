@@ -403,7 +403,7 @@ public class ESSimEngine implements IStatusProvider {
             log.debug(marker, convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
         }
 
-        return new ChocoOptimiser(solversList, constrIndices).solve();
+        return new ChocoOptimiser(simulationId, solversList, constrIndices).solve();
 
     }
 
@@ -667,7 +667,7 @@ public class ESSimEngine implements IStatusProvider {
             }
             return EssimDuration.of(amount, unit);
         }
-        log.error("Unsupported time step notation : {}. Defaulting to 1h.", timeStep);
+        log.warn("Unsupported time step notation : {}. Defaulting to 1h.", timeStep);
         return SIMULATION_STEP;
     }
 

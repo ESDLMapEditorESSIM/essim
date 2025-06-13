@@ -29,15 +29,18 @@ import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.variables.IntVar;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MarkerFactory;
 
 @Slf4j
 public class ChocoOptimiser {
 
-	private List<TransportSolver> networks;
+    private final String simulationId;
+    private List<TransportSolver> networks;
 	private HashMap<String, List<Integer[]>> orders;
 
-	public ChocoOptimiser(List<TransportSolver> networks, HashMap<String, List<Integer[]>> orders) {
-		this.networks = networks;
+	public ChocoOptimiser(String simulationId, List<TransportSolver> networks, HashMap<String, List<Integer[]>> orders) {
+        this.simulationId = simulationId;
+        this.networks = networks;
 		this.orders = orders;
 	}
 
@@ -85,8 +88,8 @@ public class ChocoOptimiser {
 			}
 
 		} else {
-			log.error("Circular dependency detected - conflicting control strategies configured!");
-			log.error(sb.toString());
+			log.error(MarkerFactory.getMarker(simulationId), "Circular dependency detected - conflicting control strategies configured!");
+			log.error(MarkerFactory.getMarker(simulationId), sb.toString());
 			throw new IllegalStateException(solver.getContradictionException());
 		}
 		return order;
