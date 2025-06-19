@@ -32,12 +32,11 @@ import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.slf4j.MarkerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
@@ -90,29 +89,29 @@ public class SimulationService {
             }
         }
 
-            if (mongo != null) {
-                SimulationStatus status = new SimulationStatus();
-                status.setState(Status.CREATED);
-                status.setDescription("");
-                simulation.setStatus(status);
+        if (mongo != null) {
+            SimulationStatus status = new SimulationStatus();
+            status.setState(Status.CREATED);
+            status.setDescription("");
+            simulation.setStatus(status);
             String simId = mongo.addSimulation(simulation);
 
-                log.debug(MarkerFactory.getMarker(simId), "Simulation ID : {}", simId);
+            log.debug(MarkerFactory.getMarker(simId), "Simulation ID : {}", simId);
 
 
             String finalDecodedContents = decodedContents;
             Thread thread = new Thread(() -> {
                 try {
-                Date now = new Date();
-                simulation.setSimRunDate(now);
+                    Date now = new Date();
+                    simulation.setSimRunDate(now);
                     ESSimEngine engine = new ESSimEngine(ESSIM_ID, simId, simulation, finalDecodedContents, mongo);
-                String grafanaDashboard = engine.createGrafanaDashboard();
-                if (grafanaDashboard != null) {
-                    simulation.setDashboardURL(grafanaDashboard);
-                } else {
-                    simulation.setDashboardURL("*headless simulation*");
-                }
-                mongo.updateSimulationData(simId, simulation);
+                    String grafanaDashboard = engine.createGrafanaDashboard();
+                    if (grafanaDashboard != null) {
+                        simulation.setDashboardURL(grafanaDashboard);
+                    } else {
+                        simulation.setDashboardURL("*headless simulation*");
+                    }
+                    mongo.updateSimulationData(simId, simulation);
                     mongo.getStatusMap().put(simId, engine);
                     engine.startSimulation();
                 } catch (Exception e) {
@@ -125,17 +124,17 @@ public class SimulationService {
                 }
 
             }, simId);
-                thread.setUncaughtExceptionHandler(new EssimExceptionHandler(mongo));
-                thread.start();
+            thread.setUncaughtExceptionHandler(new EssimExceptionHandler(mongo));
+            thread.start();
 
-                CreatedStatus created = new CreatedStatus();
-                created.setStatus(Status.CREATED);
-                created.setId(simId);
+            CreatedStatus created = new CreatedStatus();
+            created.setStatus(Status.CREATED);
+            created.setId(simId);
 
-                return Response.status(Response.Status.CREATED).entity(created).build();
-            } else {
-                error.setDescription("MongoDB internal error!");
-            }
+            return Response.status(Response.Status.CREATED).entity(created).build();
+        } else {
+            error.setDescription("MongoDB internal error!");
+        }
 
         return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
 
@@ -528,6 +527,32 @@ public class SimulationService {
         ObjectNode objectNode = ESSimEngine.getObjectMapper().createObjectNode();
         objectNode.put(module.getId(), result);
         return objectNode;
+    }
+
+    @GET
+    @Path("/{simulationId}/logs")
+    @Produces("application/json")
+    @Operation(summary = "Get simulation logs",
+            description = "Get the logs for a specified simulation",
+            responses = {
+                    @ApiResponse(description = "The logs for the given simulation id"),
+                    @ApiResponse(responseCode = "404", description = "Simulation or transport not found", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
+    public Response getSimulationLogs(
+            @Parameter(description = "The id of the simulation", required = true)
+            @PathParam("simulationId") String simulationId
+    ) throws IOException {
+        File file = new File("logs/simulation-logs/" + simulationId + ".log");
+        if (!file.exists()) {
+            ErrorStatus error = new ErrorStatus();
+            error.setStatus(Status.ERROR);
+            error.setDescription("No logs found for SimulationID " + simulationId + "!");
+            return Response.status(Response.Status.NOT_FOUND).entity(error).build();
+        }
+        String logs = Files.readString(Paths.get(file.getAbsolutePath()));
+        ObjectNode objectNode = ESSimEngine.getObjectMapper().createObjectNode();
+        objectNode.put(simulationId, logs);
+        return Response.ok(objectNode).build();
     }
 
 }

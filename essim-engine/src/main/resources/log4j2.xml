@@ -35,7 +35,6 @@
                     <File name="${event:Marker}"
                           fileName="logs/simulation-logs/${event:Marker:-main}.log">
                         <PatternLayout pattern="%d %5p [%t] %m - at %c.%M(%c{1}.java:%L)%n"/>
-
                         <!--                        <JsonTemplateLayout locationInfoEnabled="true" stackTraceEnabled="true"/>-->
                     </File>
                 </Route>
