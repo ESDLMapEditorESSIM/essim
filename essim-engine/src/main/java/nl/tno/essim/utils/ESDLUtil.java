@@ -3,6 +3,7 @@ package nl.tno.essim.utils;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.profiles.ProfileDataManager;
+import nl.tno.essim.profiles.ProfileException;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.util.Converter;
@@ -149,7 +150,12 @@ public class ESDLUtil {
                         EList<ProfileElement> profileElements = new BasicEList<>();
                         double div = Converter.abstractQuantityToStandardizedUnits(1, newQaU);
                         for (var t = essimTime.getSimulationStartTime(); t.isBefore(essimTime.getSimulationEndTime()); t = t.plus(essimTime.getSimulationStepLength().toDuration())) {
-                            double v = profileDataManager.readProfile(origProfile, new Horizon(t, essimTime.getSimulationStepLength())) / div;
+                            double v = 0;
+                            try {
+                                v = profileDataManager.readProfile(origProfile, new Horizon(t, essimTime.getSimulationStepLength())) / div;
+                            } catch (ProfileException e) {
+                                throw new RuntimeException(e);
+                            }
                             ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
                             profileElement.setFrom(EssimTime.localDateTimeToDate(t));
                             profileElement.setTo(EssimTime.localDateTimeToDate(t.plus(essimTime.getSimulationStepLength().toDuration())));

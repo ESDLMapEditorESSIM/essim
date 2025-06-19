@@ -34,7 +34,11 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
         }
         if (profileStartDate != null) {
             // Make sure the cache is loaded
-            getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+            try {
+                getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+            } catch (ProfileException e) {
+                log.warn("Could not load profile elements for profile with id {}.", profile.getId(), e);
+            }
         }
     }
 
@@ -48,7 +52,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
     }
 
     @Override
-    public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {
+    public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) throws ProfileException {
         if (dataCache == null) {
             ProfileCacheKey profileCacheKey = getProfileCacheKey();
             synchronized (ProfileCache.getInstance()) {
@@ -69,7 +73,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
         return new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), 0d);
     }
 
-    private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) {
+    private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) throws ProfileException {
         log.debug("Profile {} is not cached, proceeding to query InfluxDB", profileCacheKey);
 
         try (InfluxDB influxClient = connectToInfluxHost()) {
@@ -97,7 +101,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
             }
             ProfileCache.getInstance().cache(profileCacheKey, dataCache);
         } catch (InfluxDBIOException e) {
-            throw new RuntimeException("Error querying InfluxDB: " + e.getMessage(), e);
+            throw new ProfileException("Error querying InfluxDB", e);
         }
         return dataCache;
     }

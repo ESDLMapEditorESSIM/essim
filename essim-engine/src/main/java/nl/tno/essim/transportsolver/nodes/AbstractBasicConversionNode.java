@@ -29,9 +29,10 @@ import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.observation.ObservationField;
+import nl.tno.essim.profiles.ProfileException;
+import nl.tno.essim.profiles.ProfileUtils;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
-import nl.tno.essim.profiles.ProfileUtils;
 import org.eclipse.emf.common.util.EList;
 import org.slf4j.MarkerFactory;
 
@@ -187,21 +188,16 @@ public class AbstractBasicConversionNode extends Node {
         if (drivenByProfilePort == null) {
             drivenByProfilePort = getConnectedPort();
         }
-        double energyOutput;
         if (convProfile != null) {
-            if (ProfileUtils.isPowerProfile(convProfile)) {
-                energyOutput = timeStep * profileDataManager.readProfile(convProfile, now);
-            } else if (ProfileUtils.isEnergyProfile(convProfile)) {
-                energyOutput = profileDataManager.readProfile(convProfile, now);
-            } else {
-                throw new IllegalStateException(
-                        "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
+            try {
+                double energyOutput = getEnergyOutput(timeStep, now, convProfile, drivenByProfile.getPort());
+                double efficiency = ratioMap.get(getConnectedPort()) / ratioMap.get(drivenByProfilePort);
+                makeInflexibleConsumptionFunction(energyOutput * efficiency);
+            } catch (ProfileException e) {
+                log.warn(MarkerFactory.getMarker(simulationId), "Could not read profile of outPort {}: {}", conversionName, e.getMessage());
             }
-
-            double efficiency = ratioMap.get(getConnectedPort()) / ratioMap.get(drivenByProfilePort);
-
-            makeInflexibleConsumptionFunction(energyOutput * efficiency);
         } else {
+            log.warn(MarkerFactory.getMarker(simulationId), "{}: DrivenByProfile control strategy, but profile of the driving port is null!", conversionName);
             // Impossible!
             throw new IllegalStateException(
                     conversionName + ": DrivenByProfile control strategy, but profile of driving port is null!");
@@ -228,7 +224,12 @@ public class AbstractBasicConversionNode extends Node {
                 }
                 carrierCost = getCost();
             } else {
-                carrierCost = profileDataManager.readProfile(carrierCostProfile, now);
+                try {
+                    carrierCost = profileDataManager.readProfile(carrierCostProfile, now);
+                } catch (ProfileException e) {
+                    carrierCost = 0.0;
+                    log.warn(MarkerFactory.getMarker(simulationId), "Could not read cost profile of port {}: {}", conversionName, e.getMessage());
+                }
             }
             if (entry.getKey() instanceof InPort) {
                 sumIn += entry.getValue() * carrierCost;
@@ -287,16 +288,15 @@ public class AbstractBasicConversionNode extends Node {
             }
 
             if (convProfile != null) {
-                if (ProfileUtils.isPowerProfile(convProfile)) {
-                    energyOutput = timeStep * profileDataManager.readProfile(convProfile, now);
-                } else if (ProfileUtils.isEnergyProfile(convProfile)) {
-                    energyOutput = profileDataManager.readProfile(convProfile, now);
-                } else {
-                    throw new IllegalStateException(
-                            "Profile in the outPort of " + conversionName + " is neither Power nor Energy!");
+                try {
+                    energyOutput = getEnergyOutput(timeStep, now, convProfile, inputPort);
+                    makeInflexibleConsumptionFunction(energyOutput);
                 }
-                makeInflexibleConsumptionFunction(energyOutput);
+                catch (ProfileException e) {
+                    log.warn(MarkerFactory.getMarker(simulationId), "Could not read profile of inPort {}: {}", conversionName, e.getMessage());
+                }
             } else {
+                log.warn(MarkerFactory.getMarker(simulationId), "{}: DrivenByDemand control strategy, but profile of the driving port is null!", conversionName);
                 throw new IllegalStateException("Profile in the outPort of " + conversionName + " is null!");
             }
         }
@@ -343,16 +343,14 @@ public class AbstractBasicConversionNode extends Node {
 
     protected void makeInflexibleProductionFunction(GenericProfile convProfile, String name, long timeStep,
                                                     Horizon now) {
-        double energyOutput;
         if (convProfile != null) {
-            if (ProfileUtils.isPowerProfile(convProfile)) {
-                energyOutput = timeStep * profileDataManager.readProfile(convProfile, now);
-            } else if (ProfileUtils.isEnergyProfile(convProfile)) {
-                energyOutput = profileDataManager.readProfile(convProfile, now);
-            } else {
-                throw new IllegalStateException("Profile in the outPort of " + name + " is neither Power nor Energy!");
+            try {
+                double energyOutput = getEnergyOutput(timeStep, now, convProfile, null);
+                makeInflexibleProductionFunction(energyOutput);
             }
-            makeInflexibleProductionFunction(energyOutput);
+            catch (ProfileException e) {
+                log.warn(MarkerFactory.getMarker(simulationId), "Could not read profile of outPort {}: {}", name, e.getMessage());
+            }
         } else {
             throw new IllegalStateException("Profile in the outPort of " + name + " is null!");
         }
@@ -360,26 +358,30 @@ public class AbstractBasicConversionNode extends Node {
 
     private void updateCost(Horizon now) {
         Double aggregateCost = Double.NaN;
-        if (marginalCostProfile != null) {
-            aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
-        } else if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
-            double costSum = 0.0;
-            for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
-                Port inPort = portCostPair.getKey();
-                GenericProfile costProfile = portCostPair.getValue();
-                Double cost = 0.0;
-                double ratio = 1.0;
-                if (costProfile != null) {
-                    cost = profileDataManager.readProfile(costProfile, now);
-                    if (inPort != null) {
-                        ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
+        try {
+            if (marginalCostProfile != null) {
+                aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
+            } else if (!costProfileMap.isEmpty() && !ratioMap.isEmpty()) {
+                double costSum = 0.0;
+                for (Map.Entry<Port, GenericProfile> portCostPair : costProfileMap.entrySet()) {
+                    Port inPort = portCostPair.getKey();
+                    GenericProfile costProfile = portCostPair.getValue();
+                    Double cost = 0.0;
+                    double ratio = 1.0;
+                    if (costProfile != null) {
+                        cost = profileDataManager.readProfile(costProfile, now);
+                        if (inPort != null) {
+                            ratio = ratioMap.get(connectedPort) / ratioMap.get(inPort);
+                        }
                     }
+                    costSum += cost / ratio;
                 }
-                costSum += cost / ratio;
+                if (costSum != 0.0) {
+                    aggregateCost = costSum;
+                }
             }
-            if (costSum != 0.0) {
-                aggregateCost = costSum;
-            }
+        } catch (ProfileException e) {
+            log.warn(MarkerFactory.getMarker(simulationId), "Could not read cost profile of {}: {}", conversionName, e.getMessage());
         }
         setCost(Double.isNaN(aggregateCost) ? getDefaultMarginalCost() : aggregateCost);
     }
@@ -426,7 +428,7 @@ public class AbstractBasicConversionNode extends Node {
     }
 
     void calculateCarrierProperties(EssimTime timestamp, ObservationBuilder builder, double inputEnergy,
-                                           Carrier theCarrier) {
+                                    Carrier theCarrier) {
         EnergyCarrier inputEnergyCarrier = (EnergyCarrier) theCarrier;
         GenericProfile cost = theCarrier.getCost();
 
@@ -441,7 +443,12 @@ public class AbstractBasicConversionNode extends Node {
             builder.value(ObservationField.EMISSION, emission);
             builder.value(ObservationField.FUEL_CONSUMPTION, inputCarrierQuantity);
 
-            double currentInputCarrierCost = profileDataManager.readProfile(cost, new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength()));
+            double currentInputCarrierCost = 0;
+            try {
+                currentInputCarrierCost = profileDataManager.readProfile(cost, new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength()));
+            } catch (ProfileException e) {
+                log.warn(MarkerFactory.getMarker(simulationId), "Could not read cost profile of {}: {}", conversionName, e.getMessage());
+            }
             if (!Double.isNaN(currentInputCarrierCost)) {
                 double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
                 builder.value(ObservationField.COST, inputCarrierCost);

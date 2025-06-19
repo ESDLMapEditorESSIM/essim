@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<Configuration>
+<Configuration xmlns="https://logging.apache.org/xml/ns">
 
     <Properties>
-        <Property name="LOG_PATTERN">%d %5p [%t] %m - at %c.%M(%c{1}.java:%L)%n
-        </Property>
+        <Property name="LOG_PATTERN" value="%d %5p [%marker:%t] %m - at %c.%M(%c{1}.java:%L)%n"/>
     </Properties>
 
     <Appenders>
@@ -18,29 +17,43 @@
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
+
         <Console name="STDOUT" target="SYSTEM_OUT">
-            <LevelRangeFilter minlevel="INFO" maxlevel="TRACE"
+            <LevelRangeFilter minLevel="INFO" maxLevel="TRACE"
                               onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout pattern="${LOG_PATTERN}"/>
         </Console>
 
         <Console name="STDERR" target="SYSTEM_ERR">
+            <ThresholdFilter level="WARN"/>
             <PatternLayout pattern="${LOG_PATTERN}"/>
-            <ThresholdFilter level="warn"/>
         </Console>
 
+        <Routing name="ROUTING">
+            <Routes pattern="$${event:Marker}">
+                <Route>
+                    <File name="${event:Marker}"
+                          fileName="logs/simulation-logs/${event:Marker:-main}.log">
+                        <PatternLayout pattern="%d %5p [%t] %m - at %c.%M(%c{1}.java:%L)%n"/>
+
+                        <!--                        <JsonTemplateLayout locationInfoEnabled="true" stackTraceEnabled="true"/>-->
+                    </File>
+                </Route>
+            </Routes>
+        </Routing>
     </Appenders>
 
     <Loggers>
-        <Logger name="nl.tno" level="debug" />
-        <Logger name="org.glassfish.grizzly" level="Info"/>
+        <Logger name="nl.tno" level="DEBUG"/>
+        <Logger name="org.glassfish.grizzly" level="INFO"/>
         <Logger name="org.glassfish.jersey" level="INFO"/>
         <Logger name="com.powsybl.openloadflow" level="WARN"/>
         <Logger name="com.powsybl.openloadflow.network.impl.LfNetworkLoaderImpl" level="ERROR"/>
-        <logger name="nl.tno.essim.grafana" level="TRACE"/>
-<!--        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>-->
-<!--        <logger name="nl.tno.essim.observation.consumers.PostgresTableCache" level="TRACE"/>-->
+        <Logger name="nl.tno.essim.grafana" level="TRACE"/>
+        <!--        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>-->
+        <!--        <logger name="nl.tno.essim.observation.consumers.PostgresTableCache" level="TRACE"/>-->
         <Root level="INFO">
+            <AppenderRef ref="ROUTING"/>
             <AppenderRef ref="logfile"/>
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="STDERR"/>

@@ -30,12 +30,16 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
         cacheSupplier = ProfileCacheSupplierFactory.getProfileCacheSupplier(profile.getConfiguration());
         if (profileStartDate != null) {
             // Make sure the cache is loaded
-            getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+            try {
+                getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+            } catch (ProfileException e) {
+                log.warn("Could not load profile elements for profile with id {}.", profile.getId(), e);
+            }
         }
     }
 
     @Override
-    public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {
+    public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) throws ProfileException {
         if (dataCache == null) {
             ProfileCacheKey profileCacheKey = getProfileCacheKey();
             synchronized (ProfileCache.getInstance()) {
@@ -57,12 +61,12 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
         return new ProfileCacheKey(uri, profile.getSchema(), profile.getTableName(), profile.getColumnName(), 0d);
     }
 
-    private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) {
+    private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) throws ProfileException {
         try {
             return cacheSupplier.getTimeSeriesDataCache(profileCacheKey, profile.getTimeColumnName(), profile.getStartDate(), profile.getEndDate());
         } catch (Exception e) {
             log.error("Could not create TimeSeriesDataCache for profile {}", profileCacheKey, e);
-            throw new RuntimeException(e);
+            throw new ProfileException(e);
         }
     }
 

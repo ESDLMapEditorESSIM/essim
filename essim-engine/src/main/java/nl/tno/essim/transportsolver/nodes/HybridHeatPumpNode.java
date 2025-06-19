@@ -42,6 +42,7 @@ import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.profiles.ProfileException;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
@@ -159,8 +160,13 @@ public class HybridHeatPumpNode extends Node {
 				double totalPossibleThermalOutput = maxElecPowerThermal + maxGasPowerThermal;
 				double energyOutput = timeStep * totalPossibleThermalOutput;
 				if (marginalCostProfile != null) {
-                    Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
-					if (Double.isNaN(aggregateCost)) {
+                    Double aggregateCost = Double.NaN;
+                    try {
+                        aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
+                    } catch (ProfileException e) {
+                        log.error(MarkerFactory.getMarker(simulationId), "Error while reading marginal cost profile for HHP {}", hhpName, e);
+                    }
+                    if (Double.isNaN(aggregateCost)) {
 						aggregateCost = getDefaultMarginalCost();
 					}
 					setCost(aggregateCost);
@@ -175,8 +181,14 @@ public class HybridHeatPumpNode extends Node {
 				// At least one of the input ports was already solved, so read connected port
 				// and make an inflexible production curve
 				GenericProfile energyOutputProfile = ProfileUtils.getEnergyProfile(connectedPort);
-                double energyOutput = profileDataManager.readProfile(energyOutputProfile, now);
-				makeInflexibleProductionFunction(energyOutput);
+                double energyOutput = 0;
+                try {
+                    energyOutput = profileDataManager.readProfile(energyOutputProfile, now);
+                } catch (ProfileException e) {
+                    log.error(MarkerFactory.getMarker(simulationId), "Error while reading energy output profile for HHP {}", hhpName, e);
+					throw new IllegalStateException("Error while reading energy output profile for HHP " + hhpName, e);
+                }
+                makeInflexibleProductionFunction(energyOutput);
 
 			} else if (controlStrategy instanceof DrivenByProfile) {
 				// PRODUCER + DRIVENBYPROFILE
@@ -191,15 +203,14 @@ public class HybridHeatPumpNode extends Node {
 					double profileValue = 0.0;
 					double energyOutput = 0.0;
 					if (drivingProfile != null) {
-						if (ProfileUtils.isPowerProfile(drivingProfile)) {
-                            profileValue = timeStep * profileDataManager.readProfile(drivingProfile, now);
-						} else if (ProfileUtils.isEnergyProfile(drivingProfile)) {
-                            profileValue = profileDataManager.readProfile(drivingProfile, now);
-						} else {
-							throw new IllegalStateException("Profile in the DrivenByProfile control strategy of HHP "
-									+ hhpName + " is neither Power nor Energy!");
-						}
-					} else {
+                        try {
+                            profileValue = getEnergyOutput(timeStep, now, drivingProfile, drivenByProfile.getPort());
+                        } catch (ProfileException e) {
+							log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for HHP {}", hhpName, e);
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+						log.error(MarkerFactory.getMarker(simulationId), "Profile in the DrivenByProfile control strategy of HHP {} is null!", hhpName);
 						throw new IllegalStateException(
 								"There is no profile in the DrivenByProfile control strategy of HHP " + hhpName + "!");
 					}
@@ -224,27 +235,41 @@ public class HybridHeatPumpNode extends Node {
 				// Heat network was already solved at this point, so read connected port and
 				// make an inflexible consumption curve
 				GenericProfile energyInputProfile = ProfileUtils.getEnergyProfile(connectedPort);
-                double energyInput = profileDataManager.readProfile(energyInputProfile, now);
-				makeInflexibleConsumptionFunction(energyInput);
+                double energyInput = 0;
+                try {
+                    energyInput = profileDataManager.readProfile(energyInputProfile, now);
+                } catch (ProfileException e) {
+                    log.error(MarkerFactory.getMarker(simulationId), "Error while reading energy input profile for HHP {}", hhpName, e);
+					throw new RuntimeException("Error while reading energy input profile for HHP " + hhpName, e);
+                }
+                makeInflexibleConsumptionFunction(energyInput);
 
 			} else if (controlStrategy instanceof DrivenBySupply) {
 				// CONSUMER + DRIVENBYSUPPLY
 				// Make a flexible consumption curve based on carrier
 				double energyInput;
-				Double carrierCost = null;
+				Double carrierCost = Double.NaN;
 				if (connectedPort.equals(eInPort)) {
 					energyInput = maxElecPowerThermal / cop;
 					if (elecCostProfile != null) {
-                        carrierCost = profileDataManager.readProfile(elecCostProfile, now);
-						if (Double.isNaN(carrierCost)) {
+                        try {
+                            carrierCost = profileDataManager.readProfile(elecCostProfile, now);
+                        } catch (ProfileException e) {
+							log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for HHP {}", hhpName, e);
+                        }
+                        if (Double.isNaN(carrierCost)) {
 							carrierCost = getDefaultMarginalCost();
 						}
 					}
 				} else if (connectedPort.equals(gInPort)) {
 					energyInput = maxGasPowerThermal / efficiency;
 					if (gasCostProfile != null) {
-                        carrierCost = profileDataManager.readProfile(gasCostProfile, now);
-						if (Double.isNaN(carrierCost)) {
+                        try {
+                            carrierCost = profileDataManager.readProfile(gasCostProfile, now);
+                        } catch (ProfileException e) {
+							log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for HHP {}", hhpName, e);
+                        }
+                        if (Double.isNaN(carrierCost)) {
 							carrierCost = getDefaultMarginalCost();
 						}
 					}
@@ -253,12 +278,17 @@ public class HybridHeatPumpNode extends Node {
 							+ " cannot be a consumer in this network -> " + networkId + "!");
 				}
 				if (marginalCostProfile != null) {
-                    Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
-					if(Double.isNaN(aggregateCost)) {
+                    Double aggregateCost = Double.NaN;
+                    try {
+                        aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
+                    } catch (ProfileException e) {
+						log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for HHP {}", hhpName, e);
+					}
+                    if(Double.isNaN(aggregateCost)) {
 						aggregateCost = getDefaultMarginalCost();
 					}
 					setCost(aggregateCost);
-				} else if (carrierCost != null) {
+				} else if (carrierCost != null && !Double.isNaN(carrierCost)) {
 					setCost(carrierCost);
 				} else {
 					setCost(getDefaultMarginalCost());
@@ -273,15 +303,12 @@ public class HybridHeatPumpNode extends Node {
 				GenericProfile drivingProfile = drivenByProfile.getProfile();
 				double profileValue = 0.0;
 				if (drivingProfile != null) {
-					if (ProfileUtils.isPowerProfile(drivingProfile)) {
-                        profileValue = timeStep * profileDataManager.readProfile(drivingProfile, now);
-					} else if (ProfileUtils.isEnergyProfile(drivingProfile)) {
-                        profileValue = profileDataManager.readProfile(drivingProfile, now);
-					} else {
-						throw new IllegalStateException("Profile in the DrivenByProfile control strategy of HHP "
-								+ hhpName + " is neither Power nor Energy!");
-					}
-				} else {
+                    try {
+                        getEnergyOutput(timeStep, now, drivingProfile, drivenByProfile.getPort());
+                    } catch (ProfileException e) {
+                        log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for HHP {}", hhpName, e);
+                    }
+                } else {
 					throw new IllegalStateException(
 							"There is no profile in the DrivenByProfile control strategy of HHP " + hhpName + "!");
 				}

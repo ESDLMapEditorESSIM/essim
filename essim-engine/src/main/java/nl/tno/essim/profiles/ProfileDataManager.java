@@ -62,7 +62,7 @@ public class ProfileDataManager {
         throw new UnsupportedOperationException("Profile type " + profile.getClass().getSimpleName() + " not yet implemented.");
     }
 
-    public double readProfile(GenericProfile profile, Port port, Horizon horizon) {
+    public double readProfile(GenericProfile profile, Port port, Horizon horizon) throws ProfileException {
         double values = readProfile(profile, horizon);
         EnergyAsset energyAsset = port.getEnergyasset();
         if (ProfileUtils.isPercentageProfile(profile)) {
@@ -84,7 +84,7 @@ public class ProfileDataManager {
         return values;
     }
 
-    public double readProfile(GenericProfile profile, Horizon horizon) {
+    public double readProfile(GenericProfile profile, Horizon horizon) throws ProfileException {
         if (profile instanceof ProfileReference) {
             profile = ((ProfileReference) profile).getReference();
         }

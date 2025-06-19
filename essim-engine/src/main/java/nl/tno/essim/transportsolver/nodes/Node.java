@@ -36,6 +36,8 @@ import nl.tno.essim.model.NodeConfiguration;
 import nl.tno.essim.observation.Observation;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.observation.ObservationField;
+import nl.tno.essim.profiles.ProfileException;
+import nl.tno.essim.profiles.ProfileUtils;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import org.jetbrains.annotations.NotNull;
@@ -410,7 +412,7 @@ public abstract class Node implements INode {
             if (o.getTags().containsKey("assetId") && o.getTags().get("assetId").equals(asset.getId()) && o.getObservedAt().isEqual(timestamp.getTime())) {
                 Double loadflowPower = (Double) o.getValues().get("loadflowPower");
                 // Only set the loadflow power if the device already had an allocation
-                if (loadflowPower != null && o.getValues().containsKey("allocationPower") && ! (getAsset() instanceof Transport)) {
+                if (loadflowPower != null && o.getValues().containsKey("allocationPower") && !(getAsset() instanceof Transport)) {
                     double loadflowEnergy = loadflowPower * timestamp.getSimulationStepLength().getSeconds();
                     // We see a difference larger than 1J as significant.
                     if (Math.abs(loadflowEnergy - energy) > 1) {
@@ -536,6 +538,24 @@ public abstract class Node implements INode {
         }
     }
 
+    protected double getEnergyOutput(long timeStep, Horizon now, GenericProfile profile, Port port) throws ProfileException {
+        double energyOutput;
+        String assetName = asset.getName() == null ? asset.getId() : asset.getName();
+        String portName = port == null ? "UNKNOWN" : port.getName() == null ? port.getId() : port.getName();
+        if (ProfileUtils.isPowerProfile(profile)) {
+            energyOutput = timeStep * profileDataManager.readProfile(profile, now);
+        } else if (ProfileUtils.isEnergyProfile(profile)) {
+            energyOutput = profileDataManager.readProfile(profile, now);
+        }else if (ProfileUtils.isPercentageProfile(profile) && port != null) {
+            energyOutput = timeStep * profileDataManager.readProfile(profile, port, now);
+        } else {
+            log.warn(MarkerFactory.getMarker(simulationId), "Profile of port {} of {} is neither Power nor Energy!", portName, assetName);
+            throw new IllegalStateException("Profile of port " + portName + " of " + assetName + " is neither Power nor Energy!");
+        }
+        return energyOutput;
+    }
+
+
     public static class NodeBuilder {
         private static final String NODE = "Node";
         private static final String NODE_PACKAGE_NAME = Node.class.getPackage().getName();
@@ -601,7 +621,7 @@ public abstract class Node implements INode {
                     }
                 }
             }
-            if (node !=null) {
+            if (node != null) {
                 node.setProfileDataManager(profileDataManager);
             }
             return node;

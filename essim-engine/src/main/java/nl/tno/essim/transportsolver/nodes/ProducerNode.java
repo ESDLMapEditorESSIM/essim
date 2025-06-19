@@ -28,6 +28,7 @@ import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
 import nl.tno.essim.observation.ObservationField;
+import nl.tno.essim.profiles.ProfileException;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
@@ -97,14 +98,11 @@ public class ProducerNode extends Node {
             if (port instanceof OutPort) {
                 GenericProfile producerProfile = ProfileUtils.getEnergyProfile(port);
                 if (producerProfile != null) {
-                    if (ProfileUtils.isPowerProfile(producerProfile)) {
-                        energyOutput = timeStep * profileDataManager.readProfile(producerProfile, now);
+                    try {
+                        energyOutput = getEnergyOutput(timeStep, now, producerProfile, port);
                         break;
-                    } else if (ProfileUtils.isEnergyProfile(producerProfile)) {
-                        energyOutput = profileDataManager.readProfile(producerProfile, now);
-                        break;
-                    } else if (ProfileUtils.isPercentageProfile(producerProfile)) {
-                        energyOutput = timeStep * profileDataManager.readProfile(producerProfile, port, now);
+                    } catch (ProfileException e) {
+                        log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for producer {}: {}", producerName, e.getMessage());
                     }
                 }
             }
@@ -118,14 +116,24 @@ public class ProducerNode extends Node {
         } else {
             energyOutput = timeStep * power;
             if (marginalCostProfile != null) {
-                Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
-                if (Double.isNaN(aggregateCost)) {
+                Double aggregateCost = null;
+                try {
+                    aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
+                } catch (ProfileException e) {
+                    log.error(MarkerFactory.getMarker(simulationId), "Error while reading marginal cost profile for producer {}: {}", producerName, e.getMessage());
+                }
+                if (aggregateCost == null ||  Double.isNaN(aggregateCost)) {
                     aggregateCost = getDefaultMarginalCost();
                 }
                 setCost(aggregateCost);
             } else if (costProfile != null) {
-                Double aggregateCost = profileDataManager.readProfile(costProfile, now);
-                if (Double.isNaN(aggregateCost)) {
+                Double aggregateCost = null;
+                try {
+                    aggregateCost = profileDataManager.readProfile(costProfile, now);
+                } catch (ProfileException e) {
+                    log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for producer {}: {}", producerName, e.getMessage());
+                }
+                if (aggregateCost == null ||  Double.isNaN(aggregateCost)) {
                     aggregateCost = getDefaultMarginalCost();
                 }
                 setCost(aggregateCost);
@@ -169,8 +177,13 @@ public class ProducerNode extends Node {
                     builder.value(ObservationField.EMISSION, emission);
                     builder.value(ObservationField.FUEL_CONSUMPTION, inputCarrierQuantity);
 
-                    double currentInputCarrierCost = profileDataManager.readProfile(carrier.getCost(),
-                            new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength()));
+                    double currentInputCarrierCost = 0;
+                    try {
+                        currentInputCarrierCost = profileDataManager.readProfile(carrier.getCost(),
+                                new Horizon(timestamp.getTime(), timestamp.getSimulationStepLength()));
+                    } catch (ProfileException e) {
+                        log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for producer {}: {}", producerName, e.getMessage());
+                    }
                     if (!Double.isNaN(currentInputCarrierCost)) {
                         double inputCarrierCost = inputCarrierQuantity * currentInputCarrierCost;
                         builder.value(ObservationField.COST, inputCarrierCost);

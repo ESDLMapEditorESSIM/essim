@@ -34,6 +34,7 @@ import nl.tno.essim.commons.Commons.Role;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.model.Market;
 import nl.tno.essim.observation.Observation.ObservationBuilder;
+import nl.tno.essim.profiles.ProfileException;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.time.Horizon;
 import nl.tno.essim.profiles.ProfileUtils;
@@ -89,33 +90,37 @@ public class ConsumerNode extends Node {
 			return;
 		}
 		if (consumerProfile != null) {
-			if (ProfileUtils.isPowerProfile(consumerProfile)) {
-                energyOutput = timeStep * profileDataManager.readProfile(consumerProfile, now);
-			} else if (ProfileUtils.isEnergyProfile(consumerProfile)) {
-                energyOutput = profileDataManager.readProfile(consumerProfile, now);
-			} else if (ProfileUtils.isPercentageProfile(consumerProfile)) {
-                energyOutput = timeStep * profileDataManager.readProfile(consumerProfile, inputPort, now);
-			}
-		}
+            try {
+                energyOutput = getEnergyOutput(timeStep, now, consumerProfile, inputPort);
+            } catch (ProfileException e) {
+                log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for consumer {}: {}", consumerName, e.getMessage());
+				throw new RuntimeException(e);
+            }
+        }
 		if (!Double.isNaN(energyOutput)) {
 			makeInflexibleConsumptionFunction(energyOutput);
 		} else {
-			energyOutput = timeStep * power;
-			if (marginalCostProfile != null) {
-                Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
-				if(Double.isNaN(aggregateCost)) {
-					aggregateCost = getDefaultMarginalCost();
+			try {
+				energyOutput = timeStep * power;
+				if (marginalCostProfile != null) {
+					Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
+					if (Double.isNaN(aggregateCost)) {
+						aggregateCost = getDefaultMarginalCost();
+					}
+					setCost(aggregateCost);
+				} else if (costProfile != null) {
+					Double aggregateCost = profileDataManager.readProfile(costProfile, now);
+					if (Double.isNaN(aggregateCost)) {
+						aggregateCost = getDefaultMarginalCost();
+					}
+					setCost(aggregateCost);
+				} else {
+					log.trace(MarkerFactory.getMarker(simulationId), "Consumer {} is missing cost information! Defaulting to {}", consumerName,
+							getDefaultMarginalCost());
+					setCost(getDefaultMarginalCost());
 				}
-				setCost(aggregateCost);
-			} else if (costProfile != null) {
-                Double aggregateCost = profileDataManager.readProfile(costProfile, now);
-				if(Double.isNaN(aggregateCost)) {
-					aggregateCost = getDefaultMarginalCost();
-				}
-				setCost(aggregateCost);
-			} else {
-				log.trace(MarkerFactory.getMarker(simulationId), "Consumer {} is missing cost information! Defaulting to {}", consumerName,
-						getDefaultMarginalCost());
+			} catch (ProfileException e) {
+				log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for consumer {}: {}", consumerName, e.getMessage());
 				setCost(getDefaultMarginalCost());
 			}
 			makeAdjustableConsumptionFunction(energyOutput);
