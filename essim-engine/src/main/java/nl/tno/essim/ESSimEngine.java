@@ -303,20 +303,21 @@ public class ESSimEngine implements IStatusProvider {
         try {
             // Register all ObservationConsumers - Eg: InfluxDB
             if (simulation.getInfluxURL() != null) {
+                log.debug(marker, "Registering InfluxDB Observation Consumer: {}", scenarioName);
                 InfluxDBObservationConsumer influxObservationConsumer = new InfluxDBObservationConsumer(
                         simulation.getInfluxURL());
                 influxObservationConsumer.init(scenarioName);
                 observationManager.registerConsumer(influxObservationConsumer);
-                log.debug(marker, "Registering InfluxDB Observation Consumer: {}", scenarioName);
             }
             if (simulation.getCsvFilesLocation() != null) {
+                log.debug(marker, "Registering CSV Observation Consumer");
                 CSVObservationConsumer csvObservationConsumer = new CSVObservationConsumer(
                         simulation.getCsvFilesLocation());
                 observationManager.registerConsumer(csvObservationConsumer);
                 csvObservationConsumer.init(scenarioName);
-                log.debug(marker, "Registering CSV Observation Consumer");
             }
             if (simulation.getPostgresURL() != null) {
+                log.debug(marker, "Registering Postgres Observation Consumer");
                 String jdbcUri = "jdbc:" + simulation.getPostgresURL();
                 CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(simulation.getPostgresURL());
                 String username = credentials == null ? "essim" : credentials.username();
@@ -324,7 +325,6 @@ public class ESSimEngine implements IStatusProvider {
                 PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
                 observationManager.registerConsumer(postgresObservationConsumer);
                 postgresObservationConsumer.init(scenarioName);
-                log.debug(marker, "Registering Postgres Observation Consumer");
             }
 
         } catch (Exception e) {

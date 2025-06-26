@@ -117,7 +117,7 @@ public class SimulationService {
                 } catch (Exception e) {
                     StringWriter sw = new StringWriter();
                     e.printStackTrace(new PrintWriter(sw));
-                    log.error(e.getMessage(), e);
+                    log.error(MarkerFactory.getMarker(simId), "Error starting simulation", e);
                     error.setDescription("Internal error: " + sw);
                     mongo.updateSimulationStatus(simId, Status.ERROR, sw.toString());
                     mongo.updateStatus("Ready");
