@@ -51,7 +51,6 @@ import nl.tno.essim.transportsolver.TransportSolver;
 import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
@@ -238,7 +237,7 @@ public class ESSimEngine implements IStatusProvider {
             throw new IllegalArgumentException("No Carrier Information specified!");
 
         }
-        TreeMap<Integer, List<TransportSolver>> transportSolveOrder = createTransportSolvers(carriers);
+        TreeMap<Integer, List<TransportSolver>> transportSolveOrder = createTransportSolvers();
         if (transportSolveOrder.isEmpty()) {
             throw new IllegalStateException("Conflicting Control Strategies found!!");
         }
@@ -333,7 +332,7 @@ public class ESSimEngine implements IStatusProvider {
         }
     }
 
-    public TreeMap<Integer, List<TransportSolver>> createTransportSolvers(Carriers carriers) throws Exception {
+    public TreeMap<Integer, List<TransportSolver>> createTransportSolvers() throws Exception {
         ArrayList<Port> allPorts = new ArrayList<>();
         ESDLUtil.visitAllEnergyAssets(energySystem.getInstance().getFirst().getArea(), a -> allPorts.addAll(a.getPort()));
         int i = 0;

@@ -9,6 +9,7 @@ import nl.tno.essim.commons.CredentialUtils;
 import nl.tno.essim.observation.consumers.PostgresObservationConsumer;
 
 import java.net.URI;
+import java.util.Random;
 
 @Slf4j
 public class PostgresDataSourceGenerator implements DataSourceGenerator {
@@ -25,9 +26,19 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
         return PostgresObservationConsumer.convertToValidPostgresColumnName(resourceName);
     }
 
+    private String generateRandomString() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder random = new StringBuilder();
+        Random rnd = new Random();
+        for (int i = 0; i < 8; i++) {
+            random.append(chars.charAt(rnd.nextInt(chars.length())));
+        }
+        return random.toString();
+    }
+
     @Override
     public ObjectNode createDataSource(GrafanaClient grafanaClient, String scenarioName) {
-        String databaseName = scenarioName + "-postgres";
+        String databaseName = scenarioName + "-postgres-" + generateRandomString();
         ObjectNode dsInput = ESSimEngine.getObjectMapper().createObjectNode();
         try {
             if (databaseUid == null) {
@@ -92,15 +103,6 @@ public class PostgresDataSourceGenerator implements DataSourceGenerator {
             if (port > 0) {
                 grafanaUrl += ":" + port;
             }
-//            "jsonData": {
-//                "postgresVersion": 903,
-//                        "sslmode": "disable",
-//                        "tlsAuth": false,
-//                        "tlsAuthWithCACert": false,
-//                        "tlsConfigurationMethod": "file-path",
-//                        "tlsSkipVerify": true
-//            },
-
 
             dbJSON.put("name", database);
             dbJSON.put("database", uri.getPath().substring(1));
