@@ -239,7 +239,7 @@ public class EssimLoadFlowController {
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / 1000.0;
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / 1000.0;
             // TODO assuming 50Hz frequency here, get the actual frequency from somewhere
-            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * 1e-9 * 2 * Math.PI * 50 / 1000.0) / 2;
+            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * 1e-9 * 2 * Math.PI * 50) / 2;
 
 //            double g = ((ElectricityCable) cable).getLength() * cableSpec.get
 
