@@ -156,14 +156,18 @@ public class EssimLoadFlowController {
 
     private void createTransformers(List<EnergyAsset> assetList) {
         assetList.stream().filter(a -> a instanceof Transformer).forEach(esdlTransformer -> {
-            TransformerSpec transformerSpec = TransformerSpec.getTransformerSpec(esdlTransformer.getAssetType());
-            if (transformerSpec == null) {
-                throw new IllegalStateException("Cannot use a transformer without a type");
+            String tfTypeName = esdlTransformer.getAssetType();
+            if (tfTypeName == null || tfTypeName.equals("")) {
+                log.warn(MarkerFactory.getMarker(networkName), "No transformer type for transformer {} ({})", esdlTransformer.getName(), esdlTransformer.getId(), "assuming default type '160 MVA 380/110 kV'");
+                tfTypeName = "160 MVA 380/110 kV";
             }
-            // For now: some random values for R an X
-            // r="0.2665846" x="11.104493"
-            // U1 connected to low voltage
-            // U2 connected to high voltage
+            TransformerSpec transformerSpec = TransformerSpec.getTransformerSpec(tfTypeName);
+            if (transformerSpec == null) {
+                log.warn(MarkerFactory.getMarker(networkName), "No transformer spec for transformer {} ({})", esdlTransformer.getName(), esdlTransformer.getId());
+                throw new IllegalStateException("Invalid transformer type: " + tfTypeName + " for transformer " + esdlTransformer.getName() + " (" + esdlTransformer.getId() + ")");
+            }
+            // U1 connected to high voltage
+            // U2 connected to low voltage
             if (esdlTransformer.getPort().size() != 2) {
                 throw new IllegalStateException("Transformer can only have 2 ports");
             }
@@ -171,26 +175,38 @@ public class EssimLoadFlowController {
             Port portB = esdlTransformer.getPort().get(1);
             Substation subStation = getSubStation(esdlTransformer);
 
-            Port port1 = ((ElectricityCommodity) portA.getCarrier()).getVoltage() < ((ElectricityCommodity) portB.getCarrier()).getVoltage() ? portA : portB;
-            Port port2 = ((ElectricityCommodity) portA.getCarrier()).getVoltage() < ((ElectricityCommodity) portB.getCarrier()).getVoltage() ? portB : portA;
-            VoltageLevel voltageLevel1 = getVoltageLevel(subStation, (ElectricityCommodity) port1.getCarrier());
-            VoltageLevel voltageLevel2 = getVoltageLevel(subStation, (ElectricityCommodity) port2.getCarrier());
-            Bus bus1 = getBus((ElectricityCommodity) port1.getCarrier(), voltageLevel1, esdlTransformer);
-            Bus bus2 = getBus((ElectricityCommodity) port2.getCarrier(), voltageLevel2, esdlTransformer);
+            Port portLv = ((ElectricityCommodity) portA.getCarrier()).getVoltage() < ((ElectricityCommodity) portB.getCarrier()).getVoltage() ? portA : portB;
+            Port portHv = portLv.equals(portA) ? portB : portA;
+            VoltageLevel voltageLevelLv = getVoltageLevel(subStation, (ElectricityCommodity) portLv.getCarrier());
+            VoltageLevel voltageLevelHv = getVoltageLevel(subStation, (ElectricityCommodity) portHv.getCarrier());
+            Bus busLv = getBus((ElectricityCommodity) portLv.getCarrier(), voltageLevelLv, esdlTransformer);
+            Bus busHv = getBus((ElectricityCommodity) portHv.getCarrier(), voltageLevelHv, esdlTransformer);
+
+            double rk = transformerSpec.getVkrPercent() / 100;
+            double zk = transformerSpec.getVkPercent() / 100;
+            double xk = Math.sqrt(zk * zk - rk * rk);
+            double ym = transformerSpec.getI0Percent() / 100;
+            double gm = transformerSpec.getPfeKw() / (transformerSpec.getSnMva() * 1000);
+            double bm = -1 * Math.signum(ym) * Math.sqrt(ym * ym - gm * gm);
+            double zb_tr = transformerSpec.getVnLvKv() * transformerSpec.getVnLvKv() / transformerSpec.getSnMva();
+            double r = rk * zb_tr;
+            double x = xk * zb_tr;
+            double g = gm / zb_tr;
+            double b = bm / zb_tr;
+
             TwoWindingsTransformer transformer = subStation.newTwoWindingsTransformer()
-                    .setRatedU1(transformerSpec.getVnLvKv())
-                    .setRatedU2(transformerSpec.getVnHvKv())
-                    .setRatedS(transformerSpec.getSnMva())
-                    .setR(0.2665846)
-                    .setX(11.104493)
-                    .setB(0)
-                    .setG(0)
-                    .setBus1(bus1.getId())
-                    .setConnectableBus1(bus1.getId())
-                    .setBus2(bus2.getId())
-                    .setConnectableBus2(bus2.getId())
-                    .setVoltageLevel1(voltageLevel1.getId())
-                    .setVoltageLevel2(voltageLevel2.getId())
+                    .setRatedU1(transformerSpec.getVnHvKv())
+                    .setRatedU2(transformerSpec.getVnLvKv())
+                    .setR(r)
+                    .setX(x)
+                    .setB(b)
+                    .setG(g)
+                    .setBus1(busHv.getId())
+                    .setConnectableBus1(busHv.getId())
+                    .setBus2(busLv.getId())
+                    .setConnectableBus2(busLv.getId())
+                    .setVoltageLevel1(voltageLevelHv.getId())
+                    .setVoltageLevel2(voltageLevelLv.getId())
                     .setId(esdlTransformer.getId() + "-transformer")
                     .add();
         });
@@ -220,6 +236,10 @@ public class EssimLoadFlowController {
             log.debug(MarkerFactory.getMarker(networkName), "Creating cable of type {}", cableTypeName);
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / 1000.0;
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / 1000.0;
+            // TODO assuming 50Hz frequency here, get the actual frequency from somewhere
+            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * 1e-9 * 2 * Math.PI * 50 / 1000.0) / 2;
+
+//            double g = ((ElectricityCable) cable).getLength() * cableSpec.get
 
             Line line = network.newLine()
                     .setBus1(bus1.getId())
@@ -230,6 +250,8 @@ public class EssimLoadFlowController {
                     .setVoltageLevel2(voltageLevel2.getId())
                     .setX(x)
                     .setR(r)
+                    .setB1(b)
+                    .setB2(b)
                     .setId("electricityCable-" + cable.getId())
                     .add();
             translationMap.put(cable.getId(), line);
@@ -517,8 +539,6 @@ public class EssimLoadFlowController {
         if (powerVal == null || o == null) {
             return;
         }
-        // Set the initial variant so we can modify the power values
-        network.getVariantManager().setWorkingVariant(VariantManagerConstants.INITIAL_VARIANT_ID);
         // Powsybl default unit is kW, so we divide by 1000
         if (o instanceof Load load) {
             load.setP0(Math.abs(powerVal / 1000)).setQ0(0);
@@ -530,8 +550,6 @@ public class EssimLoadFlowController {
     }
 
     private void run(EssimTime timestamp) {
-        // Update the variant ID for the simulation
-        updateVariantId();
         LocalDateTime time = timestamp.getTime();
         ZoneId zoneId = ZoneId.systemDefault();
         network.setCaseDate(time.atZone(zoneId));
@@ -580,6 +598,8 @@ public class EssimLoadFlowController {
 
     @NotNull
     private ArrayList<Observation> processObservations(EssimTime timestamp, ArrayList<Observation> observations) {
+        // Update the variant ID for the simulation
+        updateVariantId();
         observations.forEach(this::assignPowerValues);
         status = SimulationStatus.STARTED;
         run(timestamp);
