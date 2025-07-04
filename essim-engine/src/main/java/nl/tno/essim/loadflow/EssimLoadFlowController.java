@@ -158,7 +158,7 @@ public class EssimLoadFlowController {
         assetList.stream().filter(a -> a instanceof Transformer).forEach(esdlTransformer -> {
             String tfTypeName = esdlTransformer.getAssetType();
             if (tfTypeName == null || tfTypeName.equals("")) {
-                log.warn(MarkerFactory.getMarker(networkName), "No transformer type for transformer {} ({})", esdlTransformer.getName(), esdlTransformer.getId(), "assuming default type '160 MVA 380/110 kV'");
+                log.warn(MarkerFactory.getMarker(networkName), "No transformer type for transformer {} ({}) assuming default type '160 MVA 380/110 kV'", esdlTransformer.getName(), esdlTransformer.getId());
                 tfTypeName = "160 MVA 380/110 kV";
             }
             TransformerSpec transformerSpec = TransformerSpec.getTransformerSpec(tfTypeName);
@@ -169,6 +169,7 @@ public class EssimLoadFlowController {
             // U1 connected to high voltage
             // U2 connected to low voltage
             if (esdlTransformer.getPort().size() != 2) {
+                log.error(MarkerFactory.getMarker(networkName), "Transformer {} ({}) has {} ports, expected 2 ports", esdlTransformer.getName(), esdlTransformer.getId(), esdlTransformer.getPort().size());
                 throw new IllegalStateException("Transformer can only have 2 ports");
             }
             Port portA = esdlTransformer.getPort().get(0);
@@ -215,6 +216,7 @@ public class EssimLoadFlowController {
     private void createLines(List<EnergyAsset> connectedAssets, Network network) {
         connectedAssets.stream().filter(a -> a instanceof ElectricityCable).forEach(cable -> {
             if (cable.getPort().size() != 2) {
+                log.error(MarkerFactory.getMarker(networkName), "Invalid number of ports for cable {} ({})", cable.getName(), cable.getId());
                 throw new IllegalStateException("Electricity cable with " + cable.getPort().size() + " ports not allowed!");
             }
             Iterator<Port> iterator = cable.getPort().iterator();
@@ -397,6 +399,7 @@ public class EssimLoadFlowController {
     private Bus getBus(ElectricityCommodity carrier, VoltageLevel voltageLevel, EnergyAsset asset) {
         Optional<Port> firstPortForCarrier = getFirstPortForCarrier(asset, carrier);
         if (firstPortForCarrier.isEmpty()) {
+            log.error(MarkerFactory.getMarker(networkName), "Asset {} is not connected to carrier {}}", asset.getId(), carrier.getId());
             throw new IllegalStateException(String.format("Asset %s is not connected to carrier %s", asset.getName(), carrier.getName()));
         }
         String ssString = voltageLevel.getSubstation().isEmpty() ? "network-" : voltageLevel.getSubstation().get().getId() + "-";
@@ -460,6 +463,7 @@ public class EssimLoadFlowController {
                 reverseTranslationMap.put(generator.getId(), conversion);
                 carrierMap.put(generator.getId(), carrier);
             } else {
+                log.error(MarkerFactory.getMarker(networkName), "Port type {} is not supported in loadflow", port.getClass().getSimpleName());
                 throw new IllegalStateException("Port type " + port + " is not supported in loadflow");
             }
         });
@@ -468,6 +472,7 @@ public class EssimLoadFlowController {
 
     private Battery createStorage(VoltageLevel voltageLevel, String busId, Storage storage) {
         if (storage.getPort().size() > 1) {
+            log.error(MarkerFactory.getMarker(networkName), "Batteries with multiple ports not supported in loadflow for battery {} ({})", storage.getName(), storage.getId());
             throw new IllegalStateException("Batteries with multiple ports not supported in loadflow");
         }
         Battery battery = voltageLevel.newBattery()
@@ -489,6 +494,7 @@ public class EssimLoadFlowController {
 
     private Load createConsumer(VoltageLevel voltageLevel, String busId, EnergyAsset consumer) {
         if (consumer.getPort().size() > 1) {
+            log.error(MarkerFactory.getMarker(networkName), "with multiple ports not supported in loadflow for battery {} ({})", consumer.getName(), consumer.getId());
             throw new IllegalStateException("Consumers with multiple ports are not supported in loadflow");
         }
         Load load = voltageLevel.newLoad()
@@ -507,6 +513,7 @@ public class EssimLoadFlowController {
 
     private Generator createProducer(VoltageLevel voltageLevel, String busId, Producer producer) {
         if (producer.getPort().size() > 1) {
+            log.error(MarkerFactory.getMarker(networkName), "Producer with multiple ports not supported in loadflow for battery {} ({})", producer.getName(), producer.getId());
             throw new IllegalStateException("Producers with multiple are ports not supported in loadflow");
         }
 
