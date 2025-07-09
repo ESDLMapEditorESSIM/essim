@@ -125,7 +125,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
             hasWhereClause = true;
         }
 
-        if (profile.getField() != null && !profile.getFilters().trim().isEmpty()) {
+        if (profile.getFilters() != null && !profile.getFilters().trim().isEmpty()) {
             final String filter = profile.getFilters().trim();
             command += (hasWhereClause ? " AND " : " WHERE ") + (filter.startsWith("AND") ? filter.substring(3).trim() : filter);
         }
