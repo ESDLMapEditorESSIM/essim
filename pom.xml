@@ -36,7 +36,6 @@
         <swagger.version>2.2.23</swagger.version>
         <swagger-ui.version>5.17.2</swagger-ui.version>
         <powsybl-dependencies.version>2025.1.0</powsybl-dependencies.version>
-        <openloadflow.version>1.16.0</openloadflow.version>
         <slf4j.version>2.0.17</slf4j.version>
         <jetty.version>11.0.25</jetty.version>
         <jersey.version>3.0.16</jersey.version>
