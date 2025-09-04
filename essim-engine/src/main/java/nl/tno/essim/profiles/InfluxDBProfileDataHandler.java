@@ -35,7 +35,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
         if (profileStartDate != null) {
             // Make sure the cache is loaded
             try {
-                getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
+            getProfileElements(profileStartDate, Date.from(profileStartDate.toInstant().plusSeconds(essimTime.getSimulationStepLength().getSeconds())), Converter.toESDLDuration(essimTime.getSimulationStepLength()));
             } catch (ProfileException e) {
                 log.warn("Could not load profile elements for profile with id {}.", profile.getId(), e);
             }

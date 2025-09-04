@@ -49,8 +49,8 @@
         <Logger name="com.powsybl.openloadflow" level="WARN"/>
         <Logger name="com.powsybl.openloadflow.network.impl.LfNetworkLoaderImpl" level="ERROR"/>
         <Logger name="nl.tno.essim.grafana" level="TRACE"/>
-        <!--        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>-->
-        <!--        <logger name="nl.tno.essim.observation.consumers.PostgresTableCache" level="TRACE"/>-->
+<!--        <logger name="nl.tno.essim.observation.consumers" level="TRACE"/>-->
+<!--        <logger name="nl.tno.essim.observation.consumers.PostgresTableCache" level="TRACE"/>-->
         <Root level="INFO">
             <AppenderRef ref="ROUTING"/>
             <AppenderRef ref="logfile"/>
