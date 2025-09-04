@@ -229,6 +229,7 @@ public class EssimLoadFlowController {
             VoltageLevel voltageLevel2 = getVoltageLevel(getSubStation(connected2.getEnergyasset()), (ElectricityCommodity) connected2.getCarrier());
             Bus bus1 = getBus((ElectricityCommodity) carrier, voltageLevel1, cable);
             Bus bus2 = getBus((ElectricityCommodity) carrier, voltageLevel2, cable);
+            int parallelLines = Math.max(cable.getAggregationCount(), 1);
             String cableTypeName = cable.getAssetType();
             if (cableTypeName == null || cableTypeName.isEmpty()) {
                 cableTypeName = "243-AL1/39-ST1A 20.0";
@@ -236,13 +237,11 @@ public class EssimLoadFlowController {
             }
             CableSpec cableSpec = CableSpec.getCableSpec(cableTypeName);
             log.debug(MarkerFactory.getMarker(networkName), "Creating cable of type {}", cableTypeName);
-            double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / 1000.0;
-            double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / 1000.0;
+            double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / (1000.0 * parallelLines);
+            double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / (1000.0 * parallelLines);
             // TODO assuming 50Hz frequency here, get the actual frequency from somewhere
-            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * 1e-9 * 2 * Math.PI * 50) / 2;
-
+            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * parallelLines * 1e-9 * 2 * Math.PI * 50) / 2;
 //            double g = ((ElectricityCable) cable).getLength() * cableSpec.get
-
             Line line = network.newLine()
                     .setBus1(bus1.getId())
                     .setBus2(bus2.getId())
