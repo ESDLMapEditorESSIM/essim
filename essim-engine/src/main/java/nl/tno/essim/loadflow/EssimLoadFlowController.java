@@ -255,6 +255,11 @@ public class EssimLoadFlowController {
                     .setB2(b)
                     .setId("electricityCable-" + cable.getId())
                     .add();
+            line.newOperationalLimitsGroup1("GLOBAL")
+                    .newCurrentLimits()
+                    .setPermanentLimit(cableSpec.getMaxIkA() * 1000.0 * parallelLines)
+                    .add();
+            line.setSelectedOperationalLimitsGroup1("GLOBAL");
             translationMap.put(cable.getId(), line);
             reverseTranslationMap.put(line.getId(), cable);
             carrierMap.put(line.getId(), carrier);
