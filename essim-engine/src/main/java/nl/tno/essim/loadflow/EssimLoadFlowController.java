@@ -151,7 +151,7 @@ public class EssimLoadFlowController {
         }
         DataSource dataSource = Exporters.createDataSource(diagramsDir.resolve("essim-network-" + networkName + ".xml"));
         ex.export(network, new Properties(), dataSource);
-        NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
+//        NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
     private void createTransformers(List<EnergyAsset> assetList) {
@@ -196,18 +196,18 @@ public class EssimLoadFlowController {
             double b = bm / zb_tr;
 
             TwoWindingsTransformer transformer = subStation.newTwoWindingsTransformer()
-                    .setRatedU1(transformerSpec.getVnHvKv())
-                    .setRatedU2(transformerSpec.getVnLvKv())
+                    .setRatedU2(transformerSpec.getVnHvKv())
+                    .setRatedU1(transformerSpec.getVnLvKv())
                     .setR(r)
                     .setX(x)
                     .setB(b)
                     .setG(g)
-                    .setBus1(busHv.getId())
-                    .setConnectableBus1(busHv.getId())
-                    .setBus2(busLv.getId())
-                    .setConnectableBus2(busLv.getId())
-                    .setVoltageLevel1(voltageLevelHv.getId())
-                    .setVoltageLevel2(voltageLevelLv.getId())
+                    .setBus2(busHv.getId())
+                    .setConnectableBus2(busHv.getId())
+                    .setBus1(busLv.getId())
+                    .setConnectableBus1(busLv.getId())
+                    .setVoltageLevel2(voltageLevelHv.getId())
+                    .setVoltageLevel1(voltageLevelLv.getId())
                     .setId(esdlTransformer.getId() + "-transformer")
                     .add();
         });
@@ -264,7 +264,6 @@ public class EssimLoadFlowController {
             reverseTranslationMap.put(line.getId(), cable);
             carrierMap.put(line.getId(), carrier);
         });
-
     }
 
     List<Port> getSortedBusPortList(Port port) {
