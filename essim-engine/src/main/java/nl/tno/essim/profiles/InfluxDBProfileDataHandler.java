@@ -70,7 +70,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
     @Override
     public ProfileCacheKey getProfileCacheKey() {
         String uri = "http://" + profile.getHost() + ":" + profile.getPort();
-        return new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), 0d);
+        return new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), profile.getFilters(), 0d);
     }
 
     private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) throws ProfileException {

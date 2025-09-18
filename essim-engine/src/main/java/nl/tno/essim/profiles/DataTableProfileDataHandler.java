@@ -58,7 +58,7 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
     @Override
     public ProfileCacheKey getProfileCacheKey() {
         String uri = cacheSupplier.createUri(profile.getConfiguration());
-        return new ProfileCacheKey(uri, profile.getSchema(), profile.getTableName(), profile.getColumnName(), 0d);
+        return new ProfileCacheKey(uri, profile.getSchema(), profile.getTableName(), profile.getColumnName(), profile.getFilter(), 0d);
     }
 
     private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) throws ProfileException {

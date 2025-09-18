@@ -66,7 +66,7 @@ public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
     }
 
     @NotNull
-    private String buildQueryString(ProfileCacheKey profileCacheKey, Date profileStartDate, Date profileEndDate) {
+    private String buildQueryString(ProfileCacheKey cacheKey, Date profileStartDate, Date profileEndDate) {
         String startDateString = null;
         String endDateString = null;
 
@@ -84,9 +84,19 @@ public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
             log.warn("Profile has no start date, querying everything");
         }
 
-        String command = "SELECT \"" + profileCacheKey.field() + "\" FROM \"" + profileCacheKey.measurement() + "\"";
+        return getCommand(cacheKey, startDateString, endDateString);
+    }
+
+    @NotNull
+    private static String getCommand(ProfileCacheKey cacheKey, String startDateString, String endDateString) {
+        String command = "SELECT \"" + cacheKey.field() + "\" FROM \"" + cacheKey.measurement() + "\"";
         if (startDateString != null) {
             command += " WHERE time >= '" + startDateString + "' AND time <= '" + endDateString + "'";
+        }
+        if (!(cacheKey.filters() == null || cacheKey.filters().trim().isEmpty())) {
+            final String filter = cacheKey.filters().trim();
+            boolean hasWhereClause = command.contains(" WHERE ");
+            command += (hasWhereClause ? " AND " : " WHERE ") + (filter.startsWith("AND") ? filter.substring(3).trim() : filter);
         }
         return command;
     }

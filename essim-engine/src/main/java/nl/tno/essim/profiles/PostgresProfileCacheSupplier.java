@@ -61,11 +61,7 @@ public class PostgresProfileCacheSupplier implements ProfileCacheSupplier {
     @Override
     public TimeSeriesDataCache getTimeSeriesDataCache(ProfileCacheKey cacheKey, String timeColumnName, Date startDate, Date endDate) throws ExecutionException, SQLException {
         Connection databaseConnection = connectionCache.get(cacheKey.uri());
-        String sql = String.format("SELECT %s as time, \"%s\" as value FROM %s.%s", timeColumnName, cacheKey.field(), cacheKey.databaseOrSchema(), cacheKey.measurement());
-        if (startDate != null) {
-            sql += " WHERE time >= ? AND time <= ?";
-        }
-        sql += " ORDER BY time ASC";
+        String sql = createSQL(cacheKey, timeColumnName, startDate);
         log.debug("Executing postgres query: {}", sql);
         try (java.sql.PreparedStatement statement = databaseConnection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
             if (startDate != null) {
@@ -75,6 +71,25 @@ public class PostgresProfileCacheSupplier implements ProfileCacheSupplier {
             ResultSet resultSet = statement.executeQuery();
             return new TimeSeriesDataCache(cacheKey.field(), resultSet, 0d);
         }
+        catch (SQLException e) {
+            log.warn("Error in postgres query: {}", sql);
+            throw e;
+        }
+    }
+
+    @NotNull
+    private static String createSQL(ProfileCacheKey cacheKey, String timeColumnName, Date startDate) {
+        String sql = String.format("SELECT %s as time, \"%s\" as value FROM %s.%s", timeColumnName, cacheKey.field(), cacheKey.databaseOrSchema(), cacheKey.measurement());
+        if (startDate != null) {
+            sql += " WHERE time >= ? AND time <= ?";
+        }
+        if (!(cacheKey.filters() == null || cacheKey.filters().trim().isEmpty())) {
+            final String filter = cacheKey.filters().trim();
+            boolean hasWhereClause = sql.contains(" WHERE ");
+            sql += (hasWhereClause ? " AND " : " WHERE ") + (filter.startsWith("AND") ? filter.substring(3).trim() : filter);
+        }
+        sql += " ORDER BY time ASC";
+        return sql;
     }
 
 }
