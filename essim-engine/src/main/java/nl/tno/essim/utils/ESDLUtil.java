@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 public class ESDLUtil {
@@ -140,6 +141,10 @@ public class ESDLUtil {
                             quantityAndUnitType.setPerTimeUnit(standardizedUnit.getPerTimeUnit());
                             quantityAndUnitType.setPerMultiplier(standardizedUnit.getPerMultiplier());
                             quantityAndUnitType.setPerScope(standardizedUnit.getPerScope());
+                            if (energySystem.getEnergySystemInformation().getQuantityAndUnits() == null) {
+                                energySystem.getEnergySystemInformation().setQuantityAndUnits(EsdlFactory.eINSTANCE.createQuantityAndUnits());
+                                energySystem.getEnergySystemInformation().getQuantityAndUnits().setId(UUID.randomUUID().toString());
+                            }
                             energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(quantityAndUnitType);
                             newQaU.setReference((quantityAndUnitType));
                         } else {
