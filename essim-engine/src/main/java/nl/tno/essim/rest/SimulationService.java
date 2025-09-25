@@ -25,14 +25,13 @@ import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.model.*;
 import nl.tno.essim.mongo.IMongoBackend;
-import nl.tno.essim.observation.consumers.PostgresObservationConsumer;
-import nl.tno.essim.profiles.DataTableProfileDataHandler;
+import nl.tno.essim.observation.consumers.InfluxDBPortProfileProcessor;
+import nl.tno.essim.observation.consumers.PostgresPortProfileProcessor;
 import nl.tno.essim.rest.util.MongoInject;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.MarkerFactory;
 
 import java.io.*;
@@ -576,33 +575,17 @@ public class SimulationService {
             Area mainArea = instance.getArea();
 
             String postgresURL = simulation.getPostgresURL();
-            DatabaseConfiguration dbc = DataTableProfileDataHandler.getDatabaseConfiguration(energySystem, postgresURL, DatabaseTypeEnum.POSTGRESQL);
-            QuantityAndUnitReference quantityAndUnitReference = getQuantityAndUnitReference(energySystem);
+            String influxURL = simulation.getInfluxURL();
+            if (postgresURL == null && influxURL == null) {
+                throw new IllegalStateException("Postgres or Influx URLs are missing!");
+            }
 
             ESSimEngine.determineSolverNetworks(mainArea, (connectedAssets, connectedCarriers, index) -> {
                 String solverIdentifier = ESSimEngine.getSolverIdentifier(ESSimEngine.getEnergySystemId(energySystem), connectedCarriers, index);
-                HashMap<String, DatabaseConfiguration> map = new HashMap<>();
-                connectedAssets.keySet().forEach(energyAsset -> {
-                    energyAsset.getPort().forEach(port -> {
-                        String scenarioID = simulation.getScenarioID();
-
-                        DataTableProfile dataTableProfile = EsdlFactory.eINSTANCE.createDataTableProfile();
-                        dataTableProfile.setConfiguration(dbc);
-                        dataTableProfile.setId(UUID.randomUUID().toString());
-                        dataTableProfile.setTableName(PostgresObservationConsumer.convertToValidPostgresColumnName(solverIdentifier));
-                        dataTableProfile.setSchema(PostgresObservationConsumer.convertToValidPostgresColumnName(scenarioID));
-                        dataTableProfile.setColumnName("allocationenergy");
-                        dataTableProfile.setTimeColumnName("time");
-                        dataTableProfile.setFilter("tags->>'assetName' = '" + energyAsset.getName() + "' AND tags->>'simulationRun' = '" + simulationId + "'");
-                        dataTableProfile.setProfileQuantityAndUnit(quantityAndUnitReference);
-                        dataTableProfile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
-                        dataTableProfile.setStartDate(simulation.getStartDate());
-                        dataTableProfile.setEndDate(simulation.getEndDate());
-                        dataTableProfile.setMultiplier(1);
-//                        dataTableProfile.setInterpolationMethod(InterpolationMethodEnum.LINEAR);
-                        port.getProfile().add(dataTableProfile);
-                    });
-                });
+                java.util.function.Consumer<Port> portProcessor = postgresURL != null ?
+                        new PostgresPortProfileProcessor(simulationId, simulation, energySystem, solverIdentifier) :
+                        new InfluxDBPortProfileProcessor(simulationId, simulation, energySystem, solverIdentifier);
+                connectedAssets.keySet().forEach(energyAsset -> energyAsset.getPort().forEach(portProcessor));
             });
             String newEsdl = ESDLUtil.ecoreResourceToString((EnergySystem) xmiResource.getContents().getFirst());
             ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();
@@ -614,27 +597,6 @@ public class SimulationService {
             error.setDescription(e.getMessage());
         }
         return Response.status(Response.Status.BAD_REQUEST).entity(error).build();
-    }
-
-    @NotNull
-    private QuantityAndUnitReference getQuantityAndUnitReference(EnergySystem energySystem) {
-        QuantityAndUnitType quantityAndUnitType = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
-        quantityAndUnitType.setUnit(UnitEnum.JOULE);
-        quantityAndUnitType.setDescription("Energy in J");
-        quantityAndUnitType.setMultiplier(MultiplierEnum.NONE);
-        quantityAndUnitType.setPerUnit(UnitEnum.NONE);
-        quantityAndUnitType.setPhysicalQuantity(PhysicalQuantityEnum.ENERGY);
-        quantityAndUnitType.setPerTimeUnit(TimeUnitEnum.NONE);
-        quantityAndUnitType.setPerMultiplier(MultiplierEnum.NONE);
-        quantityAndUnitType.setPerScope(QuantityAndUnitScopeEnum.UNDEFINED);
-        if (energySystem.getEnergySystemInformation().getQuantityAndUnits() == null) {
-            energySystem.getEnergySystemInformation().setQuantityAndUnits(EsdlFactory.eINSTANCE.createQuantityAndUnits());
-            energySystem.getEnergySystemInformation().getQuantityAndUnits().setId(UUID.randomUUID().toString());
-        }
-        energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(quantityAndUnitType);
-        QuantityAndUnitReference quantityAndUnitReference = EsdlFactory.eINSTANCE.createQuantityAndUnitReference();
-        quantityAndUnitReference.setReference(quantityAndUnitType);
-        return quantityAndUnitReference;
     }
 
 
