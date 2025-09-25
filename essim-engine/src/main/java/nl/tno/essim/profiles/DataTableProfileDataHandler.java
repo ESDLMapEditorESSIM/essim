@@ -1,16 +1,15 @@
 package nl.tno.essim.profiles;
 
-import esdl.DataTableProfile;
-import esdl.Duration;
-import esdl.ProfileElement;
+import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
-import org.jetbrains.annotations.NotNull;
 
+import java.net.URI;
 import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 public class DataTableProfileDataHandler implements ProfileDataHandler {
@@ -73,5 +72,45 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
     @Override
     public boolean setProfileElements(EList<ProfileElement> profileElementList) {
         throw new UnsupportedOperationException("setProfileElements not implemented for DataTableProfile");
+    }
+
+    public static DatabaseConfiguration getDatabaseConfiguration(EnergySystem energySystem, String uriString, DatabaseTypeEnum type) {
+        DatabaseConfiguration dbc = EsdlFactory.eINSTANCE.createDatabaseConfiguration();
+        dbc.setType(type);
+        dbc.setId(UUID.randomUUID().toString());
+        URI uri = URI.create(uriString);
+        dbc.setHost(uri.getHost());
+        if (uri.getPort() > 0) {
+            dbc.setPort(uri.getPort());
+        }
+        String dbName = uri.getPath().replaceFirst("/", "");
+
+        if (!dbName.isEmpty()) {
+            dbc.setDatabase(dbName);
+        }
+        String query = uri.getQuery();
+        if (query != null && query.contains("tls")) {
+            // Parse the query string to find the value of 'tls'
+            String[] queryParams = query.split("&");
+            for (String param : queryParams) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2 && keyValue[0].equalsIgnoreCase("tls")) {
+                    // Set the tls value on dbc based on the URI's tls value
+                    dbc.setTls(Boolean.parseBoolean(keyValue[1]));
+                    break;
+                }
+            }
+        }
+        getDataConfigurations(energySystem).getConfigurations().add(dbc);
+    	return dbc;
+    }
+
+    public static DataConfigurations getDataConfigurations(EnergySystem energySystem) {
+        DataConfigurations dataConfigurations = energySystem.getEnergySystemInformation().getDataconfigurations();
+        if (dataConfigurations == null) {
+            dataConfigurations = EsdlFactory.eINSTANCE.createDataConfigurations();
+            energySystem.getEnergySystemInformation().setDataconfigurations(dataConfigurations);
+        }
+        return dataConfigurations;
     }
 }

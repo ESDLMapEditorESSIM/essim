@@ -51,6 +51,7 @@ import nl.tno.essim.transportsolver.TransportSolver;
 import nl.tno.essim.utils.ESDLUtil;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
@@ -206,12 +207,7 @@ public class ESSimEngine implements IStatusProvider {
                         .value(ObservationField.SIM_DESCRIPTION, simulationDescription)
                         .build());
 
-        energySystemId = "UnnamedEnergySystem";
-        if (energySystem.getName() != null) {
-            if (!energySystem.getName().isEmpty()) {
-                energySystemId = energySystem.getName();
-            }
-        }
+        energySystemId = getEnergySystemId(energySystem);
 
         log.debug(marker, "Successfully loaded Energy System {}", energySystemId);
 
@@ -298,6 +294,10 @@ public class ESSimEngine implements IStatusProvider {
 
     }
 
+    public static String getEnergySystemId(EnergySystem energySystem) {
+        return energySystem.getName() == null || energySystem.getName().isEmpty() ? "UnnamedEnergySystem" : energySystem.getName();
+    }
+
     private void registerObservationConsumers(EssimSimulation simulation) {
         try {
             // Register all ObservationConsumers - Eg: InfluxDB
@@ -333,8 +333,48 @@ public class ESSimEngine implements IStatusProvider {
     }
 
     public TreeMap<Integer, List<TransportSolver>> createTransportSolvers() throws Exception {
+        determineSolverNetworks(energySystem.getInstance().getFirst().getArea(), this::createTransportSolver);
+
+        log.debug(marker, "Created {} solvers: {}", solversList.size(), solversList);
+
+        // WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
+        // simulation.setTransport(getNetworkDiags());
+        // MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
+
+        // Find all Conversion assets and their solver orders
+        convAssets = findAllConversionAssets();
+
+        // List<Integer[]> constrIndices = new ArrayList<Integer[]>();
+        HashMap<String, List<Integer[]>> constrIndices = new HashMap<String, List<Integer[]>>();
+        for (Conversion convAsset : convAssets.keySet()) {
+            Solvers solverOrder = convAssets.get(convAsset);
+            if (solverOrder.getFirst().isEmpty()) {
+                continue;
+            }
+            for (TransportSolver first : solverOrder.getFirst()) {
+                for (TransportSolver later : solverOrder.getLater()) {
+                    if (constrIndices.get(convAsset.getName()) == null) {
+                        constrIndices.put(convAsset.getName(), new ArrayList<Integer[]>());
+                    }
+                    List<Integer[]> constraintList = constrIndices.get(convAsset.getName());
+                    constraintList.add(new Integer[]{solversList.indexOf(first), solversList.indexOf(later)});
+                }
+            }
+            log.debug(marker, convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
+        }
+
+        return new ChocoOptimiser(simulationId, solversList, constrIndices).solve();
+
+    }
+
+    public interface TransportSolverNetworkVisitor {
+        void visit(HashMap<EnergyAsset, Role> connectedAssets, HashSet<Carrier> connectedCarriers, int solverIndex) throws Exception;
+    }
+
+
+    public static void determineSolverNetworks(Area area, TransportSolverNetworkVisitor visitor) throws Exception {
         ArrayList<Port> allPorts = new ArrayList<>();
-        ESDLUtil.visitAllEnergyAssets(energySystem.getInstance().getFirst().getArea(), a -> allPorts.addAll(a.getPort()));
+        ESDLUtil.visitAllEnergyAssets(area, a -> allPorts.addAll(a.getPort()));
         int i = 0;
         while (!allPorts.isEmpty()) {
             Port firstPort = allPorts.getFirst();
@@ -369,47 +409,14 @@ public class ESSimEngine implements IStatusProvider {
                     connectedAssets.put(energyAsset, role);
                 }
             }
-            createTransportSolver(connectedAssets, connectedCarriers, i);
+            visitor.visit(connectedAssets, connectedCarriers, i);
             allPorts.removeAll(networkPorts);
             ++i;
         }
-
-        log.debug(marker, "Created {} solvers: {}", solversList.size(), solversList);
-
-        // WHY? DISABLED TO REDUCE SIZE OF MONGO SIMULATION OBJECT
-        // simulation.setTransport(getNetworkDiags());
-        // MongoBackend.getInstance().updateSimulationData(simulationId, simulation);
-
-        // Find all Conversion assets and their solver orders
-        convAssets = findAllConversionAssets();
-
-        // List<Integer[]> constrIndices = new ArrayList<Integer[]>();
-        HashMap<String, List<Integer[]>> constrIndices = new HashMap<String, List<Integer[]>>();
-        for (Conversion convAsset : convAssets.keySet()) {
-            Solvers solverOrder = convAssets.get(convAsset);
-            if (solverOrder.getFirst().isEmpty()) {
-                continue;
-            }
-            for (TransportSolver first : solverOrder.getFirst()) {
-                for (TransportSolver later : solverOrder.getLater()) {
-                    if (constrIndices.get(convAsset.getName()) == null) {
-                        constrIndices.put(convAsset.getName(), new ArrayList<Integer[]>());
-                    }
-                    List<Integer[]> constraintList = constrIndices.get(convAsset.getName());
-                    constraintList.add(new Integer[]{solversList.indexOf(first), solversList.indexOf(later)});
-                }
-            }
-            log.debug(marker, convAsset.getName() + " forces these orders: " + printableSolversList(solverOrder));
-        }
-
-        return new ChocoOptimiser(simulationId, solversList, constrIndices).solve();
-
     }
 
     private void createTransportSolver(HashMap<EnergyAsset, Role> connectedAssets, HashSet<Carrier> connectedCarriers, int solverIndex) throws Exception {
-        String carriersName = connectedCarriers.stream().sorted(Comparator.comparing(o -> (o.getName() == null ? o.getId() : o.getName()))).map(c -> c.getName() == null ? c.getId() : c.getName()).collect(Collectors.joining(", "));
-
-        String solverId = energySystemId + " " + carriersName + " Network " + solverIndex;
+        String solverId = getSolverIdentifier(energySystemId, connectedCarriers, solverIndex);
 
         TransportSolver solver = new TransportSolver(solverId, simulationId, generalObservationProvider, nodeConfig, connectedAssets, esdlString, this.market, connectedCarriers);
         solver.setSimulationManager(simulationManager);
@@ -432,6 +439,13 @@ public class ESSimEngine implements IStatusProvider {
             }
             solversList.add(solver);
         }
+    }
+
+    @NotNull
+    public static String getSolverIdentifier(String systemId, HashSet<Carrier> connectedCarriers, int solverIndex) {
+        String carriersName = connectedCarriers.stream().sorted(Comparator.comparing(o -> (o.getName() == null ? o.getId() : o.getName()))).map(c -> c.getName() == null ? c.getId() : c.getName()).collect(Collectors.joining(", "));
+        String solverId = systemId + " " + carriersName + " Network " + solverIndex;
+        return solverId;
     }
 
     public void startSimulation() {

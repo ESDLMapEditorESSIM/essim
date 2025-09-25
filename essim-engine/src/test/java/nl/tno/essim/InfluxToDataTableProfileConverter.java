@@ -2,6 +2,7 @@ package nl.tno.essim;
 
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.profiles.DataTableProfileDataHandler;
 import nl.tno.essim.utils.ESDLUtil;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,7 +20,7 @@ import java.util.UUID;
 public class InfluxToDataTableProfileConverter {
 
     public static void main(String[] args) throws IOException {
-        String esdl = Files.readString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue.esdl"));
+        String esdl = Files.readString(Path.of("/home/armin/dev/essim/Eindhoven simple - meerdere carriers wb.esdl"));
 
         convertInfluxToPostgres((EnergySystem) ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
         convertInfluxToInflux((EnergySystem) ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
@@ -28,22 +29,24 @@ public class InfluxToDataTableProfileConverter {
     @NotNull
     static String convertInfluxToPostgres(EnergySystem energySystem) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
-        postgresMap.put("http://localhost:8086", "postgresql://localhost:15432/essim");
-        postgresMap.put("http://influxdb:8086", "postgresql://localhost:15432/essim");
+        postgresMap.put("http://geis:8086", "postgresql://localhost:5432/essim");
+        postgresMap.put("http://localhost:8086", "postgresql://localhost:5432/essim");
+        postgresMap.put("http://influxdb:8086", "postgresql://localhost:5432/essim");
         convert(energySystem, postgresMap, DatabaseTypeEnum.POSTGRESQL);
         String newEsdl = ESDLUtil.ecoreResourceToString(energySystem);
-        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_to_postgres.esdl"), newEsdl);
+        Files.writeString(Path.of("/home/armin/dev/essim/Eindhoven simple - meerdere carriers wb_converted_to_postgres.esdl"), newEsdl);
         return newEsdl;
     }
 
     @NotNull
     static String convertInfluxToInflux(EnergySystem energySystem) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
+        postgresMap.put("http://geis:8086", "http://localhost:8086");
         postgresMap.put("http://localhost:8086", "http://localhost:8086");
         postgresMap.put("http://influxdb:8086", "http://localhost:8086");
         convert(energySystem, postgresMap, DatabaseTypeEnum.INFLUXDB);
         String newEsdl = ESDLUtil.ecoreResourceToString(energySystem);
-        Files.writeString(Path.of("/home/armin/dev/essim/Tutorial5_Scenario - elektrolyzer issue_converted_to_influx.esdl"), newEsdl);
+        Files.writeString(Path.of("/home/armin/dev/essim/Eindhoven simple - meerdere carriers wb_converted_to_influx.esdl"), newEsdl);
         return newEsdl;
     }
 
@@ -67,33 +70,7 @@ public class InfluxToDataTableProfileConverter {
                         }
                         DatabaseConfiguration dbc = map.get(newUri);
                         if (dbc == null) {
-                            dbc = EsdlFactory.eINSTANCE.createDatabaseConfiguration();
-                            dbc.setType(type);
-                            dbc.setId(UUID.randomUUID().toString());
-                            URI uri = URI.create(newUri);
-                            dbc.setHost(uri.getHost());
-                            if (uri.getPort() > 0) {
-                                dbc.setPort(uri.getPort());
-                            }
-                            String dbName = uri.getPath().replaceFirst("/", "");
-
-                            if (!dbName.isEmpty()) {
-                                dbc.setDatabase(dbName);
-                            }
-                            String query = uri.getQuery();
-                            if (query != null && query.contains("tls")) {
-                                // Parse the query string to find the value of 'tls'
-                                String[] queryParams = query.split("&");
-                                for (String param : queryParams) {
-                                    String[] keyValue = param.split("=");
-                                    if (keyValue.length == 2 && keyValue[0].equalsIgnoreCase("tls")) {
-                                        // Set the tls value on dbc based on the URI's tls value
-                                        dbc.setTls(Boolean.parseBoolean(keyValue[1]));
-                                        break;
-                                    }
-                                }
-                            }
-                            getDataConfigurations(energySystem).getConfigurations().add(dbc);
+                            dbc = DataTableProfileDataHandler.getDatabaseConfiguration(energySystem, newUri, type);
                             map.put(newUri, dbc);
 
                         }
@@ -117,14 +94,5 @@ public class InfluxToDataTableProfileConverter {
                 port.getProfile().addAll(newProfiles);
             });
         });
-    }
-
-    static DataConfigurations getDataConfigurations(EnergySystem energySystem) {
-        DataConfigurations dataConfigurations = energySystem.getEnergySystemInformation().getDataconfigurations();
-        if (dataConfigurations == null) {
-            dataConfigurations = EsdlFactory.eINSTANCE.createDataConfigurations();
-            energySystem.getEnergySystemInformation().setDataconfigurations(dataConfigurations);
-        }
-        return dataConfigurations;
     }
 }
