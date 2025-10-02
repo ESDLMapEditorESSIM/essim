@@ -31,7 +31,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @Slf4j
-public class EssimHttpServer extends ContextHandler {
+public class EssimHttpServer  {
 
     public EssimHttpServer(String scheme, String host, int port) throws Exception {
 		// direct java.util.logging to slf4j (Jersey/Grizzly)

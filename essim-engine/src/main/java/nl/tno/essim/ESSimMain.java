@@ -68,7 +68,6 @@ public class ESSimMain {
     }
 
     public void cleanup() throws Exception {
-        httpServer.stop();
         mongoBackend.stop();
     }
 }

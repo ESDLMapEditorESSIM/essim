@@ -35,7 +35,7 @@
         <log4j.version>2.24.3</log4j.version>
         <swagger.version>2.2.23</swagger.version>
         <swagger-ui.version>5.17.2</swagger-ui.version>
-        <powsybl-dependencies.version>2025.1.0</powsybl-dependencies.version>
+        <powsybl-dependencies.version>2024.4.1</powsybl-dependencies.version>
         <slf4j.version>2.0.17</slf4j.version>
         <jetty.version>11.0.25</jetty.version>
         <jersey.version>3.0.16</jersey.version>
