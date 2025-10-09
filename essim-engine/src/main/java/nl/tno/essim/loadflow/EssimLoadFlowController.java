@@ -75,6 +75,12 @@ public class EssimLoadFlowController {
      */
     private final Map<String, Substation> substationMap = new HashMap<>();
 
+    /**
+     * A mapping of unique asset identifiers (represented as strings) to their corresponding
+     * {@link EnergyAsset} instances.
+     */
+    private Map<String, EnergyAsset> assetMap;
+
     private final ExecutorService executor;
     private Network network;
     private final String networkName;
@@ -140,6 +146,7 @@ public class EssimLoadFlowController {
         // Now we create the lines
         createLines(assetList, network);
         solvers.forEach(solver -> solver.getCarriers().forEach(c -> carrierSolverMap.put(c.getId(), solver)));
+        assetMap = assetList.stream().collect(Collectors.toMap(EnergyAsset::getId, a -> a));
         exportNetwork();
     }
 
@@ -550,12 +557,38 @@ public class EssimLoadFlowController {
             return;
         }
         // Powsybl default unit is kW, so we divide by 1000
+        powerVal = powerVal / 1000;
+        EnergyAsset energyAsset = assetMap.get(assetId);
+        Double maxPower = null;
+        Double minPower = null;
+        ControlStrategy controlStrategy = energyAsset.getControlStrategy();
+        if (controlStrategy instanceof DrivenByProfile) {
+            maxPower = powerVal;
+            minPower = powerVal;
+        }
+        if (controlStrategy instanceof CurtailmentStrategy) {
+            maxPower = ((CurtailmentStrategy) controlStrategy).getMaxPower() / 1000;
+        }
+
         if (o instanceof Load load) {
-            load.setP0(Math.abs(powerVal / 1000)).setQ0(0);
+            load.setP0(Math.abs(powerVal)).setQ0(0);
         } else if (o instanceof Generator generator) {
-            generator.setTargetP(Math.abs(powerVal / 1000));
+            generator.setTargetP(Math.abs(powerVal));
+            if (maxPower != null) {
+                generator.setMaxP(maxPower);
+            }
+            if (minPower != null) {
+                generator.setMinP(minPower);
+            }
         } else if (o instanceof Battery battery) {
-            battery.setTargetP(-powerVal / 1000);
+            if (maxPower != null) {
+                battery.setMaxP(maxPower);
+            }
+            if (minPower != null) {
+                battery.setMinP(minPower);
+            }
+            battery.setTargetP(Math.abs(powerVal));
+            battery.setTargetP(-powerVal);
         }
     }
 
@@ -566,8 +599,8 @@ public class EssimLoadFlowController {
         LoadFlowParameters parameters = LoadFlowParameters.load()
                 .setUseReactiveLimits(false);
         parameters.getExtension(OpenLoadFlowParameters.class)
-                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
-//                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
+//                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
+                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
 //                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
                 .setUseActiveLimits(false)
                 .setPlausibleActivePowerLimit(Double.MAX_VALUE);
