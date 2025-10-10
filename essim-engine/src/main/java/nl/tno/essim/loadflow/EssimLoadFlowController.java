@@ -238,11 +238,12 @@ public class EssimLoadFlowController {
             Bus bus2 = getBus((ElectricityCommodity) carrier, voltageLevel2, cable);
             int parallelLines = Math.max(cable.getAggregationCount(), 1);
             String cableTypeName = cable.getAssetType();
-            if (cableTypeName == null || cableTypeName.isEmpty()) {
+            CableSpec cableSpec = CableSpec.getCableSpec(cableTypeName);
+            if (cableSpec == null) {
                 cableTypeName = "243-AL1/39-ST1A 20.0";
                 log.warn(MarkerFactory.getMarker(networkName), "No asset type for cable {} ({}) assuming default type '{}'", cable.getName(), cable.getId(), cableTypeName);
+                cableSpec = CableSpec.getCableSpec(cableTypeName);
             }
-            CableSpec cableSpec = CableSpec.getCableSpec(cableTypeName);
             log.debug(MarkerFactory.getMarker(networkName), "Creating cable of type {}", cableTypeName);
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / (1000.0 * parallelLines);
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / (1000.0 * parallelLines);
@@ -684,6 +685,12 @@ public class EssimLoadFlowController {
                         .build();
                 observationMap.put(getObservationKey(observation), observation);
                 super.visitLine(line, side);
+            }
+
+            @Override
+            public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, TwoSides side) {
+                Carrier carrier = carrierMap.get(transformer.getId());
+                transformer.getTerminals().forEach(t -> {});
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
