@@ -158,7 +158,8 @@ public class EssimLoadFlowController {
         }
         DataSource dataSource = Exporters.createDataSource(diagramsDir.resolve("essim-network-" + networkName + ".xml"));
         ex.export(network, new Properties(), dataSource);
-//        NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
+        NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));
+//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
     private void createTransformers(List<EnergyAsset> assetList) {
@@ -190,11 +191,11 @@ public class EssimLoadFlowController {
             Bus busLv = getBus((ElectricityCommodity) portLv.getCarrier(), voltageLevelLv, esdlTransformer);
             Bus busHv = getBus((ElectricityCommodity) portHv.getCarrier(), voltageLevelHv, esdlTransformer);
 
-            double rk = transformerSpec.getVkrPercent() / 100;
-            double zk = transformerSpec.getVkPercent() / 100;
+            double rk = transformerSpec.getVkrPercent() / 100.0;
+            double zk = transformerSpec.getVkPercent() / 100.0;
             double xk = Math.sqrt(zk * zk - rk * rk);
-            double ym = transformerSpec.getI0Percent() / 100;
-            double gm = transformerSpec.getPfeKw() / (transformerSpec.getSnMva() * 1000);
+            double ym = transformerSpec.getI0Percent() / 100.0;
+            double gm = transformerSpec.getPfeKw() / (transformerSpec.getSnMva() * 1000.0);
             double bm = -1 * Math.signum(ym) * Math.sqrt(ym * ym - gm * gm);
             double zb_tr = transformerSpec.getVnLvKv() * transformerSpec.getVnLvKv() / transformerSpec.getSnMva();
             double r = rk * zb_tr;
@@ -248,7 +249,7 @@ public class EssimLoadFlowController {
             double x = ((ElectricityCable) cable).getLength() * cableSpec.getXOhmPerKm() / (1000.0 * parallelLines);
             double r = ((ElectricityCable) cable).getLength() * cableSpec.getROhmPerKm() / (1000.0 * parallelLines);
             // TODO assuming 50Hz frequency here, get the actual frequency from somewhere
-            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * parallelLines * 1e-9 * 2 * Math.PI * 50) / 2;
+            double b = (((ElectricityCable) cable).getLength() * cableSpec.getCNfPerKm() * parallelLines * 1e-9 * 2.0 * Math.PI * 50.0) / 2.0;
 //            double g = ((ElectricityCable) cable).getLength() * cableSpec.get
             Line line = network.newLine()
                     .setBus1(bus1.getId())
@@ -431,7 +432,7 @@ public class EssimLoadFlowController {
         if (voltageLevel == null) {
             voltageLevel = substation.newVoltageLevel()
                     .setId(voltageLevelId)
-                    .setNominalV((carrier).getVoltage() / 1000)
+                    .setNominalV((carrier).getVoltage() / 1000.0)
                     .setTopologyKind(TopologyKind.BUS_BREAKER)
                     .add();
             voltageLevelMap.put(voltageLevelId, voltageLevel);
@@ -463,7 +464,7 @@ public class EssimLoadFlowController {
                         .setBus(busId)
                         .setConnectableBus(busId)
                         // Do we need to convert based on port???
-                        .setMaxP(conversion.getPower() / 1000)
+                        .setMaxP(conversion.getPower() / 1000.0)
                         .setMinP(0)
                         .setTargetP(0)
                         .setTargetQ(0)
@@ -491,8 +492,8 @@ public class EssimLoadFlowController {
                 .setConnectableBus(busId)
                 .setId("storage-" + storage.getId())
                 .setName(storage.getName())
-                .setMaxP(storage.getMaxChargeRate() / 1000)
-                .setMinP(-storage.getMaxDischargeRate() / 1000)
+                .setMaxP(storage.getMaxChargeRate() / 1000.0)
+                .setMinP(-storage.getMaxDischargeRate() / 1000.0)
                 .setTargetP(0)
                 .setTargetQ(0)
                 .add();
@@ -532,7 +533,7 @@ public class EssimLoadFlowController {
                 .setId("producer-" + producer.getId())
                 .setName(producer.getName())
                 .setMinP(0)
-                .setMaxP(producer.getPower() / 1000)
+                .setMaxP(producer.getPower() / 1000.0)
                 .setTargetP(0)
                 .setTargetQ(0)
                 .setBus(busId)
@@ -558,7 +559,7 @@ public class EssimLoadFlowController {
             return;
         }
         // Powsybl default unit is kW, so we divide by 1000
-        powerVal = powerVal / 1000;
+        powerVal = powerVal / 1000.0;
         EnergyAsset energyAsset = assetMap.get(assetId);
         Double maxPower = null;
         Double minPower = null;
@@ -568,7 +569,7 @@ public class EssimLoadFlowController {
             minPower = powerVal;
         }
         if (controlStrategy instanceof CurtailmentStrategy) {
-            maxPower = ((CurtailmentStrategy) controlStrategy).getMaxPower() / 1000;
+            maxPower = ((CurtailmentStrategy) controlStrategy).getMaxPower() / 1000.0;
         }
 
         if (o instanceof Load load) {
@@ -600,9 +601,10 @@ public class EssimLoadFlowController {
         LoadFlowParameters parameters = LoadFlowParameters.load()
                 .setUseReactiveLimits(false);
         parameters.getExtension(OpenLoadFlowParameters.class)
-//                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
-                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
-//                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
+                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
+//                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.LEAVE_ON_SLACK_BUS)
+//                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
+                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
                 .setUseActiveLimits(false)
                 .setPlausibleActivePowerLimit(Double.MAX_VALUE);
 
@@ -641,7 +643,8 @@ public class EssimLoadFlowController {
     }
 
     @NotNull
-    private ArrayList<Observation> processObservations(EssimTime timestamp, ArrayList<Observation> observations) {
+    private ArrayList<Observation>
+    processObservations(EssimTime timestamp, ArrayList<Observation> observations) {
         // Update the variant ID for the simulation
         updateVariantId();
         observations.forEach(this::assignPowerValues);
@@ -678,9 +681,9 @@ public class EssimLoadFlowController {
                 double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getQ());
                 double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getQ());
                 double q = q1 > q2 ? q1 - q2 : q2 - q1;
-                Observation observation = builder.value(ObservationField.LOADFLOW_POWER, p * 1000)
-                        .value(ObservationField.LOADFLOW_ENERGY, p * 1000 * timestamp.getSimulationStepLength().getSeconds())
-                        .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000)
+                Observation observation = builder.value(ObservationField.LOADFLOW_POWER, p * 1000.0)
+                        .value(ObservationField.LOADFLOW_ENERGY, p * 1000.0 * timestamp.getSimulationStepLength().getSeconds())
+                        .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000.0)
                         .value(ObservationField.LOADFLOW_CURRENT, line.getTerminal(side).getI())
                         .build();
                 observationMap.put(getObservationKey(observation), observation);
@@ -689,8 +692,10 @@ public class EssimLoadFlowController {
 
             @Override
             public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, TwoSides side) {
-                Carrier carrier = carrierMap.get(transformer.getId());
-                transformer.getTerminals().forEach(t -> {});
+//                Carrier carrier = carrierMap.get(transformer.getId());
+                // TODO publish losses for each winding
+                transformer.getTerminals().forEach(t -> {
+                });
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
@@ -714,9 +719,9 @@ public class EssimLoadFlowController {
     private Observation createObservation(String id, Terminal terminal, EssimTime timestamp) {
         Carrier carrier = carrierMap.get(id);
         Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
-        Observation observation = builder.value(ObservationField.LOADFLOW_POWER, terminal.getP() * 1000)
-                .value(ObservationField.LOADFLOW_ENERGY, terminal.getP() * 1000 * timestamp.getSimulationStepLength().getSeconds())
-                .value(ObservationField.LOADFLOW_REACTIVE_POWER, terminal.getQ() * 1000)
+        Observation observation = builder.value(ObservationField.LOADFLOW_POWER, terminal.getP() * 1000.0)
+                .value(ObservationField.LOADFLOW_ENERGY, terminal.getP() * 1000.0 * timestamp.getSimulationStepLength().getSeconds())
+                .value(ObservationField.LOADFLOW_REACTIVE_POWER, terminal.getQ() * 1000.0)
                 .build();
         return observation;
     }
