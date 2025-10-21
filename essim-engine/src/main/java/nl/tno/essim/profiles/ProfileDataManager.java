@@ -12,6 +12,7 @@ import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class ProfileDataManager {
 
@@ -126,8 +127,14 @@ public class ProfileDataManager {
             profile.setTimestep((int) timestamp.getSimulationStepLength().getSeconds());
             profile.setStartDateTime(EssimTime.localDateTimeToDate(timestamp.getSimulationStartTime()));
             updatedProfile = writeProfile(profile, timestamp, value);
+
+            QuantityAndUnitType quantityAndUnitType = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+            quantityAndUnitType.setUnit(UnitEnum.JOULE);
+            quantityAndUnitType.setDescription("Energy in J");
+            quantityAndUnitType.setPhysicalQuantity(PhysicalQuantityEnum.ENERGY);
+            profile.setProfileQuantityAndUnit(quantityAndUnitType);
         } else {
-            GenericProfile profile = profiles.get(0);
+            GenericProfile profile = profiles.getFirst();
             if (profile instanceof ProfileReference) {
                 profile = ((ProfileReference) profile).getReference();
             }
