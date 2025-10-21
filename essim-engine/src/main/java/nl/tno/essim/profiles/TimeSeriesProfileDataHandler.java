@@ -93,7 +93,7 @@ public class TimeSeriesProfileDataHandler implements ProfileDataHandler {
                 }
                 int elementIndex = (int) ((elementStartSeconds - profileStart) / profile.getTimestep());
 
-                double profileValue = Converter.fromDidoUnit(profileElement.getValue(), profile.getProfileType());
+                double profileValue = profileElement.getValue();
                 if (elementIndex < values.size()) {
                     values.set(elementIndex, profileElement.getValue());
                     profile.getValues().set(elementIndex, profileValue);

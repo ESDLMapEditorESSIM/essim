@@ -126,7 +126,6 @@ public class ProfileDataManager {
             profile.setTimestep((int) timestamp.getSimulationStepLength().getSeconds());
             profile.setStartDateTime(EssimTime.localDateTimeToDate(timestamp.getSimulationStartTime()));
             updatedProfile = writeProfile(profile, timestamp, value);
-            profile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
         } else {
             GenericProfile profile = profiles.get(0);
             if (profile instanceof ProfileReference) {

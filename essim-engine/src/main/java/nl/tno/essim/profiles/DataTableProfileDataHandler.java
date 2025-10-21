@@ -62,7 +62,7 @@ public class DataTableProfileDataHandler implements ProfileDataHandler {
 
     private TimeSeriesDataCache createTimeSeriesDataCache(ProfileCacheKey profileCacheKey) throws ProfileException {
         try {
-            return cacheSupplier.getTimeSeriesDataCache(profileCacheKey, profile.getTimeColumnName(), profile.getStartDate(), profile.getEndDate());
+            return cacheSupplier.getTimeSeriesDataCache(profileCacheKey, profile.getDatetimeColumnName(), profile.getStartDate(), profile.getEndDate());
         } catch (Exception e) {
             log.error("Could not create TimeSeriesDataCache for profile {}", profileCacheKey, e);
             throw new ProfileException(e);

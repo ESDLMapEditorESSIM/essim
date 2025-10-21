@@ -78,7 +78,7 @@ public class Converter {
 
 	public static double toStandardizedUnits(double amount, Object unit) {
 		if (unit instanceof ProfileTypeEnum) {
-			return profileTypeToStandardizedUnits(amount, (ProfileTypeEnum) unit);
+			throw new IllegalArgumentException("ProfileTypeEnum is not supported for conversion to standardized units, should use QuantityAndUnit");
 		} else if (unit instanceof AbstractQuantityAndUnit) {
 			return abstractQuantityToStandardizedUnits(amount, (AbstractQuantityAndUnit) unit);
 		} else {
@@ -86,118 +86,7 @@ public class Converter {
 		}
 	}
 
-	/**
-	 * Converts the unit into DIDO's default units (Joule for energy, W for Power,
-	 * Celcius for Temperature)
-	 * 
-	 * @param amount the amount in 'unit'
-	 * @param unit   of the amount
-	 * @return the amount in the DIDO unit
-	 */
-	private static double profileTypeToStandardizedUnits(double amount, ProfileTypeEnum unit) {
-		switch (unit) {
-		case ENERGY_IN_GJ:
-			return amount * 1E9;
-		case ENERGY_IN_GWH:
-			return amount * 3.6E12;
-		case ENERGY_IN_J:
-			return amount;
-		case ENERGY_IN_KJ:
-			return amount * 1000;
-		case ENERGY_IN_KWH:
-			return amount * 3.6E6;
-		case ENERGY_IN_MJ:
-			return amount * 1E6;
-		case ENERGY_IN_MWH:
-			return amount * 3.6E9;
-		case ENERGY_IN_PJ:
-			return amount * 1E15;
-		case ENERGY_IN_TJ:
-			return amount * 1E12;
-		case ENERGY_IN_WH:
-			return amount * 3.6E3;
-		case POWER_IN_GW:
-			return amount * 1E9;
-		case POWER_IN_KW:
-			return amount * 1E3;
-		case POWER_IN_MW:
-			return amount * 1E6;
-		case POWER_IN_TW:
-			return amount * 1E12;
-		case POWER_IN_W:
-			return amount;
-		case TEMPERATURE_IN_K:
-			return amount + 273.15;
-		case TEMPERATURE_IN_C:
-		case STATEOFCHARGE_IN_WS:
-		case SOLARIRRADIANCE_IN_WPER_M2:
-		case WINDSPEED_IN_MPER_S:
-		default:
-			return amount;
-		}
-	}
 
-	/**
-	 * Converts the given amount to the amount in the given unit
-	 * 
-	 * @param amount
-	 * @param unit
-	 * @return the converted amount
-	 */
-	public static double fromDidoUnit(double amount, ProfileTypeEnum unit) {
-		switch (unit) {
-		case ENERGY_IN_GJ:
-			return amount / 1E9;
-		case ENERGY_IN_GWH:
-			return amount / 3.6E12;
-		case ENERGY_IN_J:
-			return amount;
-		case ENERGY_IN_KJ:
-			return amount / 1000;
-		case ENERGY_IN_KWH:
-			return amount / 3.6E6;
-		case ENERGY_IN_MJ:
-			return amount / 1E6;
-		case ENERGY_IN_MWH:
-			return amount / 3.6E9;
-		case ENERGY_IN_PJ:
-			return amount / 1E15;
-		case ENERGY_IN_TJ:
-			return amount / 1E12;
-		case ENERGY_IN_WH:
-			return amount / 3.6E3;
-		case POWER_IN_GW:
-			return amount / 1E9;
-		case POWER_IN_KW:
-			return amount / 1E3;
-		case POWER_IN_MW:
-			return amount / 1E6;
-		case POWER_IN_TW:
-			return amount / 1E12;
-		case POWER_IN_W:
-			return amount;
-		case TEMPERATURE_IN_K:
-			return amount - 273.15;
-		case TEMPERATURE_IN_C:
-		case STATEOFCHARGE_IN_WS:
-		case SOLARIRRADIANCE_IN_WPER_M2:
-		case WINDSPEED_IN_MPER_S:
-		default:
-			return amount;
-		}
-	}
-
-	/**
-	 * Formats a number in a specific unit using the current Locale
-	 * 
-	 * @param value
-	 * @param unit
-	 * @return
-	 */
-	public static String format(double value, ProfileTypeEnum unit) {
-		return formatter.format(fromDidoUnit(value, unit));
-	}
-	
 	public static QuantityAndUnitType resolveAbstractQuantityAndUnit(AbstractQuantityAndUnit specifiedUnit) {
 		if (specifiedUnit instanceof QuantityAndUnitType) {
 			return (QuantityAndUnitType) specifiedUnit;

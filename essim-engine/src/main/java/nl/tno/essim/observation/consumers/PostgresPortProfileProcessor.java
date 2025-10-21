@@ -52,10 +52,9 @@ public class PostgresPortProfileProcessor implements java.util.function.Consumer
         dataTableProfile.setTableName(PostgresObservationConsumer.convertToValidPostgresColumnName(solverIdentifier));
         dataTableProfile.setSchema(PostgresObservationConsumer.convertToValidPostgresColumnName(scenarioID));
         dataTableProfile.setColumnName("allocationenergy");
-        dataTableProfile.setTimeColumnName("time");
+        dataTableProfile.setDatetimeColumnName("time");
         dataTableProfile.setFilter("tags->>'assetName' = '" + port.getEnergyasset().getName() + "' AND tags->>'simulationRun' = '" + simulationId + "'");
         dataTableProfile.setProfileQuantityAndUnit(quantityAndUnitReference);
-        dataTableProfile.setProfileType(ProfileTypeEnum.ENERGY_IN_J);
         dataTableProfile.setStartDate(simulation.getStartDate());
         dataTableProfile.setEndDate(simulation.getEndDate());
         dataTableProfile.setMultiplier(1);

@@ -35,8 +35,7 @@ public class ProfileUtils {
             return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.POWER);
         }
 
-        return (profile.getProfileType().getValue() <= ProfileTypeEnum.POWER_IN_TW_VALUE)
-                && (profile.getProfileType().getValue() >= ProfileTypeEnum.POWER_IN_W_VALUE);
+        return false;
     }
 
     public static boolean isEnergyProfile(GenericProfile profile) {
@@ -55,8 +54,7 @@ public class ProfileUtils {
             return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.ENERGY);
         }
 
-        return (profile.getProfileType().getValue() <= ProfileTypeEnum.ENERGY_IN_PJ_VALUE)
-                && (profile.getProfileType().getValue() >= ProfileTypeEnum.ENERGY_IN_WH_VALUE);
+        return false;
     }
 
     public static boolean isPercentageProfile(GenericProfile profile) {
@@ -75,7 +73,7 @@ public class ProfileUtils {
             return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.COEFFICIENT);
         }
 
-        return (profile.getProfileType().getValue() == ProfileTypeEnum.PERCENTAGE_VALUE);
+        return false;
     }
 
     public static boolean isSoCProfile(GenericProfile profile) {
@@ -94,7 +92,7 @@ public class ProfileUtils {
             return qu != null && qu.getPhysicalQuantity().equals(PhysicalQuantityEnum.STATE_OF_CHARGE);
         }
 
-        return profile.getProfileType().equals(ProfileTypeEnum.STATEOFCHARGE_IN_WS);
+        return false;
     }
 
     /**

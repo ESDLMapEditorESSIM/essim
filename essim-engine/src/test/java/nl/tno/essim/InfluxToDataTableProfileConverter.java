@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,34 +18,63 @@ import java.util.UUID;
 @Slf4j
 public class InfluxToDataTableProfileConverter {
 
-    public static void main(String[] args) throws IOException {
-        String esdl = Files.readString(Path.of("/home/armin/dev/essim/Eindhoven simple - meerdere carriers wb.esdl"));
+    /**
+     * Generates an output file path by adding a postfix to the filename before the extension.
+     *
+     * @param inputPath The input file path
+     * @param postfix   The postfix to add to the filename
+     * @return A new Path with the postfix added before the extension
+     */
+    public static Path generateOutputPath(Path inputPath, String postfix) {
+        String fileName = inputPath.getFileName().toString();
+        int lastDotIndex = fileName.lastIndexOf('.');
 
-        convertInfluxToPostgres((EnergySystem) ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
-        convertInfluxToInflux((EnergySystem) ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst());
+        String newFileName;
+        if (lastDotIndex > 0) {
+            // File has an extension
+            String nameWithoutExt = fileName.substring(0, lastDotIndex);
+            String extension = fileName.substring(lastDotIndex);
+            newFileName = nameWithoutExt + postfix + extension;
+        } else {
+            // No extension found
+            newFileName = fileName + postfix;
+        }
+
+        return inputPath.resolveSibling(newFileName);
+    }
+
+    public static void main(String[] args) throws IOException {
+        Path path = Path.of("/home/armin/dev/essim/new data/Eindhoven simple 2023.esdl");
+        String esdl = Files.readString(path);
+
+
+        convertInfluxToPostgres((EnergySystem) ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst(), path);
+        convertInfluxToInflux((EnergySystem) ESDLUtil.loadEcoreResource(new ByteArrayInputStream(esdl.getBytes(StandardCharsets.UTF_8))).getContents().getFirst(), path);
     }
 
     @NotNull
-    static String convertInfluxToPostgres(EnergySystem energySystem) throws IOException {
+    static String convertInfluxToPostgres(EnergySystem energySystem, Path origPath) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
-        postgresMap.put("http://geis:8086", "postgresql://localhost:5432/essim");
-        postgresMap.put("http://localhost:8086", "postgresql://localhost:5432/essim");
-        postgresMap.put("http://influxdb:8086", "postgresql://localhost:5432/essim");
+        postgresMap.put("http://geis:8086", "postgresql://postgres:5432/essim");
+        postgresMap.put("http://localhost:8086", "postgresql://postgres:5432/essim");
+        postgresMap.put("http://influxdb:8086", "postgresql://postgres:5432/essim");
         convert(energySystem, postgresMap, DatabaseTypeEnum.POSTGRESQL);
         String newEsdl = ESDLUtil.ecoreResourceToString(energySystem);
-        Files.writeString(Path.of("/home/armin/dev/essim/Eindhoven simple - meerdere carriers wb_converted_to_postgres.esdl"), newEsdl);
+        Path convertedToPostgres = generateOutputPath(origPath, "_converted_to_postgres");
+        Files.writeString(convertedToPostgres, newEsdl);
         return newEsdl;
     }
 
     @NotNull
-    static String convertInfluxToInflux(EnergySystem energySystem) throws IOException {
+    static String convertInfluxToInflux(EnergySystem energySystem, Path origPath) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
-        postgresMap.put("http://geis:8086", "http://localhost:8086");
-        postgresMap.put("http://localhost:8086", "http://localhost:8086");
-        postgresMap.put("http://influxdb:8086", "http://localhost:8086");
+        postgresMap.put("http://geis:8086", "http://influxdb:8086");
+        postgresMap.put("http://localhost:8086", "http://indlfuxdb:8086");
+        postgresMap.put("http://influxdb:8086", "http://influxdb:8086");
         convert(energySystem, postgresMap, DatabaseTypeEnum.INFLUXDB);
         String newEsdl = ESDLUtil.ecoreResourceToString(energySystem);
-        Files.writeString(Path.of("/home/armin/dev/essim/Eindhoven simple - meerdere carriers wb_converted_to_influx.esdl"), newEsdl);
+        Path convertedToPostgres = generateOutputPath(origPath, "_converted_to_influx");
+        Files.writeString(convertedToPostgres, newEsdl);
         return newEsdl;
     }
 
@@ -80,7 +108,7 @@ public class InfluxToDataTableProfileConverter {
                         dataTableProfile.setId(UUID.randomUUID().toString());
                         dataTableProfile.setTableName(((InfluxDBProfile) profile).getMeasurement());
                         dataTableProfile.setColumnName(((InfluxDBProfile) profile).getField());
-                        dataTableProfile.setTimeColumnName("time");
+                        dataTableProfile.setDatetimeColumnName("time");
                         dataTableProfile.setSchema(((InfluxDBProfile) profile).getDatabase());
                         dataTableProfile.setProfileQuantityAndUnit(profile.getProfileQuantityAndUnit());
                         dataTableProfile.setProfileType(profile.getProfileType());

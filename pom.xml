@@ -27,7 +27,7 @@
         <java.version>21</java.version>
         <emf.version>2.41.0</emf.version>
         <emfecore.version>2.38.0</emfecore.version>
-        <esdl.version>2.25.5</esdl.version>
+        <esdl.version>2.25.7</esdl.version>
         <junit.jupiter.version>5.11.4</junit.jupiter.version>
         <base.package.name>nl.tno.essim</base.package.name>
         <jackson.version>2.18.1</jackson.version>
