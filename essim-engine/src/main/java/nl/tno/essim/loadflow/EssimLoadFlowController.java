@@ -219,6 +219,10 @@ public class EssimLoadFlowController {
                     .setVoltageLevel1(voltageLevelLv.getId())
                     .setId(esdlTransformer.getId() + "-transformer")
                     .add();
+            reverseTranslationMap.put(transformer.getId(), esdlTransformer);
+            translationMap.put(esdlTransformer.getId(), transformer);
+            // A convention (for now): add the transformer to the low-side carrier
+            carrierMap.put(transformer.getId(), portLv.getCarrier());
         });
     }
 
@@ -649,7 +653,7 @@ public class EssimLoadFlowController {
 //                .setAcSolverType(NewtonKrylovFactory.NAME)
                 .setAcSolverType(NewtonRaphsonFactory.NAME)
                 .setMaxNewtonRaphsonIterations(100)
-                // The next two settings are for "Fast decoupled" AC solver
+        // The next two settings are for "Fast decoupled" AC solver
 //                .setLineSearchStateVectorScalingMaxIteration(4)
 //                .setLineSearchStateVectorScalingStepFold(3.0/2.0)
         ;
@@ -727,30 +731,21 @@ public class EssimLoadFlowController {
 
             @Override
             public void visitLine(Line line, TwoSides side) {
-                Carrier carrier = carrierMap.get(line.getId());
-                Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(line.getId()), carrier);
-                double p1 = Math.abs(line.getTerminal(TwoSides.TWO).getP());
-                double p2 = Math.abs(line.getTerminal(TwoSides.ONE).getP());
-                double p = p1 > p2 ? p1 - p2 : p2 - p1;
-                double q1 = Math.abs(line.getTerminal(TwoSides.TWO).getQ());
-                double q2 = Math.abs(line.getTerminal(TwoSides.ONE).getQ());
-                double q = q1 > q2 ? q1 - q2 : q2 - q1;
-                Observation observation = builder.value(ObservationField.LOADFLOW_POWER, p * 1000.0)
-                        .value(ObservationField.LOADFLOW_ENERGY, p * 1000.0 * timestamp.getSimulationStepLength().getSeconds())
-                        .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000.0)
-                        .value(ObservationField.LOADFLOW_CURRENT, line.getTerminal(side).getI())
-                        .build();
-                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for line {}: {}", line.getId(), observation.toString());
+                String id = line.getId();
+                Carrier carrier = getCarrier(id);
+                Observation observation = createBranchObservation(line, side, carrier, timestamp);
+                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for line {}: {}", id, observation.toString());
                 observationMap.put(getObservationKey(observation), observation);
                 super.visitLine(line, side);
             }
 
             @Override
             public void visitTwoWindingsTransformer(TwoWindingsTransformer transformer, TwoSides side) {
-//                Carrier carrier = carrierMap.get(transformer.getId());
-                // TODO publish losses for each winding
-                transformer.getTerminals().forEach(t -> {
-                });
+                Carrier carrier = getCarrier(transformer.getId());
+                Observation observation = createBranchObservation(transformer, side, carrier, timestamp);
+                observationMap.put(getObservationKey(observation), observation);
+                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for transformer {}: {}", transformer.getId(), observation.toString());
+                super.visitTwoWindingsTransformer(transformer, side);
             }
         };
         voltageLevelMap.values().forEach(voltageLevel -> voltageLevel.visitEquipments(visitor));
@@ -767,12 +762,34 @@ public class EssimLoadFlowController {
         return observations;
     }
 
+    private Carrier getCarrier(String id) {
+        return carrierMap.get(id);
+    }
+
+    private Observation createBranchObservation(Branch branch, TwoSides side, Carrier carrier, EssimTime timestamp) {
+        Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(branch.getId()), carrier);
+        double p1 = Math.abs(branch.getTerminal(TwoSides.TWO).getP());
+        double p2 = Math.abs(branch.getTerminal(TwoSides.ONE).getP());
+        double p = p1 > p2 ? p1 - p2 : p2 - p1;
+        double q1 = Math.abs(branch.getTerminal(TwoSides.TWO).getQ());
+        double q2 = Math.abs(branch.getTerminal(TwoSides.ONE).getQ());
+        double q = q1 > q2 ? q1 - q2 : q2 - q1;
+        builder.value(ObservationField.LOADFLOW_POWER, p * 1000.0)
+                .value(ObservationField.LOADFLOW_ENERGY, p * 1000.0 * timestamp.getSimulationStepLength().getSeconds())
+                .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000.0);
+        if (branch instanceof Line) {
+            builder.value(ObservationField.LOADFLOW_CURRENT, branch.getTerminal(side).getI());
+
+        }
+        return builder.build();
+    }
+
     private static String getObservationKey(Observation observation) {
         return observation.getTags().get("assetId") + "-" + observation.getTags().get("carrierId");
     }
 
     private Observation createObservation(String id, Terminal terminal, EssimTime timestamp) {
-        Carrier carrier = carrierMap.get(id);
+        Carrier carrier = getCarrier(id);
         EnergyAsset asset = reverseTranslationMap.get(id);
         String assetName = asset.getName() == null ? "" : asset.getName();
         assetName += "(" + asset.getId() + ")";
