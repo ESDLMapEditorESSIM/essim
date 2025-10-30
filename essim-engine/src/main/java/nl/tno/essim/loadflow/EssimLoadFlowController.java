@@ -636,13 +636,15 @@ public class EssimLoadFlowController {
         ZoneId zoneId = ZoneId.systemDefault();
         network.setCaseDate(time.atZone(zoneId));
         LoadFlowParameters parameters = LoadFlowParameters.load()
-                .setUseReactiveLimits(false);
+                .setUseReactiveLimits(false)
+                .setDistributedSlack(true);
         parameters.getExtension(OpenLoadFlowParameters.class)
-                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
-//                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.LEAVE_ON_SLACK_BUS)
-//                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
-                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
+                .setPlausibleActivePowerLimit(Double.MAX_VALUE)
 //                .setUseActiveLimits(false)
+                .setSlackBusSelectionMode(SlackBusSelectionMode.MOST_MESHED)
+//                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
+                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.LEAVE_ON_SLACK_BUS)
+//                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
 //                .setAcSolverType(FastDecoupledFactory.NAME)
 //                .setAcSolverType(NewtonKrylovFactory.NAME)
                 .setAcSolverType(NewtonRaphsonFactory.NAME)
@@ -650,7 +652,7 @@ public class EssimLoadFlowController {
                 // The next two settings are for "Fast decoupled" AC solver
 //                .setLineSearchStateVectorScalingMaxIteration(4)
 //                .setLineSearchStateVectorScalingStepFold(3.0/2.0)
-                .setPlausibleActivePowerLimit(Double.MAX_VALUE);
+        ;
 
         OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider();
         LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
