@@ -30,19 +30,8 @@ Useful links:
   - Pluggable KPI modules compute scenario KPIs (e.g., energy balance, curtailment, losses, grid violations).
   - Managed by `nl.tno.essim.kpi.KPIManager` and exposed via REST.
 - Profiles and time-series utilities
-  - ESDL profile conversion, resampling and alignment to simulation time steps (`ProfileUtils`).
-  - Query timeout configurable via `PROFILE_QUERY_TIMEOUT`.
-- Persistence and logs
-  - MongoDB-backed storage for simulations, observations, profiles, and logs (`MONGODB_HOST`/`MONGODB_PORT`).
-  - Structured server logs with SLF4J; request/response logging enabled in Jersey.
-- API description and tooling
-  - OpenAPI 3 description and embedded Swagger UI at `/openapi/` for exploring and trying endpoints.
-  - Multipart upload support for model and data ingestion.
-- Configuration and deployment
-  - Environment-driven configuration: `HTTP_SERVER_SCHEME`, `HTTP_SERVER_HOSTNAME`, `HTTP_SERVER_PORT`, `MONGODB_HOST`, `MONGODB_PORT`, optional Grafana vars and `PROFILE_QUERY_TIMEOUT`.
-  - Distributed as a single runnable JAR and as a Docker image.
-- Extensibility and modularity
-  - Add new KPI modules, carriers, or solvers without changing core server bootstrapping.
+  - ESDL profile conversion, resampling and alignment to simulation time steps.
+  - Embedding of profiles into ESDL.
 
 
 ## Prerequisites
