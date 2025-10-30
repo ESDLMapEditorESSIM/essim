@@ -2,6 +2,7 @@ package nl.tno.essim.utils;
 
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.profiles.ProfileDataHandler;
 import nl.tno.essim.profiles.ProfileDataManager;
 import nl.tno.essim.profiles.ProfileException;
 import nl.tno.essim.time.EssimTime;
@@ -17,10 +18,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Slf4j
 public class ESDLUtil {
@@ -177,4 +177,35 @@ public class ESDLUtil {
         });
     }
 
+    public static LocalDateTime[] getProfilesStartAndEnd(XMIResourceImpl esdlResource) {
+        Long startAndEnd[] = new Long[2];
+        for (var iterator = esdlResource.getAllContents(); iterator.hasNext(); ) {
+            EObject object = iterator.next();
+            if (object instanceof ExternalProfile profile) {
+                updateStartAndEnd(startAndEnd, profile.getStartDate().getTime(), profile.getEndDate().getTime());
+
+            } else if (object instanceof TimeSeriesProfile profile) {
+                long startTime = profile.getStartDateTime().getTime();
+                long endTime = startTime + ((long) profile.getValues().size() * (long) profile.getTimestep() * 1000);
+                updateStartAndEnd(startAndEnd, startTime, endTime);
+
+            } else if (object instanceof DateTimeProfile profile) {
+                profile.getElement().forEach(element -> {
+                    updateStartAndEnd(startAndEnd, element.getFrom().getTime(), element.getTo().getTime());
+                });
+            }
+        }
+        return new LocalDateTime[]{
+                startAndEnd[0] == null ? null : LocalDateTime.ofInstant(Instant.ofEpochMilli(startAndEnd[0]), TimeZone.getDefault().toZoneId()),
+                startAndEnd[1] == null ? null : LocalDateTime.ofInstant(Instant.ofEpochMilli(startAndEnd[1]), TimeZone.getDefault().toZoneId())};
+    }
+
+    private static void updateStartAndEnd(Long[] startAndEnd, Long startTime, Long endTime) {
+        if (startTime != null && (startAndEnd[0] == null || startTime < startAndEnd[0])) {
+            startAndEnd[0] = startTime;
+        }
+        if (endTime != null && (startAndEnd[1] == null || endTime > startAndEnd[1])) {
+            startAndEnd[1] = endTime;
+        }
+    }
 }

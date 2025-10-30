@@ -74,10 +74,7 @@ public class ESSimEngine implements IStatusProvider {
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
-    static {
-//        objectMapper.
-    }
-
+    @Getter
     private final XMIResourceImpl esdlResource;
     private final Marker marker;
     private EssimLoadFlowController loadFlowController;

@@ -6,6 +6,7 @@ package nl.tno.essim.observation;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @AllArgsConstructor
 @Getter
+@ToString
 public class Observation implements IObservation {
 
     private LocalDateTime observedAt;
