@@ -8,10 +8,13 @@ import com.powsybl.iidm.network.Line;
 import com.powsybl.iidm.serde.XMLExporter;
 import com.powsybl.loadflow.LoadFlow;
 import com.powsybl.loadflow.LoadFlowParameters;
+import com.powsybl.loadflow.LoadFlowResult;
 import com.powsybl.nad.NetworkAreaDiagram;
 import com.powsybl.openloadflow.OpenLoadFlowParameters;
 import com.powsybl.openloadflow.OpenLoadFlowProvider;
+import com.powsybl.openloadflow.ac.solver.NewtonRaphsonFactory;
 import com.powsybl.openloadflow.network.SlackBusSelectionMode;
+import com.powsybl.sld.SingleLineDiagram;
 import esdl.*;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
@@ -95,13 +98,9 @@ public class EssimLoadFlowController {
 
     public void createNetwork(List<TransportSolver> solvers, List<EnergyAsset> assetList) {
         try {
-            Future<?> future = executor.submit(new Callable<>() {
-
-                @Override
-                public Object call() throws Exception {
-                    createNetworkInternal(solvers, assetList);
-                    return null;
-                }
+            Future<?> future = executor.submit(() -> {
+                createNetworkInternal(solvers, assetList);
+                return null;
             });
             future.get();
         } catch (InterruptedException ignored) {
@@ -159,6 +158,8 @@ public class EssimLoadFlowController {
         DataSource dataSource = Exporters.createDataSource(diagramsDir.resolve("essim-network-" + networkName + ".xml"));
         ex.export(network, new Properties(), dataSource);
         NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));
+        List<String> list = substationMap.values().stream().map(Substation::getId).toList();
+        list.forEach(i -> SingleLineDiagram.drawSubstation(network, i, diagramsDir.resolve("essim-network-" + networkName + "-substation-" + i + "-diagram.svg")));
 //        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
@@ -324,6 +325,13 @@ public class EssimLoadFlowController {
         AtomicInteger consumerCounter = new AtomicInteger();
         AtomicInteger storageCounter = new AtomicInteger();
         AtomicInteger conversionCounter = new AtomicInteger();
+        assetList.stream().filter(a -> a instanceof esdl.Bus).forEach(busAsset -> {
+            ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(busAsset, carriers);
+            VoltageLevel voltageLevel = getVoltageLevel(getSubStation(busAsset), carrier);
+            Bus bus = getBus(carrier, voltageLevel, busAsset);
+            carrierMap.put(bus.getId(), carrier);
+
+        });
         assetList.stream().filter(a -> a instanceof Producer).forEach(producer -> {
             ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(producer, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(producer), carrier);
@@ -336,7 +344,7 @@ public class EssimLoadFlowController {
             ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(consumer, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(consumer), carrier);
             Bus bus = getBus(carrier, voltageLevel, consumer);
-            Load load = createConsumer(voltageLevel, bus.getId(), consumer);
+            Generator load = createConsumer(voltageLevel, bus.getId(), consumer);
             carrierMap.put(load.getId(), carrier);
             consumerCounter.incrementAndGet();
         });
@@ -418,8 +426,14 @@ public class EssimLoadFlowController {
         String busId = "bus-" + ssString + voltageLevel.getId();
         Bus bus = busMap.get(busId);
         if (bus == null) {
-            bus = voltageLevel.getBusBreakerView().newBus().setId(busId).setName(busId).add();
-            log.trace(MarkerFactory.getMarker(networkName), "Creating bus with id {} in voltagelevel {}", busId, voltageLevel.getId());
+            String actualId = busId;
+            String actualName = busId;
+            if (asset instanceof esdl.Bus busAsset) {
+                actualId = busAsset.getId();
+                actualName = busAsset.getName() == "" ? busAsset.getId() : busAsset.getName();
+            }
+            bus = voltageLevel.getBusBreakerView().newBus().setId(actualId).setName(actualName).add();
+            log.info(MarkerFactory.getMarker(networkName), "Creating bus with id {} in voltagelevel {}", actualName, voltageLevel.getId());
             busMap.put(busId, bus);
         }
         return bus;
@@ -445,18 +459,30 @@ public class EssimLoadFlowController {
         AtomicReference<Object> result = new AtomicReference<>();
         conversion.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).findFirst().ifPresent(port -> {
             if (port instanceof InPort) {
-                Load load = voltageLevel.newLoad()
-                        .setBus(busId)
-                        .setConnectableBus(busId)
+                Generator generator = voltageLevel.newGenerator()
                         .setId("conversion-" + conversion.getId())
                         .setName(conversion.getName())
-                        .setP0(0)
-                        .setQ0(0)
+                        .setMinP(0)
+                        // Do we need to convert based on port???
+                        .setMaxP(conversion.getPower() / 1000.0)
+                        .setTargetP(0)
+                        .setTargetQ(0)
+                        .setBus(busId)
+                        .setConnectableBus(busId)
+                        .setVoltageRegulatorOn(true)
+                        .setTargetV(voltageLevel.getNominalV())
                         .add();
-                result.set(load);
-                translationMap.put(conversion.getId(), load);
-                reverseTranslationMap.put(load.getId(), conversion);
-                carrierMap.put(load.getId(), carrier);
+                generator.newMinMaxReactiveLimits()
+                        .setMinQ(-9999.99)
+                        .setMaxQ(9999.99);
+                log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a generator: {}", conversion.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
+                translationMap.put(conversion.getId(), generator);
+                reverseTranslationMap.put(generator.getId(), conversion);
+
+                result.set(conversion);
+                translationMap.put(conversion.getId(), conversion);
+                reverseTranslationMap.put(conversion.getId(), conversion);
+                carrierMap.put(conversion.getId(), carrier);
             } else if (port instanceof OutPort) {
                 Generator generator = voltageLevel.newGenerator()
                         .setId("conversion-" + conversion.getId())
@@ -504,23 +530,30 @@ public class EssimLoadFlowController {
         return battery;
     }
 
-    private Load createConsumer(VoltageLevel voltageLevel, String busId, EnergyAsset consumer) {
+    private Generator createConsumer(VoltageLevel voltageLevel, String busId, EnergyAsset consumer) {
         if (consumer.getPort().size() > 1) {
             log.error(MarkerFactory.getMarker(networkName), "with multiple ports not supported in loadflow for battery {} ({})", consumer.getName(), consumer.getId());
             throw new IllegalStateException("Consumers with multiple ports are not supported in loadflow");
         }
-        Load load = voltageLevel.newLoad()
-                .setBus(busId)
-                .setConnectableBus(busId)
+        Generator generator = voltageLevel.newGenerator()
                 .setId("consumer-" + consumer.getId())
                 .setName(consumer.getName())
-                .setP0(0)
-                .setQ0(0)
+                .setMinP(0)
+                .setMaxP(Double.MAX_VALUE)
+                .setTargetP(0)
+                .setTargetQ(0)
+                .setBus(busId)
+                .setConnectableBus(busId)
+                .setVoltageRegulatorOn(true)
+                .setTargetV(voltageLevel.getNominalV())
                 .add();
-        translationMap.put(consumer.getId(), load);
-        reverseTranslationMap.put(load.getId(), consumer);
-        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a load: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), load.toString());
-        return load;
+        generator.newMinMaxReactiveLimits()
+                .setMinQ(-9999.99)
+                .setMaxQ(9999.99);
+        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a generator: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
+        translationMap.put(consumer.getId(), generator);
+        reverseTranslationMap.put(generator.getId(), consumer);
+        return generator;
     }
 
     private Generator createProducer(VoltageLevel voltageLevel, String busId, Producer producer) {
@@ -554,12 +587,13 @@ public class EssimLoadFlowController {
         String assetId = observation.getTags().get("assetId");
         String assetName = observation.getTags().get("assetName");
         Double powerVal = (Double) observation.getValues().get("allocationPower");
-        Object o = translationMap.get(assetId);
-        if (powerVal == null || o == null) {
+        Object powsyblObject = translationMap.get(assetId);
+        if (powerVal == null || powsyblObject == null) {
             return;
         }
         // Powsybl default unit is kW, so we divide by 1000
         powerVal = powerVal / 1000.0;
+        log.trace(MarkerFactory.getMarker(networkName), "Power allocation for {} is {} kW", assetName, powerVal);
         EnergyAsset energyAsset = assetMap.get(assetId);
         Double maxPower = null;
         Double minPower = null;
@@ -572,17 +606,20 @@ public class EssimLoadFlowController {
             maxPower = ((CurtailmentStrategy) controlStrategy).getMaxPower() / 1000.0;
         }
 
-        if (o instanceof Load load) {
+        if (minPower != null || maxPower != null) {
+            log.trace(MarkerFactory.getMarker(networkName), "Power boundaries for {} are {} kW and {} kW", assetName, minPower, maxPower);
+        }
+        if (powsyblObject instanceof Load load) {
             load.setP0(Math.abs(powerVal)).setQ0(0);
-        } else if (o instanceof Generator generator) {
-            generator.setTargetP(Math.abs(powerVal));
+        } else if (powsyblObject instanceof Generator generator) {
+            generator.setTargetP(-powerVal);
             if (maxPower != null) {
-                generator.setMaxP(maxPower);
+                generator.setMaxP(-maxPower);
             }
             if (minPower != null) {
-                generator.setMinP(minPower);
+                generator.setMinP(-minPower);
             }
-        } else if (o instanceof Battery battery) {
+        } else if (powsyblObject instanceof Battery battery) {
             if (maxPower != null) {
                 battery.setMaxP(maxPower);
             }
@@ -605,13 +642,25 @@ public class EssimLoadFlowController {
 //                .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.LEAVE_ON_SLACK_BUS)
 //                .setSlackBusSelectionMode(SlackBusSelectionMode.LARGEST_GENERATOR)
                 .setSlackDistributionFailureBehavior(OpenLoadFlowParameters.SlackDistributionFailureBehavior.DISTRIBUTE_ON_REFERENCE_GENERATOR)
-                .setUseActiveLimits(false)
+//                .setUseActiveLimits(false)
+//                .setAcSolverType(FastDecoupledFactory.NAME)
+//                .setAcSolverType(NewtonKrylovFactory.NAME)
+                .setAcSolverType(NewtonRaphsonFactory.NAME)
+                .setMaxNewtonRaphsonIterations(100)
+                // The next two settings are for "Fast decoupled" AC solver
+//                .setLineSearchStateVectorScalingMaxIteration(4)
+//                .setLineSearchStateVectorScalingStepFold(3.0/2.0)
                 .setPlausibleActivePowerLimit(Double.MAX_VALUE);
 
         OpenLoadFlowProvider loadFlowProvider = new OpenLoadFlowProvider();
         LoadFlow.Runner loadFlowRunner = new LoadFlow.Runner(loadFlowProvider);
 
-        loadFlowRunner.run(network, parameters);
+        LoadFlowResult result = loadFlowRunner.run(network, parameters);
+        result.getComponentResults().forEach(cr -> {
+            if (cr.getStatus() != LoadFlowResult.ComponentResult.Status.CONVERGED && cr.getStatus() != LoadFlowResult.ComponentResult.Status.NO_CALCULATION) {
+                log.warn("At timestep {}: Component {} state is {} ({})", time, cr.getReferenceBusId(), cr.getStatus(), cr.getStatusText());
+            }
+        });
     }
 
     @NotNull
@@ -656,18 +705,21 @@ public class EssimLoadFlowController {
             @Override
             public void visitGenerator(Generator generator) {
                 Observation observation = createObservation(generator.getId(), generator.getTerminal(), timestamp);
+                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for generator {}: {}", generator.getId(), observation.toString());
                 observationMap.put(getObservationKey(observation), observation);
             }
 
             @Override
             public void visitLoad(Load load) {
                 Observation observation = createObservation(load.getId(), load.getTerminal(), timestamp);
+                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for load {}: {}", load.getId(), observation.toString());
                 observationMap.put(getObservationKey(observation), observation);
             }
 
             @Override
             public void visitBattery(Battery battery) {
                 Observation observation = createObservation(battery.getId(), battery.getTerminal(), timestamp);
+                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for battery {}: {}", battery.getId(), observation.toString());
                 observationMap.put(getObservationKey(observation), observation);
             }
 
@@ -686,6 +738,7 @@ public class EssimLoadFlowController {
                         .value(ObservationField.LOADFLOW_REACTIVE_POWER, q * 1000.0)
                         .value(ObservationField.LOADFLOW_CURRENT, line.getTerminal(side).getI())
                         .build();
+                log.trace(MarkerFactory.getMarker(networkName), "Adding observation for line {}: {}", line.getId(), observation.toString());
                 observationMap.put(getObservationKey(observation), observation);
                 super.visitLine(line, side);
             }
@@ -718,10 +771,18 @@ public class EssimLoadFlowController {
 
     private Observation createObservation(String id, Terminal terminal, EssimTime timestamp) {
         Carrier carrier = carrierMap.get(id);
-        Observation.ObservationBuilder builder = createObservationBuilder(timestamp, reverseTranslationMap.get(id), carrier);
-        Observation observation = builder.value(ObservationField.LOADFLOW_POWER, terminal.getP() * 1000.0)
+        EnergyAsset asset = reverseTranslationMap.get(id);
+        String assetName = asset.getName() == null ? "" : asset.getName();
+        assetName += "(" + asset.getId() + ")";
+        Observation.ObservationBuilder builder = createObservationBuilder(timestamp, asset, carrier);
+        double loadflowPower = terminal.getP() * 1000.0;
+        double loadflowReactivePower = terminal.getQ() * 1000.0;
+        if (Double.isNaN(loadflowPower) || Double.isNaN(loadflowReactivePower)) {
+            log.debug(MarkerFactory.getMarker(networkName), "Loadflow power is {} , reactive power is {} for asset {} with terminal {}", loadflowPower, loadflowReactivePower, assetName, terminal);
+        }
+        Observation observation = builder.value(ObservationField.LOADFLOW_POWER, loadflowPower)
                 .value(ObservationField.LOADFLOW_ENERGY, terminal.getP() * 1000.0 * timestamp.getSimulationStepLength().getSeconds())
-                .value(ObservationField.LOADFLOW_REACTIVE_POWER, terminal.getQ() * 1000.0)
+                .value(ObservationField.LOADFLOW_REACTIVE_POWER, loadflowReactivePower)
                 .build();
         return observation;
     }
