@@ -16,6 +16,7 @@
 
 package nl.tno.essim.transportsolver.nodes;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import esdl.Carrier;
@@ -92,18 +93,17 @@ public class RemoteLogicNode extends Node {
 
     private void publishConfig() {
         try {
-            ESSimEngine.getObjectMapper().createObjectNode()
-                    .put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()))
-                    .put("simulationId", simulationId).put("config", remoteConfig);
-            MqttMessage msg = new MqttMessage(ESSimEngine.getObjectMapper().createObjectNode().asText().getBytes());
+            ObjectNode node = ESSimEngine.getObjectMapper().createObjectNode();
+            node.put("esdlContents", Base64.getEncoder().encodeToString(esdlString.getBytes()));
+            node.put("simulationId", simulationId);
+            node.set("config", remoteConfig);
+            MqttMessage msg = new MqttMessage(ESSimEngine.getObjectMapper().writeValueAsBytes(node));
             this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/config", msg);
-        } catch (MqttException e) {
+        } catch (MqttException | JsonProcessingException e) {
             // FIXME this is now the default behavior
-            log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node asset info");
-            e.printStackTrace();
+            log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node asset info", e);
         }
     }
-
     @Override
     public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
         updateMarketInfo(marketInfo);
@@ -116,10 +116,10 @@ public class RemoteLogicNode extends Node {
                 .put("maxPrice", marketInfo.getMaxPrice().doubleValue())
                 .put("deltaPrice", marketInfo.getDeltaPrice().doubleValue()).put("carrierId", carrier.getId());
         try {
-            MqttMessage msg = new MqttMessage(message.asText().getBytes());
+            MqttMessage msg = new MqttMessage(ESSimEngine.getObjectMapper().writeValueAsBytes(message));
             this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/createBid", msg);
-        } catch (MqttException e) {
-            e.printStackTrace();
+        } catch (MqttException | JsonProcessingException e) {
+            log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node message", e);
         }
 
         /**
@@ -147,15 +147,15 @@ public class RemoteLogicNode extends Node {
                 .put("price", price).put("carrierId", carrier.getId());
 
         try {
-            MqttMessage msg = new MqttMessage(message.asText().getBytes());
+            MqttMessage msg = new MqttMessage(ESSimEngine.getObjectMapper().writeValueAsBytes(message));
             this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/allocate", msg);
-        } catch (MqttException e) {
-            e.printStackTrace();
+        } catch (MqttException | JsonProcessingException e) {
+            log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node message", e);
         }
     }
 
 
-        @Override
+    @Override
     public void processAllocation(EssimTime timestamp, ObservationBuilder observation) {
         if (role.equals(Role.CONSUMER)) {
             EmissionManager.getInstance(simulationId).addConsumer(networkId, asset, Math.abs(energy));
@@ -168,10 +168,10 @@ public class RemoteLogicNode extends Node {
         ObjectNode message = ESSimEngine.getObjectMapper().createObjectNode().put("carrierId", carrier.getId());
 
         try {
-            MqttMessage msg = new MqttMessage(message.asText().getBytes());
+            MqttMessage msg = new MqttMessage(ESSimEngine.getObjectMapper().writeValueAsBytes(message));
             this.client.publish(this.remoteLogicConfig.getMqttTopic() + "/node/" + nodeId + "/stop", msg);
-        } catch (MqttException e) {
-            e.printStackTrace();
+        } catch (MqttException | JsonProcessingException e) {
+            log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node message", e);
         }
     }
 
@@ -204,8 +204,7 @@ public class RemoteLogicNode extends Node {
                 }
             }
         } catch (Exception e) {
-            log.warn(MarkerFactory.getMarker(simulationId), "Error handling MQTT message: {}", e.getMessage());
-            log.trace(MarkerFactory.getMarker(simulationId), e.getMessage(), e);
+            log.warn(MarkerFactory.getMarker(simulationId), "Error handling MQTT message: {}", e.getMessage(), e);
         }
     }
 
