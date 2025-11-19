@@ -23,11 +23,7 @@ public class SingleValueProfileDataHandler implements ProfileDataHandler {
     @Override
     public EList<ProfileElement> getProfileElements(Date from, Date to, Duration aggregationPrecision) {
         ProfileElement profileElement = EsdlFactory.eINSTANCE.createProfileElement();
-        if (profile.getProfileType().equals(ProfileTypeEnum.UNDEFINED)) {
-            profileElement.setValue(Converter.toStandardizedUnits(profile.getValue(), profile.getProfileQuantityAndUnit()));
-        } else {
-            profileElement.setValue(Converter.toStandardizedUnits(profile.getValue(), profile.getProfileType()));
-        }
+        profileElement.setValue(Converter.toStandardizedUnits(profile.getValue(), profile.getProfileQuantityAndUnit()));
         profileElement.setFrom(from);
         profileElement.setTo(to);
         return ECollections.singletonEList(profileElement);
