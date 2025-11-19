@@ -89,10 +89,12 @@ public class InfluxDBObservationConsumer implements IObservationConsumer {
 
     @Override
     public void cleanup() {
-        // flush the content to the database. Don't close the connection, it can be reused or will be closed automatically
+        // flush the content to the database.
         InfluxDB influxDB = influx.getInfluxDB();
-        influxDB.flush();
-        influxDB.disableBatch();
+        if (influxDB.isBatchEnabled()) {
+            influxDB.flush();
+            influxDB.disableBatch();
+        }
         influx.close();
         log.debug("InfluxDB flush complete");
     }
