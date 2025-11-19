@@ -96,10 +96,9 @@ public class ProducerNode extends Node {
         }
         for (Port port : producer.getPort()) {
             if (port instanceof OutPort) {
-                GenericProfile producerProfile = ProfileUtils.getEnergyProfile(port);
-                if (producerProfile != null) {
+                if (!port.getProfile().isEmpty()) {
                     try {
-                        energyOutput = getEnergyOutput(timeStep, now, producerProfile, port);
+                        energyOutput = getEnergyOutput(timeStep, now, port);
                         break;
                     } catch (ProfileException e) {
                         log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for producer {}: {}", producerName, e.getMessage());

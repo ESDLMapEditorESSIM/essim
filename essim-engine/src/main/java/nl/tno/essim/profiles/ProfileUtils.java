@@ -5,18 +5,18 @@ import esdl.*;
 import java.util.Date;
 
 public class ProfileUtils {
-    public static GenericProfile getEnergyProfile(Port port) {
-        GenericProfile energyProfile = null;
-        for (GenericProfile profile : port.getProfile()) {
-            if (profile instanceof ProfileReference) {
-                profile = ((ProfileReference) profile).getReference();
-            }
-            if (isEnergyProfile(profile) || isPowerProfile(profile) || isPercentageProfile(profile)) {
-                energyProfile = profile;
-            }
-        }
-        return energyProfile;
-    }
+//    public static GenericProfile getEnergyProfile(Port port) {
+//        GenericProfile energyProfile = null;
+//        for (GenericProfile profile : port.getProfile()) {
+//            if (profile instanceof ProfileReference) {
+//                profile = ((ProfileReference) profile).getReference();
+//            }
+//            if (isEnergyProfile(profile) || isPowerProfile(profile) || isPercentageProfile(profile)) {
+//                energyProfile = profile;
+//            }
+//        }
+//        return energyProfile;
+//    }
 
 
     public static boolean isPowerProfile(GenericProfile profile) {

@@ -268,8 +268,7 @@ public class AbstractBasicConversionNode extends Node {
             }
         } else {
             // CONSUMER + DRIVENBYSUPPLY + NON-DRIVINGCARRIER
-            GenericProfile convProfile = ProfileUtils.getEnergyProfile(getConnectedPort());
-            makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
+            makeInflexibleProductionFunction(getConnectedPort(), getConversionName(), timeStep, now);
         }
     }
 
@@ -277,19 +276,16 @@ public class AbstractBasicConversionNode extends Node {
         DrivenByDemand drivenByDemand = (DrivenByDemand) controlStrategy;
         Carrier drivingCarrier = drivenByDemand.getOutPort().getCarrier();
         if (!drivingCarrier.equals(carrier) || specialConversion) {
-            GenericProfile convProfile;
             double energyOutput;
             InPort inputPort = (InPort) getConnectedPort();
-            if (inputPort != null) {
-                convProfile = ProfileUtils.getEnergyProfile(inputPort);
-            } else {
+            if (inputPort == null) {
                 // Impossible!
                 throw new IllegalStateException("Conversion " + conversionName + " should not exist in this network!");
             }
 
-            if (convProfile != null) {
+            if (!inputPort.getProfile().isEmpty()) {
                 try {
-                    energyOutput = getEnergyOutput(timeStep, now, convProfile, inputPort);
+                    energyOutput = getEnergyOutput(timeStep, now, inputPort);
                     makeInflexibleConsumptionFunction(energyOutput);
                 }
                 catch (ProfileException e) {
@@ -307,16 +303,13 @@ public class AbstractBasicConversionNode extends Node {
         Carrier drivingCarrier = drivenBySupply.getInPort().getCarrier();
         if (!drivingCarrier.equals(carrier) || specialConversion) {
             // PRODUCER + DRIVENBYSUPPLY + DRIVINGCARRIER
-            GenericProfile convProfile;
             OutPort outputPort = (OutPort) getConnectedPort();
-            if (outputPort != null) {
-                convProfile = ProfileUtils.getEnergyProfile(outputPort);
-            } else {
+            if (outputPort == null) {
                 // Impossible!
                 throw new IllegalStateException("Conversion " + conversionName + " should not exist in this network!");
             }
 
-            makeInflexibleProductionFunction(convProfile, conversionName, timeStep, now);
+            makeInflexibleProductionFunction(outputPort, conversionName, timeStep, now);
         }
     }
 
@@ -336,16 +329,15 @@ public class AbstractBasicConversionNode extends Node {
             }
         } else {
             // PRODUCER + DRIVENBYDEMAND + OTHER OUTPUT CARRIER
-            GenericProfile convProfile = ProfileUtils.getEnergyProfile(getConnectedPort());
-            makeInflexibleProductionFunction(convProfile, getConversionName(), timeStep, now);
+            makeInflexibleProductionFunction(getConnectedPort(), getConversionName(), timeStep, now);
         }
     }
 
-    protected void makeInflexibleProductionFunction(GenericProfile convProfile, String name, long timeStep,
+    protected void makeInflexibleProductionFunction(Port port, String name, long timeStep,
                                                     Horizon now) {
-        if (convProfile != null) {
+        if (!port.getProfile().isEmpty()) {
             try {
-                double energyOutput = getEnergyOutput(timeStep, now, convProfile, null);
+                double energyOutput = getEnergyOutput(timeStep, now, port);
                 makeInflexibleProductionFunction(energyOutput);
             }
             catch (ProfileException e) {

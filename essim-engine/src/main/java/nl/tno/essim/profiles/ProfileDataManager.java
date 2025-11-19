@@ -68,14 +68,11 @@ public class ProfileDataManager {
         EnergyAsset energyAsset = port.getEnergyasset();
         if (ProfileUtils.isPercentageProfile(profile)) {
             double ratedPower = 1.0;
-            if (energyAsset instanceof Producer) {
-                Producer producer = (Producer) energyAsset;
+            if (energyAsset instanceof Producer producer) {
                 ratedPower = producer.getPower();
-            } else if (energyAsset instanceof Consumer) {
-                Consumer consumer = (Consumer) energyAsset;
+            } else if (energyAsset instanceof Consumer consumer) {
                 ratedPower = consumer.getPower();
-            } else if (energyAsset instanceof AbstractBasicConversion) {
-                AbstractBasicConversion conversion = (AbstractBasicConversion) energyAsset;
+            } else if (energyAsset instanceof AbstractBasicConversion conversion) {
                 ratedPower = conversion.getPower();
             }
             final double power = ratedPower;

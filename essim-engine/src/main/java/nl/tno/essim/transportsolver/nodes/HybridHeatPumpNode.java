@@ -180,10 +180,9 @@ public class HybridHeatPumpNode extends Node {
 				// PRODUCER + DRIVENBYDEMAND
 				// At least one of the input ports was already solved, so read connected port
 				// and make an inflexible production curve
-				GenericProfile energyOutputProfile = ProfileUtils.getEnergyProfile(connectedPort);
                 double energyOutput = 0;
                 try {
-                    energyOutput = profileDataManager.readProfile(energyOutputProfile, now);
+                    energyOutput = getEnergyOutput(timeStep, now, connectedPort);
                 } catch (ProfileException e) {
                     log.error(MarkerFactory.getMarker(simulationId), "Error while reading energy output profile for HHP {}", hhpName, e);
 					throw new IllegalStateException("Error while reading energy output profile for HHP " + hhpName, e);
@@ -234,10 +233,9 @@ public class HybridHeatPumpNode extends Node {
 				// CONSUMER + DRIVENBYDEMAND
 				// Heat network was already solved at this point, so read connected port and
 				// make an inflexible consumption curve
-				GenericProfile energyInputProfile = ProfileUtils.getEnergyProfile(connectedPort);
                 double energyInput = 0;
                 try {
-                    energyInput = profileDataManager.readProfile(energyInputProfile, now);
+                    energyInput = getEnergyOutput(timeStep, now, connectedPort);
                 } catch (ProfileException e) {
                     log.error(MarkerFactory.getMarker(simulationId), "Error while reading energy input profile for HHP {}", hhpName, e);
 					throw new RuntimeException("Error while reading energy input profile for HHP " + hhpName, e);

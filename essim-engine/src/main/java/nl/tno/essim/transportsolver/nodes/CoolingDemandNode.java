@@ -1,17 +1,17 @@
 /**
- *  This work is based on original code developed and copyrighted by TNO 2020. 
- *  Subsequent contributions are licensed to you by the developers of such code and are
- *  made available to the Project under one or several contributor license agreements.
- *
- *  This work is licensed to you under the Apache License, Version 2.0.
- *  You may obtain a copy of the license at
- * 
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Contributors:
- *      TNO         - Initial implementation
- *  Manager:
- *      TNO
+ * This work is based on original code developed and copyrighted by TNO 2020.
+ * Subsequent contributions are licensed to you by the developers of such code and are
+ * made available to the Project under one or several contributor license agreements.
+ * <p>
+ * This work is licensed to you under the Apache License, Version 2.0.
+ * You may obtain a copy of the license at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Contributors:
+ * TNO         - Initial implementation
+ * Manager:
+ * TNO
  */
 
 package nl.tno.essim.transportsolver.nodes;
@@ -45,92 +45,88 @@ import org.slf4j.MarkerFactory;
 @Slf4j
 public class CoolingDemandNode extends Node {
 
-	private CoolingDemand consumer;
-	private Horizon now;
-	private long timeStep;
-	private double power;
-	private OutPort profilePort;
-	private CostInformation costInformation;
-	private String consumerName;
-	private GenericProfile marginalCostProfile;
-	private GenericProfile costProfile;
+    private CoolingDemand consumer;
+    private Horizon now;
+    private long timeStep;
+    private double power;
+    private OutPort profilePort;
+    private CostInformation costInformation;
+    private String consumerName;
+    private GenericProfile marginalCostProfile;
+    private GenericProfile costProfile;
 
-	@Builder(builderMethodName = "consumerNodeBuilder")
-	public CoolingDemandNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
-			int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
-			Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
-		super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction,
-				energy, cost, parent, carrier, children, timeStep, now, connectedPort);
-		this.consumer = (CoolingDemand) asset;
-		this.consumerName = consumer.getName() == null ? consumer.getId() : consumer.getName();
-		this.power = consumer.getPower();
-		this.costInformation = consumer.getCostInformation();
-		if (costInformation != null) {
-			marginalCostProfile = costInformation.getMarginalCosts();
-		}
-		for (Port port : consumer.getPort()) {
-			if (port instanceof OutPort) {
-				profilePort = (OutPort) port;
-				costProfile = profilePort.getCarrier().getCost();
-				break;
-			}
-		}
-	}
-
-	@Override
-	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
-		updateMarketInfo(marketInfo);
-		double energyOutput = Double.NaN;
-		GenericProfile convProfile = null;
-		if (profilePort != null) {
-			convProfile = ProfileUtils.getEnergyProfile(profilePort);
-		}
-
-		// Checks if an asset is operational (accounts for Commissioning and
-		// Decommissioning date)
-		if (!isOperational(now)) {
-			makeInflexibleConsumptionFunction(0);
-			return;
-		}
-		if (convProfile != null) {
-            try {
-                energyOutput = getEnergyOutput(timeStep, now, convProfile, profilePort);
-            } catch (ProfileException e) {
-				log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for consumer {}: {}", consumerName, e.getMessage());
+    @Builder(builderMethodName = "consumerNodeBuilder")
+    public CoolingDemandNode(String simulationId, String nodeId, String address, String networkId, EnergyAsset asset,
+                             int directionFactor, Role role, BidFunction demandFunction, double energy, double cost,
+                             Node parent, Carrier carrier, List<Node> children, long timeStep, Horizon now, Port connectedPort) {
+        super(simulationId, nodeId, address, networkId, asset, directionFactor, role, demandFunction,
+                energy, cost, parent, carrier, children, timeStep, now, connectedPort);
+        this.consumer = (CoolingDemand) asset;
+        this.consumerName = consumer.getName() == null ? consumer.getId() : consumer.getName();
+        this.power = consumer.getPower();
+        this.costInformation = consumer.getCostInformation();
+        if (costInformation != null) {
+            marginalCostProfile = costInformation.getMarginalCosts();
+        }
+        for (Port port : consumer.getPort()) {
+            if (port instanceof OutPort) {
+                profilePort = (OutPort) port;
+                costProfile = profilePort.getCarrier().getCost();
+                break;
             }
         }
-		if (!Double.isNaN(energyOutput)) {
-			makeInflexibleProductionFunction(energyOutput);
-		} else {
-			try {
-				energyOutput = timeStep * power;
-				if (marginalCostProfile != null) {
-					Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
-					if (Double.isNaN(aggregateCost)) {
-						aggregateCost = getDefaultMarginalCost();
-					}
-					setCost(aggregateCost);
-				} else if (costProfile != null) {
-					Double aggregateCost = profileDataManager.readProfile(costProfile, now);
-					if (Double.isNaN(aggregateCost)) {
-						aggregateCost = getDefaultMarginalCost();
-					}
-					setCost(aggregateCost);
-				} else {
-					setCost(getDefaultMarginalCost());
-				}
-			}catch (ProfileException e) {
-				log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for consumer {}: {}", consumerName, e.getMessage());
-				setCost(getDefaultMarginalCost());
-			}
-			makeAdjustableProductionFunction(energyOutput);
-		}
-	}
+    }
 
-	@Override
-	public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
-		builder.tag("capability", "Consumer");
-		EmissionManager.getInstance(simulationId).addProducer(networkId, consumer, Math.abs(energy));
-	}
+    @Override
+    public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
+        updateMarketInfo(marketInfo);
+        double energyOutput = Double.NaN;
+
+        // Checks if an asset is operational (accounts for Commissioning and
+        // Decommissioning date)
+        if (!isOperational(now)) {
+            makeInflexibleConsumptionFunction(0);
+            return;
+        }
+        if (profilePort != null && !profilePort.getProfile().isEmpty()) {
+            try {
+                energyOutput = getEnergyOutput(timeStep, now, profilePort);
+            } catch (ProfileException e) {
+                log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for consumer {}: {}", consumerName, e.getMessage());
+            }
+        }
+        if (!Double.isNaN(energyOutput)) {
+            makeInflexibleProductionFunction(energyOutput);
+        } else {
+            try {
+                energyOutput = timeStep * power;
+                if (marginalCostProfile != null) {
+                    Double aggregateCost = profileDataManager.readProfile(marginalCostProfile, now);
+                    if (Double.isNaN(aggregateCost)) {
+                        aggregateCost = getDefaultMarginalCost();
+                    }
+                    setCost(aggregateCost);
+                } else if (costProfile != null) {
+                    Double aggregateCost = profileDataManager.readProfile(costProfile, now);
+                    if (Double.isNaN(aggregateCost)) {
+                        aggregateCost = getDefaultMarginalCost();
+                    }
+                    setCost(aggregateCost);
+                } else {
+                    setCost(getDefaultMarginalCost());
+                }
+            } catch (ProfileException e) {
+                log.error(MarkerFactory.getMarker(simulationId), "Error while reading cost profile for consumer {}: {}", consumerName, e.getMessage());
+                setCost(getDefaultMarginalCost());
+            }
+            makeAdjustableProductionFunction(energyOutput);
+        }
+    }
+
+    @Override
+    public void processAllocation(EssimTime timestamp, ObservationBuilder builder) {
+        builder.tag("capability", "Consumer");
+        EmissionManager.getInstance(simulationId).addProducer(networkId, consumer, Math.abs(energy));
+    }
 
 }

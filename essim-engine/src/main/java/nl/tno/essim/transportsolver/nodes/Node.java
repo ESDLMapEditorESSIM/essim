@@ -537,6 +537,13 @@ public abstract class Node implements INode {
             }
         }
     }
+    protected double getEnergyOutput(long timeStep, Horizon now,Port port) throws ProfileException {
+        double energyOutput = 0;
+        for (var profile : port.getProfile()) {
+            energyOutput += getEnergyOutput(timeStep, now, profile, port);
+        }
+        return energyOutput;
+    }
 
     protected double getEnergyOutput(long timeStep, Horizon now, GenericProfile profile, Port port) throws ProfileException {
         double energyOutput;

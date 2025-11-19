@@ -81,7 +81,7 @@ public class ConsumerNode extends Node {
 	public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
 		updateMarketInfo(marketInfo);
 		double energyOutput = Double.NaN;
-		GenericProfile consumerProfile = ProfileUtils.getEnergyProfile(inputPort);
+//		GenericProfile consumerProfile = ProfileUtils.getEnergyProfile(inputPort);
 
 		// Checks if an asset is operational (accounts for Commissioning and
 		// Decommissioning date)
@@ -89,9 +89,9 @@ public class ConsumerNode extends Node {
 			makeInflexibleConsumptionFunction(0);
 			return;
 		}
-		if (consumerProfile != null) {
+		if (!connectedPort.getProfile().isEmpty()) {
             try {
-                energyOutput = getEnergyOutput(timeStep, now, consumerProfile, inputPort);
+                energyOutput = getEnergyOutput(timeStep, now, inputPort);
             } catch (ProfileException e) {
                 log.error(MarkerFactory.getMarker(simulationId), "Error while reading profile for consumer {}: {}", consumerName, e.getMessage());
 				throw new RuntimeException(e);
