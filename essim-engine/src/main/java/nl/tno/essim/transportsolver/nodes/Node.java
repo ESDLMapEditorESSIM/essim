@@ -245,7 +245,7 @@ public abstract class Node implements INode {
     }
 
     public void makeInflexibleProductionFunction(double emax) {
-        if (emax <= BidFunction.DELTA_POWER.doubleValue()) {
+        if (Math.abs(emax) <= BidFunction.DELTA_POWER.doubleValue()) {
             emax = 0;
         }
         energy = -emax;
@@ -262,7 +262,7 @@ public abstract class Node implements INode {
     }
 
     public void makeInflexibleConsumptionFunction(double emax) {
-        if (emax <= BidFunction.DELTA_POWER.doubleValue()) {
+        if (Math.abs(emax) <= BidFunction.DELTA_POWER.doubleValue()) {
             emax = 0;
         }
         energy = emax;
