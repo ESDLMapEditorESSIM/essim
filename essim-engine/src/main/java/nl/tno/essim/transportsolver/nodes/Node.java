@@ -54,6 +54,7 @@ public abstract class Node implements INode {
     @Getter
     @Setter
     private static boolean storeBidCurves = System.getenv().containsKey("STORE_BIDCURVES");
+    private static boolean sumProfiles = System.getenv().containsKey("SUM_PROFILES");
 
     protected String simulationId;
     protected String nodeId;
@@ -545,7 +546,7 @@ public abstract class Node implements INode {
             energyOutput += getEnergyOutput(timeStep, now, profile, port);
             profiles++;
         }
-        if (profiles > 1) {
+        if (!sumProfiles && profiles > 1) {
             throw new IllegalStateException("More than one energy profile found for port " + port.getName() + " of " + asset.getName());
         }
         return energyOutput;
