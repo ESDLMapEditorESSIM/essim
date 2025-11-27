@@ -537,10 +537,16 @@ public abstract class Node implements INode {
             }
         }
     }
-    protected double getEnergyOutput(long timeStep, Horizon now,Port port) throws ProfileException {
+
+    protected double getEnergyOutput(long timeStep, Horizon now, Port port) throws ProfileException {
         double energyOutput = 0;
+        int profiles = 0;
         for (var profile : port.getProfile()) {
             energyOutput += getEnergyOutput(timeStep, now, profile, port);
+            profiles++;
+        }
+        if (profiles > 1) {
+            throw new IllegalStateException("More than one energy profile found for port " + port.getName() + " of " + asset.getName());
         }
         return energyOutput;
     }
@@ -553,7 +559,7 @@ public abstract class Node implements INode {
             energyOutput = timeStep * profileDataManager.readProfile(profile, now);
         } else if (ProfileUtils.isEnergyProfile(profile)) {
             energyOutput = profileDataManager.readProfile(profile, now);
-        }else if (ProfileUtils.isPercentageProfile(profile) && port != null) {
+        } else if (ProfileUtils.isPercentageProfile(profile) && port != null) {
             energyOutput = timeStep * profileDataManager.readProfile(profile, port, now);
         } else {
             log.warn(MarkerFactory.getMarker(simulationId), "Profile of port {} of {} is neither Power nor Energy!", portName, assetName);
