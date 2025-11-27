@@ -93,6 +93,7 @@ public class EssimLoadFlowController {
 
     public EssimLoadFlowController(String simulationId) {
         this.networkName = simulationId;
+        // We create a single thread executor to avoid concurrent access to the powsybl network.
         executor = Executors.newSingleThreadExecutor(threadFactory);
     }
 
@@ -102,6 +103,7 @@ public class EssimLoadFlowController {
                 createNetworkInternal(solvers, assetList);
                 return null;
             });
+            // Wait for the network to be created
             future.get();
         } catch (InterruptedException ignored) {
         } catch (Exception e) {
@@ -152,6 +154,13 @@ public class EssimLoadFlowController {
         exportNetwork();
     }
 
+    /**
+     * Exports the current state of the network to an XML file and generates visual diagrams
+     * for the entire network as well as individual substations. The exported XML and
+     * diagrams are stored in a temporary directory.
+     *
+     * @throws IOException if an error occurs during file or directory operations, or while exporting the network.
+     */
     private void exportNetwork() throws IOException {
         Exporter ex = new XMLExporter();
         Path diagramsDir = Paths.get(System.getProperty("java.io.tmpdir"), "diagrams");
@@ -161,9 +170,9 @@ public class EssimLoadFlowController {
         DataSource dataSource = Exporters.createDataSource(diagramsDir.resolve("essim-network-" + networkName + ".xml"));
         ex.export(network, new Properties(), dataSource);
         NetworkAreaDiagram.draw(network, diagramsDir.resolve("essim-network-" + networkName + "-diagram.svg"));
-        List<String> list = substationMap.values().stream().map(Substation::getId).toList();
-        list.forEach(i -> SingleLineDiagram.drawSubstation(network, i, diagramsDir.resolve("essim-network-" + networkName + "-substation-" + i + "-diagram.svg")));
-//        SingleLineDiagram.drawMultiSubstations(network, voltageLevelMap.values().stream().map(v -> v.getSubstation().get().getId()).toList(), Paths.get("diagrams", "essim-network-" + networkName + "-single-line-diagram.svg"));
+        List<String> list = substationMap.values().stream().distinct().map(Substation::getId).toList();
+//        list.forEach(i -> SingleLineDiagram.drawSubstation(network, i, diagramsDir.resolve("essim-network-" + networkName + "-substation-" + i + "-diagram.svg")));
+        SingleLineDiagram.drawMultiSubstations(network, list, diagramsDir.resolve("essim-network-" + networkName + "-single-line-diagram.svg"));
     }
 
     private void createTransformers(List<EnergyAsset> assetList) {
@@ -243,8 +252,8 @@ public class EssimLoadFlowController {
             Port connected2 = Commons.getConnectedPorts(port2).stream().filter(p -> !(p.getEnergyasset() instanceof ElectricityCable)).findAny().get();
             VoltageLevel voltageLevel1 = getVoltageLevel(getSubStation(connected1.getEnergyasset()), (ElectricityCommodity) connected1.getCarrier());
             VoltageLevel voltageLevel2 = getVoltageLevel(getSubStation(connected2.getEnergyasset()), (ElectricityCommodity) connected2.getCarrier());
-            Bus bus1 = getBus((ElectricityCommodity) carrier, voltageLevel1, cable);
-            Bus bus2 = getBus((ElectricityCommodity) carrier, voltageLevel2, cable);
+            Bus bus1 = getBus((ElectricityCommodity) carrier, voltageLevel1, connected1.getEnergyasset());
+            Bus bus2 = getBus((ElectricityCommodity) carrier, voltageLevel2, connected2.getEnergyasset());
             int parallelLines = Math.max(cable.getAggregationCount(), 1);
             String cableTypeName = cable.getAssetType();
             CableSpec cableSpec = CableSpec.getCableSpec(cableTypeName);
@@ -497,8 +506,7 @@ public class EssimLoadFlowController {
             // TODO do we need to convert based on port?
             if (port instanceof InPort) {
                 generatorAdder.setMinP(-conversion.getPower() / 1000.0);
-            }
-            else if (port instanceof OutPort) {
+            } else if (port instanceof OutPort) {
                 generatorAdder.setMaxP(conversion.getPower() / 1000.0);
             }
             Generator generator = generatorAdder.add();
