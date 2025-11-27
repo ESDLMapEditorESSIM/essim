@@ -58,7 +58,7 @@ public class EssimLoadFlowController {
      */
     private final Map<String, Carrier> carrierMap = new HashMap<>();
     /**
-     * The carrier name map is used to lookup which observer name we should use per carrier
+     * The carrier solver map is used to lookup which observer name we should use per carrier
      */
     private final Map<String, TransportSolver> carrierSolverMap = new HashMap<>();
     /**
@@ -138,14 +138,16 @@ public class EssimLoadFlowController {
         // Now we create the assets per carrier
         solvers.stream().filter(s -> s.getCarriers().iterator().next() instanceof ElectricityCommodity).forEach(solver -> {
             Set<EnergyAsset> connectedAssets = solver.getRoleMap().keySet();
-            // Create the network elements for solvers
+            // Create the (producer/consumer/conversion) network elements for solvers
             createAssets(connectedAssets, solver.getCarriers());
         });
         // Create the transformers connecting the carriers
         createTransformers(assetList);
-        // Now we create the lines
+        // Now we create the transport lines
         createLines(assetList, network);
+        // Fill the carrierSolverMap
         solvers.forEach(solver -> solver.getCarriers().forEach(c -> carrierSolverMap.put(c.getId(), solver)));
+        // Fill the asset id map
         assetMap = assetList.stream().collect(Collectors.toMap(EnergyAsset::getId, a -> a));
         exportNetwork();
     }
@@ -315,6 +317,13 @@ public class EssimLoadFlowController {
         return busIdMap.get(id);
     }
 
+    /**
+     * Retrieves the carrier associated with a port of the given energy asset that matches one of the carriers in the specified set.
+     *
+     * @param energyAsset the energy asset containing ports to be evaluated
+     * @param carriers    the set of carriers to match with the ports of the energy asset
+     * @return the carrier associated with a matching port, or null if no match is found
+     */
     private Carrier getConnectedCarrier(EnergyAsset energyAsset, Set<Carrier> carriers) {
         for (Port port : energyAsset.getPort()) {
             if (carriers.contains(port.getCarrier())) {
@@ -330,6 +339,8 @@ public class EssimLoadFlowController {
         AtomicInteger consumerCounter = new AtomicInteger();
         AtomicInteger storageCounter = new AtomicInteger();
         AtomicInteger conversionCounter = new AtomicInteger();
+        // We will first create a bus for each bus in the ESDL file. More buses will probably be created based on the
+        // connections in the ESDL file
         assetList.stream().filter(a -> a instanceof esdl.Bus).forEach(busAsset -> {
             ElectricityCommodity carrier = (ElectricityCommodity) getConnectedCarrier(busAsset, carriers);
             VoltageLevel voltageLevel = getVoltageLevel(getSubStation(busAsset), carrier);
@@ -378,17 +389,27 @@ public class EssimLoadFlowController {
         }
         Substation substation = substationMap.get(asset.getId());
         if (substation == null) {
+            // We get a sorted list of all the assets that belong to this substation.
             List<EnergyAsset> list = getSubstationAssets(asset.getPort());
+            // The id of the substation is a concatenation of all the names or (part of) the ids of the contained assets
             String id = "substation-" + list.stream().map(a -> a.getName() == null || "".equals(a.getName()) ? a.getId().substring(0, 4) : a.getName()).collect(Collectors.joining("-"));
             Substation newSubstation = network.newSubstation().setId(id).setCountry(Country.NL).add();
+            // Add all the assets to the map, mapping to this new substation
             substationMap.putAll(list.stream().collect(Collectors.toMap(EnergyAsset::getId, a -> newSubstation)));
             log.trace(MarkerFactory.getMarker(networkName), "Creating substation {} for assets: {}", id, list.stream().map(EnergyAsset::getName).collect(Collectors.joining(", ")));
-
             substation = newSubstation;
         }
         return substation;
     }
 
+    /**
+     * Get a list of energy assets that should be together in a substation. This is done by recursively finding all the
+     * assets that are connected directly to the given list of ports. 'Connected directly' in this case means they are
+     * connected, but not through electricity cables (asset type {@code ElectricityCable}).
+     *
+     * @param ports the list of ports to analyze and determine connected energy assets.
+     * @return a list of distinct {@code EnergyAsset} objects, somehow connected to the given ports.
+     */
     private List<EnergyAsset> getSubstationAssets(List<Port> ports) {
         HashSet<Port> portSet = new HashSet<>();
         addSubstationInternalPorts(ports, portSet);
