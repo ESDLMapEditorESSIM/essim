@@ -112,22 +112,23 @@ public class EssimLoadFlowController {
     private void createNetworkInternal(List<TransportSolver> solvers, List<EnergyAsset> assetList) throws IOException {
         /*
          * We may need a substation, because many elements can only be created in a substation
-         * Substations contain voltagelevels and transformers
-         * Voltagelevels contain generators, loads and batteries. And buses and breakers (in busbreaker view getBusBreakerView().newBus())
-         *                                                        OR nodes, but I don't understand nodes yet
+         * Substations contain voltage levels and transformers
+         * VoltageLevels contain generators, loads and batteries. And buses and breakers (in busbreaker view getBusBreakerView().newBus())
+         *                                                        OR nodes, but we don't use nodes
          * Network contains substations and lines and voltage levels. And also subnetworks....
          *
          * So we group devices based on connections. If devices are connected to each other without an electricity cable
          * between then, or they are connected to the same Bus or ElectricalConnection they will be grouped together in
-         * the same substation and voltage level. Grouping is done in getSortedSubStationPortList(). A bus will be created
-         * in the voltage level and it will get an ID based on this list. All the ports in the group will then be connected
-         * to this bus.
+         * the same substation and voltage level. A bus will be created in the voltage level and it will get an ID based
+         * on this list. All the ports in the group will then be connected to this bus.
          *
          * Then we will create:
-         * - A generator for a produce
-         * - A load for a consumer
+         * - A generator for a producer
+         * - A generator (not a load) for a consumer (this is done to allow flexibility. When we choose a load, the power
+         *      consumption cannot be changed. A generator with negative production can change the power consumption based
+         *      on the rest of the network)
          * - A Battery for a storage
-         * - A generator OR a load for a conversion, based of the type of conversion
+         * - A generator for a conversion
          * - A line for each line
          */
         log.info(MarkerFactory.getMarker(networkName), "Creating powsybl network {}", networkName);
@@ -462,52 +463,35 @@ public class EssimLoadFlowController {
     private Object createConversion(VoltageLevel voltageLevel, ElectricityCommodity carrier, String busId, AbstractBasicConversion conversion) {
         AtomicReference<Object> result = new AtomicReference<>();
         conversion.getPort().stream().filter(p -> p.getCarrier().equals(carrier)).findFirst().ifPresent(port -> {
+            GeneratorAdder generatorAdder = voltageLevel.newGenerator()
+                    .setId("conversion-" + conversion.getId())
+                    .setName(conversion.getName())
+                    .setMinP(0)
+                    .setTargetP(0)
+                    .setTargetQ(0)
+                    .setBus(busId)
+                    .setConnectableBus(busId)
+                    .setVoltageRegulatorOn(true)
+                    .setTargetV(voltageLevel.getNominalV());
+            // TODO do we need to convert based on port?
             if (port instanceof InPort) {
-                Generator generator = voltageLevel.newGenerator()
-                        .setId("conversion-" + conversion.getId())
-                        .setName(conversion.getName())
-                        .setMinP(0)
-                        // Do we need to convert based on port???
-                        .setMaxP(conversion.getPower() / 1000.0)
-                        .setTargetP(0)
-                        .setTargetQ(0)
-                        .setBus(busId)
-                        .setConnectableBus(busId)
-                        .setVoltageRegulatorOn(true)
-                        .setTargetV(voltageLevel.getNominalV())
-                        .add();
-                generator.newMinMaxReactiveLimits()
-                        .setMinQ(-9999.99)
-                        .setMaxQ(9999.99);
-                log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a generator: {}", conversion.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
-                translationMap.put(conversion.getId(), generator);
-                reverseTranslationMap.put(generator.getId(), conversion);
-
-                result.set(conversion);
-                translationMap.put(conversion.getId(), conversion);
-                reverseTranslationMap.put(conversion.getId(), conversion);
-                carrierMap.put(conversion.getId(), carrier);
-            } else if (port instanceof OutPort) {
-                Generator generator = voltageLevel.newGenerator()
-                        .setId("conversion-" + conversion.getId())
-                        .setName(conversion.getName())
-                        .setBus(busId)
-                        .setConnectableBus(busId)
-                        // Do we need to convert based on port???
-                        .setMaxP(conversion.getPower() / 1000.0)
-                        .setMinP(0)
-                        .setTargetP(0)
-                        .setTargetQ(0)
-                        .setVoltageRegulatorOn(false)
-                        .add();
-                result.set(generator);
-                translationMap.put(conversion.getId(), generator);
-                reverseTranslationMap.put(generator.getId(), conversion);
-                carrierMap.put(generator.getId(), carrier);
-            } else {
-                log.error(MarkerFactory.getMarker(networkName), "Port type {} is not supported in loadflow", port.getClass().getSimpleName());
-                throw new IllegalStateException("Port type " + port + " is not supported in loadflow");
+                generatorAdder.setMinP(-conversion.getPower() / 1000.0);
             }
+            else if (port instanceof OutPort) {
+                generatorAdder.setMaxP(conversion.getPower() / 1000.0);
+            }
+            Generator generator = generatorAdder.add();
+            generator.newMinMaxReactiveLimits()
+                    .setMinQ(-9999.99)
+                    .setMaxQ(9999.99);
+            log.trace(MarkerFactory.getMarker(networkName), "Conversion asset {} is implemented as a generator: {}", conversion.getClass().getInterfaces()[0].getSimpleName(), generator);
+            translationMap.put(conversion.getId(), generator);
+            reverseTranslationMap.put(generator.getId(), conversion);
+
+            result.set(conversion);
+            translationMap.put(conversion.getId(), conversion);
+            reverseTranslationMap.put(conversion.getId(), conversion);
+            carrierMap.put(conversion.getId(), carrier);
         });
         return result.get();
     }
@@ -554,7 +538,7 @@ public class EssimLoadFlowController {
         generator.newMinMaxReactiveLimits()
                 .setMinQ(-9999.99)
                 .setMaxQ(9999.99);
-        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a generator: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
+        log.trace(MarkerFactory.getMarker(networkName), "Consumer asset {} is implemented as a generator: {}", consumer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
         translationMap.put(consumer.getId(), generator);
         reverseTranslationMap.put(generator.getId(), consumer);
         return generator;
@@ -581,7 +565,7 @@ public class EssimLoadFlowController {
         generator.newMinMaxReactiveLimits()
                 .setMinQ(-9999.99)
                 .setMaxQ(9999.99);
-        log.trace(MarkerFactory.getMarker(networkName), "Asset {} is implemented as a generator: {}", producer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
+        log.trace(MarkerFactory.getMarker(networkName), "Producer asset {} is implemented as a generator: {}", producer.getClass().getInterfaces()[0].getSimpleName(), generator.toString());
         translationMap.put(producer.getId(), generator);
         reverseTranslationMap.put(generator.getId(), producer);
         return generator;
