@@ -104,6 +104,7 @@ public class RemoteLogicNode extends Node {
             log.warn(MarkerFactory.getMarker(simulationId), "Unable to send node asset info", e);
         }
     }
+
     @Override
     public void createBidCurve(long timeStep, Horizon now, Market marketInfo) {
         updateMarketInfo(marketInfo);
@@ -193,7 +194,7 @@ public class RemoteLogicNode extends Node {
                     }
                     this.demandFunction = new BidFunction(getMinMarketPrice(), getMaxMarketPrice(), getDeltaPrice(),
                             list.toArray(new double[][]{}));
-                    log.debug(MarkerFactory.getMarker(simulationId), "Received for timestep " + timestep + ", carrier " + carrierId + ", bid curve is "
+                    log.trace(MarkerFactory.getMarker(simulationId), "Received for timestep " + timestep + ", carrier " + carrierId + ", bid curve is "
                             + point.substring(0, point.length() - 1));
 
                     // Resume the createBidCurve thread
