@@ -19,7 +19,8 @@
       "refId": "A",
       "rawSql": "SELECT timestamp '1-1-1970' as time, simDescription FROM $ScenarioName$.ESSIM WHERE tags->>'simulationRun' = '$SimulationRun$'",
       "rawQuery": true,
-      "resultFormat": "time_series"
+      "resultFormat": "time_series",
+      "format": "time_series"
     }
   ]
 ,

@@ -168,7 +168,8 @@
       "rawSql": "SELECT time,imbalanceEnergy * -1 AS Imbalance FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$') ORDER BY time ASC",
       "rawQuery": true,
       "alias": "Imbalance",
-      "resultFormat": "time_series"
+      "resultFormat": "time_series",
+      "format": "time_series"
     },
     {
       "measurement": "$$$TRANSPORT-SOLVER-NAME$$$",
@@ -176,7 +177,8 @@
       "rawSql": "SELECT time,soc FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE tags->>'simulationRun' = '$SimulationRun$' AND tags->>'capability' = 'Storage' ORDER BY time ASC",
       "rawQuery": true,
       "alias": "SOC",
-      "resultFormat": "time_series"
+      "resultFormat": "time_series",
+      "format": "time_series"
     },
     {
       "refId": "D",

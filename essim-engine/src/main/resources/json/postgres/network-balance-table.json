@@ -16,7 +16,8 @@
       "rawSql": "SELECT timestamp '1970-01-01' as time, result_value AS average_imbalance_energy,group_by_label AS transportNetworkId FROM $ScenarioName$.execute_query_on_multiple_tables('$ScenarioName$', 'SELECT tags->>''transportNetworkId'' as group_by_label, AVG(imbalanceEnergy) AS result_value FROM {TABLE_NAME} GROUP BY tags->>''transportNetworkId''') where result_value is not null;",
       "rawQuery": true,
       "alias": "$tag_transportNetworkId",
-      "resultFormat": "time_series"
+      "resultFormat": "time_series",
+      "format": "time_series"
     }
   ],
   "options": {

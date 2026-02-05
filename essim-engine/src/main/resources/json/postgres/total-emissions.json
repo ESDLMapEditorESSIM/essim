@@ -15,7 +15,8 @@
       "refId": "A",
       "resultFormat": "time_series",
       "rawSql": "SELECT timestamp '1970-01-01' as time, result_value FROM $ScenarioName$.execute_query_on_multiple_tables('$ScenarioName$', 'SELECT ''none'' as group_by_label, SUM(emission) AS result_value FROM {TABLE_NAME} WHERE (tags->>''simulationRun'' = ''$$SimulationRunName$$'' AND tags->>''capability'' = ''Producer'')') WHERE result_value IS NOT NULL",
-      "rawQuery": true
+      "rawQuery": true,
+      "format": "time_series"
     }
   ],
   "options": {},

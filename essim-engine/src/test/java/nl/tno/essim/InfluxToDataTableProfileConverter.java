@@ -69,7 +69,7 @@ public class InfluxToDataTableProfileConverter {
     static String convertInfluxToInflux(EnergySystem energySystem, Path origPath) throws IOException {
         HashMap<String, String> postgresMap = new HashMap<>();
         postgresMap.put("http://geis:8086", "http://influxdb:8086");
-        postgresMap.put("http://localhost:8086", "http://indlfuxdb:8086");
+        postgresMap.put("http://localhost:8086", "http://influxdb:8086");
         postgresMap.put("http://influxdb:8086", "http://influxdb:8086");
         convert(energySystem, postgresMap, DatabaseTypeEnum.INFLUXDB);
         String newEsdl = ESDLUtil.ecoreResourceToString(energySystem);

@@ -156,7 +156,8 @@
       "query": "SELECT time,imbalancePower * -1 AS Imbalance FROM $ScenarioName$.$$$TRANSPORT-SOLVER-NAME$$$ WHERE (tags->>'simulationRun' = '$SimulationRun$') ORDER BY time ASC",
       "rawQuery": true,
       "resultFormat": "time_series",
-      "alias": "Imbalance"
+      "alias": "Imbalance",
+      "format": "time_series"
     }
   ],
   "timeFrom": null,

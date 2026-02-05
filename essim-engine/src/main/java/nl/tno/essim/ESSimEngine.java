@@ -71,6 +71,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
     public static final EssimDuration SIMULATION_STEP = EssimDuration.of(1, ChronoUnit.HOURS);
+    private static final String POSTGRES_USER_ENV = "POSTGRES_USER";
+    private static final String POSTGRES_PASSWORD_ENV = "POSTGRES_PASSWORD";
     @Getter
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -316,8 +318,8 @@ public class ESSimEngine implements IStatusProvider {
                 log.debug(marker, "Registering Postgres Observation Consumer");
                 String jdbcUri = "jdbc:" + simulation.getPostgresURL();
                 CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(simulation.getPostgresURL());
-                String username = credentials == null ? "essim" : credentials.username();
-                String password = credentials == null ? "pgpassword" : credentials.password();
+                String username = credentials == null ? (System.getenv(POSTGRES_USER_ENV) == null ? "essim" : System.getenv(POSTGRES_USER_ENV)) : credentials.username();
+                String password = credentials == null ? (System.getenv(POSTGRES_PASSWORD_ENV) == null ? "pgpassword" : System.getenv(POSTGRES_PASSWORD_ENV)) : credentials.password();
                 PostgresObservationConsumer postgresObservationConsumer = new PostgresObservationConsumer(jdbcUri, username, password);
                 observationManager.registerConsumer(postgresObservationConsumer);
                 postgresObservationConsumer.init(scenarioName);
