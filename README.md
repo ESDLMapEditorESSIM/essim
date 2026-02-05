@@ -11,6 +11,16 @@ Useful links:
 - API base path: `/essim`
 - ESDL information: https://energytransition.gitbook.io/esdl/esdl-based-tools/essim
 - ESDL Model Reference Documentation: https://energytransition.github.io/index.html
+- ESSIM user documentation: https://essim-documentation.readthedocs.io/en/latest/
+
+Documentation:
+- [Architecture](docs/architecture.md)
+- [Database Backends (PostgreSQL vs InfluxDB)](docs/database-backends.md)
+- [ESDL Profile Conversion](docs/esdl-profile-conversion.md)
+- [External Models Documentation](docs/external-models.md)
+- [Market Prices and Carrier Price Profiles](docs/market-prices.md)
+- [Power Grid Modeling / PowSyBl Integration](docs/powsybl-integration.md)
+- [Cable and Transformer Parameters](docs/cable-and-transformer-parameters.md)
 
 
 ## Features
@@ -22,15 +32,15 @@ Useful links:
   - Create simulations, start execution, check status/progress, retrieve results/artifacts, and delete when finished.
   - Built-in pagination and JSON payloads; errors reported with meaningful HTTP status codes.
 - Power grid modeling and AC load-flow
-  - Build a Powsybl network from ESDL: substations, voltage levels, lines, transformers.
+  - Build a Powsybl network from ESDL: substations, voltage levels, lines, transformers (see [PowSyBl integration](docs/powsybl-integration.md)).
   - Run load-flow per time step and collect flows, voltages, and thermal loading.
-  - Cable/transformer parameterization via `CableSpec` and `TransformerSpec`.
+  - Cable/transformer parameterization via `CableSpec` and `TransformerSpec` (see [Cable and Transformer parameters](docs/cable-and-transformer-parameters.md)).
   - Controller: `nl.tno.essim.loadflow.EssimLoadFlowController`.
 - KPIs and analytics
   - Pluggable KPI modules compute scenario KPIs (e.g., energy balance, curtailment, losses, grid violations).
   - Managed by `nl.tno.essim.kpi.KPIManager` and exposed via REST.
 - Profiles and time-series utilities
-  - ESDL profile conversion, resampling and alignment to simulation time steps.
+  - ESDL profile conversion, resampling and alignment to simulation time steps (see [ESDL profile conversion](docs/esdl-profile-conversion.md)).
   - Embedding of profiles into ESDL.
 
 
