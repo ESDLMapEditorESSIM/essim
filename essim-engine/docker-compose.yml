@@ -54,6 +54,9 @@ services:
       - MONGODB_HOST=mongo
       - MONGODB_PORT=27017
       - PROFILE_QUERY_TIMEOUT=120
+    volumes:
+      - ./log4j2.xml:/opt/log4j2.xml
+      - ./logs:/opt/logs
     networks:
       - essim_net
 
