@@ -114,6 +114,34 @@ Then browse to:
 - API: `http://localhost:8080/essim`
 - Swagger UI: `http://localhost:8080/openapi/`
 
+### Logging configuration
+
+By default, the engine uses the `log4j2.xml` file bundled in the Docker image at `/opt/log4j2.xml`. You can override the logging configuration by mounting an external `log4j2.xml` file:
+
+```bash
+docker run --rm \
+  -v /path/to/your/log4j2.xml:/opt/log4j2.xml \
+  ...
+  <repo/essim>:<tag>
+```
+
+You can extract the default configuration file to use it as a basis:
+
+```bash
+docker run --rm --entrypoint cat <repo/essim>:<tag> /opt/log4j2.xml > my-log4j2.xml
+```
+
+The configuration is set to automatically reload every 30 seconds if the file is changed.
+
+To persist or access the log files outside the container, you can mount the `/opt/logs` directory:
+
+```bash
+docker run --rm \
+  -v $(pwd)/logs:/opt/logs \
+  ...
+  <repo/essim>:<tag>
+```
+
 Tip: See `essim-engine/Dockerfile` for the full list of default environment variables used at runtime.
 
 
@@ -138,6 +166,9 @@ services:
       MONGODB_PORT: 27017
     ports:
       - "8080:8080"
+    volumes:
+      - ./log4j2.xml:/opt/log4j2.xml
+      - ./logs:/opt/logs
 ```
 
 

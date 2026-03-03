@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<Configuration xmlns="https://logging.apache.org/xml/ns">
+<Configuration xmlns="https://logging.apache.org/xml/ns" monitorInterval="30">
 
     <Properties>
         <Property name="LOG_PATTERN" value="%d %5p [%marker:%t] %m - at %c.%M(%c{1}.java:%L)%n"/>
@@ -47,7 +47,7 @@
         <Logger name="org.glassfish.grizzly" level="INFO"/>
         <Logger name="org.glassfish.jersey" level="INFO"/>
         <Logger name="com.powsybl.openloadflow" level="WARN"/>
-<!--        <Logger name="com.powsybl.openloadflow.network" level="WARN"/>-->
+        <!--        <Logger name="com.powsybl.openloadflow.network" level="WARN"/>-->
 <!--        <Logger name="com.powsybl.openloadflow.ac" level="WARN"/>-->
 <!--        <Logger name="com.powsybl.openloadflow.OpenLoadFlowParameters" level="WARN"/>-->
         <Logger name="com.powsybl.openloadflow.network.impl.LfNetworkLoaderImpl" level="ERROR"/>
