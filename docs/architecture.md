@@ -41,7 +41,7 @@ graph TD
         subgraph KPI_System [KPI System]
             KPI_MGR[KPI Manager]
             KPI_COMM[KPI Communicators]
-            BROKERS[Kafka / NATS / RabbitMQ]
+            BROKERS[Kafka / RabbitMQ]
             
             KPI_MGR --- KPI_COMM
             KPI_COMM --- BROKERS
@@ -241,9 +241,8 @@ The KPI system follows a producer-consumer pattern over a message broker:
 To ensure flexibility in different deployment environments, ESSIM supports multiple message brokers through specialized `KPICommunicator` implementations:
 - **Kafka**: Used for high-throughput, distributed streaming.
 - **RabbitMQ**: A widely used, robust message broker.
-- **NATS**: A lightweight, high-performance messaging system. At the time of writing, the NATS java client has some performance issues, making it less suitable for high-throughput scenarios.
 
-The broker type and connection details are configured via environment variables (`KAFKA_URL`, `NATS_URL`, `RABBITMQ_URL`).
+The broker type and connection details are configured via environment variables (`KAFKA_URL`, `RABBITMQ_URL`).
 
 ### Data Structures
 
@@ -308,4 +307,4 @@ See [Database Backends](database-backends.md) for more details.
 - **ESDL**: The primary language for describing the energy system.
 - **Grafana**: ESSIM can generate Grafana dashboard configurations for visualizing results.
 - **External Models**: Support for interacting with external models via an MSO client or external KPI modules. See [Working with External Models](external-models.md).
-- **MSO (Multi-Stakeholder Optimization)**: Support for interacting with external models via an MSO client.
+- **MSO (Model Service Orchestration)**: Support for interacting with external models via an MSO client.

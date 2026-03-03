@@ -8,7 +8,9 @@ ESSIM supports integrating external models for two main purposes:
 
 ## MSO-based External Models
 
-External models for assets are managed via a Model Service Orchestration (MSO) controller. This allows ESSIM to trigger the deployment of external models (typically in Docker containers) and synchronize with them during the simulation steps.
+External models for assets are managed via a Model Service Orchestration (MSO) controller. This allows ESSIM to trigger
+the deployment of external models (typically in Docker containers) and synchronize with them during the simulation
+steps.
 
 ### Architecture
 

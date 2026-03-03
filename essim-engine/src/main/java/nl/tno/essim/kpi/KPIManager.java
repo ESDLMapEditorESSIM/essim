@@ -24,12 +24,10 @@ public class KPIManager {
     private final static int STATUS_INTERVAL = 1; // seconds
     private final static int MAX_OFFLINE = 20; // seconds
     public static String KAFKA_URL;
-    public static String NATS_URL;
     public static String RABBITMQ_URL;
 
     static {
         KAFKA_URL = System.getenv("KAFKA_URL");
-        NATS_URL = System.getenv("NATS_URL");
         RABBITMQ_URL = System.getenv("RABBITMQ_URL");
     }
 
@@ -75,11 +73,6 @@ public class KPIManager {
         if (KAFKA_URL != null) {
             KafkaKPICommunicator communicator = new KafkaKPICommunicator(this, KAFKA_URL);
             communicatorMap.put(KAFKA_URL, communicator);
-            communicator.sendKPIGetStatus();
-        }
-        if (NATS_URL != null) {
-            NATSKPICommunicator communicator = new NATSKPICommunicator(this, NATS_URL);
-            communicatorMap.put(NATS_URL, communicator);
             communicator.sendKPIGetStatus();
         }
         if (RABBITMQ_URL != null) {

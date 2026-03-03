@@ -11,7 +11,6 @@ import nl.tno.essim.kpi.data.KPIModuleMessage;
 @Slf4j
 public abstract class KPICommunicator {
     public enum Type {
-        NATS,
         KAFKA,
         RabbitMQ
     }
