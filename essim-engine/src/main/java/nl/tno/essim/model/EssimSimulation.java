@@ -79,7 +79,31 @@ public class EssimSimulation {
     private SimulationStatus status;
 
     @JsonProperty("influxURL")
+    @Setter(AccessLevel.NONE)
     private String influxURL;
+
+    @JsonSetter("influxURL")
+    public void setInfluxURL(String influxURL) {
+        this.influxURL = addSchemeIfMissing(influxURL);
+    }
+
+    // Single-label hostnames (no dots) get http://, FQDNs get https://
+    public static String addSchemeIfMissing(String url) {
+        if (url == null || url.startsWith("http://") || url.startsWith("https://")) {
+            return url;
+        }
+        String host;
+        if (url.contains(":")) {
+            host = url.substring(0, url.indexOf(':'));
+        } else {
+            host = url;
+        }
+        if (host.contains(".")) {
+            return "https://" + url;
+        } else {
+            return "http://" + url;
+        }
+    }
 
     @JsonProperty("postgresURL")
     private String postgresURL;
