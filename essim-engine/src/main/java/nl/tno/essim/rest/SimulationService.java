@@ -593,7 +593,7 @@ public class SimulationService {
             return Response.status(Response.Status.OK).entity(statusJson).build();
 
         } catch (Exception e) {
-            log.error("Error converting ESDL to time series profiles", e);
+            log.error("Error creating ESDL with profiles", e);
             error.setDescription(e.getMessage());
         }
         return Response.status(Response.Status.BAD_REQUEST).entity(error).build();

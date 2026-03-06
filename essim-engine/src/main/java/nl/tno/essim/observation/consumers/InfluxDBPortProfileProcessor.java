@@ -24,14 +24,14 @@ public class InfluxDBPortProfileProcessor implements java.util.function.Consumer
     @Override
     public void accept(Port port) {
         String scenarioID = simulation.getScenarioID();
+        dbc.setDatabase(scenarioID);
         DataTableProfile dataTableProfile = EsdlFactory.eINSTANCE.createDataTableProfile();
         dataTableProfile.setConfiguration(dbc);
         dataTableProfile.setId(UUID.randomUUID().toString());
         dataTableProfile.setTableName(solverIdentifier);
-        dataTableProfile.setSchema(scenarioID);
         dataTableProfile.setColumnName("allocationenergy");
         dataTableProfile.setDatetimeColumnName("time");
-        dataTableProfile.setFilter("assetName = '" + port.getEnergyasset().getName() + "' AND simulationRun = '" + simulationId + "'");
+        dataTableProfile.setFilter("assetName='" + port.getEnergyasset().getName() + "' AND simulationRun='" + simulationId + "'");
         dataTableProfile.setProfileQuantityAndUnit(quantityAndUnitReference);
         dataTableProfile.setStartDate(simulation.getStartDate());
         dataTableProfile.setEndDate(simulation.getEndDate());
