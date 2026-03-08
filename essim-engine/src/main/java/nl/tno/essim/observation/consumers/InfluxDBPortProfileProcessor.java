@@ -29,7 +29,7 @@ public class InfluxDBPortProfileProcessor implements java.util.function.Consumer
         dataTableProfile.setConfiguration(dbc);
         dataTableProfile.setId(UUID.randomUUID().toString());
         dataTableProfile.setTableName(solverIdentifier);
-        dataTableProfile.setColumnName("allocationenergy");
+        dataTableProfile.setColumnName("allocationEnergy");
         dataTableProfile.setDatetimeColumnName("time");
         dataTableProfile.setFilter("assetName='" + port.getEnergyasset().getName() + "' AND simulationRun='" + simulationId + "'");
         dataTableProfile.setProfileQuantityAndUnit(quantityAndUnitReference);
