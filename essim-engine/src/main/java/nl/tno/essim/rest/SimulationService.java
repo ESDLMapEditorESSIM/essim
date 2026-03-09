@@ -4,10 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import esdl.*;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,13 +39,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-@OpenAPIDefinition(
-        info = @Info(
-                title = "ESSIM API",
-                version = "1.0",
-                description = "API for managing ESSIM simulations"
-        )
-)
 @Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
 @Path("/simulation")
 @Slf4j

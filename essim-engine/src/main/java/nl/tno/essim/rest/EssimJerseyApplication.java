@@ -45,7 +45,8 @@ import java.util.logging.Logger;
         ),
         info = @Info(
                 title = "ESSIM API",
-                version = "Main",
+                version = "1.0",
+                description = "API for managing ESSIM simulations",
                 contact = @Contact(name = "TNO", url = "https://energytransition.gitbook.io/esdl/esdl-based-tools/essim")
         ))
 public class EssimJerseyApplication extends ResourceConfig {
