@@ -5,6 +5,7 @@ import esdl.InfluxDBProfile;
 import esdl.ProfileElement;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.CredentialUtils;
+import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.util.Converter;
 import org.eclipse.emf.common.util.EList;
@@ -46,7 +47,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
         if (profile.getHost().isEmpty() || profile.getPort() <= 0) {
             throw new IllegalArgumentException("Postgres profile not configured correctly: " + this);
         }
-        final String serverId = profile.getHost() + ":" + profile.getPort();
+        final String serverId = EssimSimulation.addSchemeIfMissing(profile.getHost() + ":" + profile.getPort());
         CredentialUtils.Credentials credentials = CredentialUtils.getCredentialsFromFile(serverId);
         return credentials == null ? InfluxDBFactory.connect(serverId).enableGzip() : InfluxDBFactory.connect(serverId, credentials.username(), credentials.password()).enableGzip();
     }
@@ -69,7 +70,7 @@ public class InfluxDBProfileDataHandler implements ProfileDataHandler {
 
     @Override
     public ProfileCacheKey getProfileCacheKey() {
-        String uri = "http://" + profile.getHost() + ":" + profile.getPort();
+        String uri = EssimSimulation.addSchemeIfMissing(profile.getHost() + ":" + profile.getPort());
         return new ProfileCacheKey(uri, profile.getDatabase(), profile.getMeasurement(), profile.getField(), profile.getFilters(), 0d);
     }
 
