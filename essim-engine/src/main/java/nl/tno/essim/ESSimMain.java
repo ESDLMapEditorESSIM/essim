@@ -35,7 +35,7 @@ public class ESSimMain {
 
     @Getter
     private EssimHttpServer httpServer;
-    private IMongoBackend mongoBackend;
+    private final IMongoBackend mongoBackend;
 
     public static void main(String[] args) {
         new ESSimMain();
@@ -45,18 +45,18 @@ public class ESSimMain {
         GitRepositoryState gitVersion = Version.getGitRepositoryState();
         String version = gitVersion.getCommitIdAbbrev();
 
-        log.debug("ESSIM version: {}", gitVersion.getBuildVersion());
-        log.debug("ESSIM git commit id: {} / {}", version, gitVersion.getDescribeShort());
-        log.debug("ESSIM Last git commit by {} at {}", gitVersion.getCommitUserName(), gitVersion.getCommitTime());
-        log.debug("ESSIM build by {} at {}", gitVersion.getBuildUserName(), gitVersion.getBuildTime());
+        log.info("ESSIM version: {}", gitVersion.getBuildVersion());
+        log.info("ESSIM git commit id: {} / {}", version, gitVersion.getDescribeShort());
+        log.info("ESSIM Last git commit by {} at {}", gitVersion.getCommitUserName(), gitVersion.getCommitTime());
+        log.info("ESSIM build by {} at {}", gitVersion.getBuildUserName(), gitVersion.getBuildTime());
         System.setProperty(Commons.ESSIM_REVISION, version);
 
         // Setup MongoDB server
-        log.debug("Connecting to Mongo Backend");
+        log.info("Connecting to Mongo Backend");
         mongoBackend = new MongoBackend(System.getenv(MONGODB_HOST), System.getenv(MONGODB_PORT));
 
         // Setup RAML server
-        log.debug("Starting ESSIM REST Server");
+        log.info("Starting ESSIM REST Server");
         try {
             KPIManager.getInstance();
             httpServer = new EssimHttpServer(System.getenv(HTTP_SERVER_SCHEME), System.getenv(HTTP_SERVER_HOSTNAME),

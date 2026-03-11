@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.ApplicationPath;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,13 @@ import java.util.logging.Logger;
                 version = "1.0",
                 description = "API for managing ESSIM simulations",
                 contact = @Contact(name = "TNO", url = "https://energytransition.gitbook.io/esdl/esdl-based-tools/essim")
-        ))
+        ),
+        tags = {
+                @Tag(name = "Simulations", description = "Create, retrieve, update and delete simulations; includes status, logs, and transport networks"),
+                @Tag(name = "KPIs", description = "Access KPI modules and results for a simulation"),
+                @Tag(name = "ESDL", description = "ESDL profile conversion and retrieval"),
+                @Tag(name = "Service", description = "ESSIM service health and configuration")
+        })
 public class EssimJerseyApplication extends ResourceConfig {
     Logger jullog = Logger.getLogger(EssimJerseyApplication.class.getName());
 
@@ -56,8 +63,8 @@ public class EssimJerseyApplication extends ResourceConfig {
         // Configure
         packages(
                 SimulationService.class.getPackageName(),
-//                OpenApiResource.class.getPackageName(),
-                MongoInjectResolver.class.getPackageName()
+                MongoInjectResolver.class.getPackageName(),
+                "io.swagger.v3.jaxrs2.integration.resources"
         );
         register(new AbstractBinder() {
             @Override

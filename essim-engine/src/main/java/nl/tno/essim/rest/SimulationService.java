@@ -39,7 +39,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-@Tag(name = "ESSIM", description = "Operations related to ESSIM Simulations")
 @Path("/simulation")
 @Slf4j
 public class SimulationService {
@@ -51,6 +50,7 @@ public class SimulationService {
     @Produces("application/json")
     @Consumes("application/json")
     @Operation(
+            tags = {"Simulations"},
             summary = "Start a new simulation",
             description = "Initiates a new simulation with the provided ESDL",
             requestBody = @RequestBody(description = "Details of the simulation to be started", required = true, content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
@@ -64,7 +64,6 @@ public class SimulationService {
         error.setStatus(Status.ERROR);
 
         String esdlContents = simulation.getEsdlContents();
-        FileWriter fw = null;
         String decodedContents = null;
         if (esdlContents == null || esdlContents.isEmpty()) {
             error.setDescription("Invalid ESDL file!");
@@ -136,6 +135,7 @@ public class SimulationService {
     @Produces("application/json")
     @Consumes("application/json")
     @Operation(
+            tags = {"ESDL"},
             summary = "Convert external profiles to time series",
             description = "Converts external profiles in the provided ESDL to time series profiles using the specified time parameters",
             requestBody = @RequestBody(
@@ -183,6 +183,7 @@ public class SimulationService {
     @GET
     @Produces("application/json")
     @Operation(
+            tags = {"Simulations"},
             summary = "Retrieve all simulations",
             description = "Fetches all simulations stored in the system. NOTE: This can return a large dataset.",
             responses = {
@@ -198,6 +199,7 @@ public class SimulationService {
     @Path("/list")
     @Produces("application/json")
     @Operation(
+            tags = {"Simulations"},
             summary = "Retrieve simulation list",
             description = "Fetches a list of all simulation IDs stored in the system.",
             responses = {
@@ -213,6 +215,7 @@ public class SimulationService {
     @Path("/status")
     @Produces("text/plain")
     @Operation(
+            tags = {"Service"},
             summary = "Retrieve ESSIM status",
             description = "Gets the current status of the ESSIM simulation service",
             responses = {
@@ -232,6 +235,7 @@ public class SimulationService {
     @Path("/kpiModules")
     @Produces("application/json")
     @Operation(
+            tags = {"Service"},
             summary = "Retrieve available KPI modules",
             description = "Fetches a list of all available KPI modules connected to ESSIM",
             responses = {
@@ -248,6 +252,7 @@ public class SimulationService {
     @Path("/{simulationId}")
     @Produces("application/json")
     @Operation(
+            tags = {"Simulations"},
             summary = "Retrieve a specific simulation",
             description = "Fetches the details of a specific simulation based on the provided simulation ID",
             responses = {
@@ -273,7 +278,8 @@ public class SimulationService {
     @Path("/{simulationId}")
     @Produces("application/json")
     @Consumes("application/json")
-    @Operation(summary = "Add or update simulation",
+    @Operation(tags = {"Simulations"},
+            summary = "Add or update simulation",
             description = "Add or update a simulation in mongo",
             requestBody = @RequestBody(description = "Simulation description", content = @Content(schema = @Schema(implementation = EssimSimulation.class))),
             responses = {
@@ -298,6 +304,7 @@ public class SimulationService {
     @Path("/{simulationId}")
     @Produces("application/json")
     @Operation(
+            tags = {"Simulations"},
             summary = "Remove a specific simulation",
             description = "Removes a specific simulation including all simulation data.",
             responses = {
@@ -331,7 +338,8 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/kpi")
     @Produces("application/json")
-    @Operation(summary = "Get KPIs for simulation",
+    @Operation(tags = {"KPIs"},
+            summary = "Get KPIs for simulation",
             description = "Get all the KPI information for a simulation",
             responses = {
                     @ApiResponse(description = "The list of KPIs", content = @Content(array = @ArraySchema(schema = @Schema(implementation = KPIModule.class)))),
@@ -362,7 +370,8 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/kpi/{kpiId}")
     @Produces("application/json")
-    @Operation(summary = "Get KPI result",
+    @Operation(tags = {"KPIs"},
+            summary = "Get KPI result",
             description = "Get KPI result for a specific KPI of a simulation",
             responses = {
                     @ApiResponse(description = "The KPI result"),
@@ -403,7 +412,8 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/status")
     @Produces("application/json")
-    @Operation(summary = "Get simulation status",
+    @Operation(tags = {"Simulations"},
+            summary = "Get simulation status",
             description = "Get the status of a simulation",
             responses = {
                     @ApiResponse(description = "The simulation status", content = @Content(schema = @Schema(implementation = SimulationStatus.class))),
@@ -429,6 +439,9 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/load_animation")
     @Produces("application/json")
+    @Operation(tags = {"Simulations"},
+            summary = "Get load animation (disabled)",
+            description = "Feature temporarily disabled")
     public Response getSimulationLoadAnimationBySimulationId(@PathParam("simulationId") String simulationId) {
         return Response.status(Response.Status.NOT_FOUND).entity("Feature temporarily disabled!").build();
     }
@@ -436,7 +449,8 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/transport")
     @Produces("application/json")
-    @Operation(summary = "Get simulation transport networks",
+    @Operation(tags = {"Simulations"},
+            summary = "Get simulation transport networks",
             description = "Get the transport networks of a simulation",
             responses = {
                     @ApiResponse(description = "The list of transport networks for the simulation", content = @Content(array = @ArraySchema(schema = @Schema(implementation = TransportNetwork.class)))),
@@ -459,7 +473,8 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/transport/{index}")
     @Produces("application/json")
-    @Operation(summary = "Get simulation transport network",
+    @Operation(tags = {"Simulations"},
+            summary = "Get simulation transport network",
             description = "Get a specific transport network for a simulation",
             responses = {
                     @ApiResponse(description = "The transport network", content = @Content(schema = @Schema(implementation = TransportNetwork.class))),
@@ -523,7 +538,8 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/logs")
     @Produces("application/json")
-    @Operation(summary = "Get simulation logs",
+    @Operation(tags = {"Simulations"},
+            summary = "Get simulation logs",
             description = "Get the logs for a specified simulation",
             responses = {
                     @ApiResponse(description = "The logs for the given simulation id"),
@@ -549,6 +565,13 @@ public class SimulationService {
     @GET
     @Path("/{simulationId}/ESDLWithProfiles")
     @Produces("application/json")
+    @Operation(tags = {"ESDL"},
+            summary = "Get ESDL with embedded profiles",
+            description = "Returns the ESDL for a simulation with time series profiles embedded from the database",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "ESDL with profiles", content = @Content(schema = @Schema(implementation = ObjectNode.class))),
+                    @ApiResponse(responseCode = "400", description = "Error building ESDL", content = @Content(schema = @Schema(implementation = ErrorStatus.class)))
+            })
     public Response getESDLWithProfiles(
             @Parameter(description = "The id of the simulation", required = true)
             @PathParam("simulationId") String simulationId) {

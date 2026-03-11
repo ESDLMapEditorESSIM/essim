@@ -45,18 +45,6 @@ public class EssimHttpServer  {
 
         ServletHolder jerseyServlet = servletContext.addServlet(ServletContainer.class, "/essim/*");
         jerseyServlet.setInitOrder(1);
-        jerseyServlet.setInitParameter(
-                "jersey.config.server.provider.packages",
-                String.join(
-                        ",",
-                        new String[]{
-                                "io.swagger.v3.jaxrs2.integration.resources",
-                                "nl.tno.essim.rest",
-                                "nl.tno.essim.rest.util"
-	}
-                )
-        );
-
         jerseyServlet.setInitParameter("jakarta.ws.rs.Application", EssimJerseyApplication.class.getCanonicalName());
         jerseyServlet.setInitParameter("jersey.config.property.WebPageContentRegex", "/.*");
         jerseyServlet.setInitParameter("jersey.config.server.provider.classnames", "org.glassfish.jersey.media.multipart.MultiPartFeature,org.glassfish.jersey.logging.LoggingFeature");

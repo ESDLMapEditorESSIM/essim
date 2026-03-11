@@ -37,8 +37,8 @@ build-and-push-essim:
     - VERSION=$(date +%y.%m)-g$COMMIT_SHA
     - mvn -Drevision=$VERSION clean package
     - cd $CI_PROJECT_DIR/essim-engine
-    - echo $COMMIT_SHA > version.txt
-    - docker build --no-cache 
+    - docker build --no-cache
+      --build-arg VERSION=$VERSION
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_BRANCH 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
       .

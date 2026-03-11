@@ -1,6 +1,11 @@
 FROM eclipse-temurin:21-jdk
 
+ARG VERSION=unknown
+LABEL org.opencontainers.image.version=$VERSION
+
 WORKDIR /opt
+
+RUN echo "$VERSION" > /opt/version.txt
 
 COPY target/essim.jar /opt
 COPY src/main/resources/json /opt/json
