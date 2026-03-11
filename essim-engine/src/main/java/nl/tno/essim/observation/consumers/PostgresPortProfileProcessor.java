@@ -25,6 +25,7 @@ public class PostgresPortProfileProcessor implements java.util.function.Consumer
     @NotNull
     public static QuantityAndUnitReference getQuantityAndUnitReference(EnergySystem energySystem) {
         QuantityAndUnitType quantityAndUnitType = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+        quantityAndUnitType.setId(UUID.randomUUID().toString());
         quantityAndUnitType.setUnit(UnitEnum.JOULE);
         quantityAndUnitType.setDescription("Energy in J");
         quantityAndUnitType.setMultiplier(MultiplierEnum.NONE);
