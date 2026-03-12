@@ -16,6 +16,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
+import org.slf4j.MarkerFactory;
 
 import esdl.EnergyAsset;
 import esdl.EnergySystem;
@@ -30,7 +31,6 @@ import nl.tno.essim.externalmodel.protos.SimulationDone;
 import nl.tno.essim.managers.SimulationManager;
 import nl.tno.essim.model.MSOConfiguration;
 import nl.tno.essim.model.NodeConfiguration;
-import org.slf4j.MarkerFactory;
 
 @Slf4j
 public class MSOClient {

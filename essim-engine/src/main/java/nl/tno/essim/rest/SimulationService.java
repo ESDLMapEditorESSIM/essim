@@ -1,9 +1,30 @@
 package nl.tno.essim.rest;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.slf4j.MarkerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import esdl.*;
+
+import esdl.Area;
+import esdl.EnergySystem;
+import esdl.Instance;
+import esdl.Port;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -11,8 +32,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.ws.rs.*;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.ESSimEngine;
@@ -21,7 +48,16 @@ import nl.tno.essim.influxdb.InfluxConnectionProvider;
 import nl.tno.essim.influxdb.InfluxDBService;
 import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIStatus;
-import nl.tno.essim.model.*;
+import nl.tno.essim.model.CreatedStatus;
+import nl.tno.essim.model.ESDLProfileConversion;
+import nl.tno.essim.model.ErrorStatus;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.KPIModule;
+import nl.tno.essim.model.KPIModuleInfo;
+import nl.tno.essim.model.RemoteKPIModule;
+import nl.tno.essim.model.SimulationStatus;
+import nl.tno.essim.model.Status;
+import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.observation.consumers.InfluxDBPortProfileProcessor;
 import nl.tno.essim.observation.consumers.PostgresPortProfileProcessor;
@@ -29,15 +65,6 @@ import nl.tno.essim.rest.util.MongoInject;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.utils.ESDLUtil;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
-import org.slf4j.MarkerFactory;
-
-import java.io.*;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
 
 @Path("/simulation")
 @Slf4j
@@ -580,8 +607,10 @@ public class SimulationService {
         try {
             EssimSimulation simulation = mongo.getSimulation(simulationId);
             XMIResourceImpl xmiResource = ESDLUtil.loadEcoreResource(new ByteArrayInputStream(Base64.getDecoder().decode(simulation.getEsdlContents())));
-//        simulation.get
             EnergySystem energySystem = (EnergySystem) xmiResource.getContents().getFirst();
+            // set new ID and name for this ESDL, as profiles are added and therefore this is a different ESDL
+            energySystem.setId(UUID.randomUUID().toString());
+            energySystem.setName(energySystem.getName() + " [ESSIM output]");
             Instance instance = energySystem.getInstance().getFirst();
             if (instance.getArea() == null) {
                 throw new IllegalArgumentException("No area found in ESDL energy instance !");

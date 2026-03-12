@@ -1,26 +1,52 @@
 package nl.tno.essim.utils;
 
-import esdl.*;
-import lombok.extern.slf4j.Slf4j;
-import nl.tno.essim.profiles.ProfileDataHandler;
-import nl.tno.essim.profiles.ProfileDataManager;
-import nl.tno.essim.profiles.ProfileException;
-import nl.tno.essim.time.EssimTime;
-import nl.tno.essim.time.Horizon;
-import nl.tno.essim.util.Converter;
-import org.eclipse.emf.common.util.BasicEList;
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.EObject;
-import org.eclipse.emf.ecore.xmi.XMIResource;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.UUID;
+
+import org.eclipse.emf.common.util.BasicEList;
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.xmi.XMIResource;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.jetbrains.annotations.NotNull;
+
+import esdl.AbstractBuilding;
+import esdl.Area;
+import esdl.Asset;
+import esdl.DateTimeProfile;
+import esdl.EnergyAsset;
+import esdl.EnergySystem;
+import esdl.EnergySystemInformation;
+import esdl.EsdlFactory;
+import esdl.EsdlPackage;
+import esdl.ExternalProfile;
+import esdl.GenericProfile;
+import esdl.Instance;
+import esdl.MultiplierEnum;
+import esdl.PhysicalQuantityEnum;
+import esdl.Port;
+import esdl.ProfileElement;
+import esdl.QuantityAndUnitReference;
+import esdl.QuantityAndUnitScopeEnum;
+import esdl.QuantityAndUnitType;
+import esdl.TimeSeriesProfile;
+import esdl.TimeUnitEnum;
+import esdl.UnitEnum;
+import lombok.extern.slf4j.Slf4j;
+import nl.tno.essim.profiles.ProfileDataManager;
+import nl.tno.essim.profiles.ProfileException;
+import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.time.Horizon;
+import nl.tno.essim.util.Converter;
 
 @Slf4j
 public class ESDLUtil {
@@ -70,9 +96,7 @@ public class ESDLUtil {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static XMIResourceImpl loadEcoreResource(InputStream stream) throws IOException {
-
         XMIResourceImpl resource = new XMIResourceImpl();
         resource.getDefaultLoadOptions().put(XMIResource.OPTION_DEFER_IDREF_RESOLUTION, Boolean.TRUE);
         resource.setIntrinsicIDToEObjectMap(new HashMap<>());
@@ -208,4 +232,63 @@ public class ESDLUtil {
             startAndEnd[1] = endTime;
         }
     }
+
+    
+    /**
+     * Returns or creates a ENERGY in Joule {@link esdl.QuantityAndUnitType} in the QuanityAndUnits part of the {@link esdl.EnergySystemInformation}, 
+     * if not present already.
+     * @param energySystem
+     * @return Energy in Joule Quantity and Unit.
+     */
+	@NotNull
+	public static QuantityAndUnitType getOrCreateEnergyInJouleQuantityAndUnit(EnergySystem energySystem) {
+		if (energySystem.getEnergySystemInformation() == null) {
+			EnergySystemInformation energySystemInformation = EsdlFactory.eINSTANCE.createEnergySystemInformation();
+			energySystemInformation.setId(UUID.randomUUID().toString());
+			energySystem.setEnergySystemInformation(energySystemInformation);
+		}
+		if (energySystem.getEnergySystemInformation().getQuantityAndUnits() == null) {
+			energySystem.getEnergySystemInformation()
+					.setQuantityAndUnits(EsdlFactory.eINSTANCE.createQuantityAndUnits());
+			energySystem.getEnergySystemInformation().getQuantityAndUnits().setId(UUID.randomUUID().toString());
+		}
+		QuantityAndUnitType energyInJoule = null;
+		// find EnergyInJoule in ESI of ESDL. If not create one and add it.
+		for (QuantityAndUnitType qau : energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit()) {
+			if (qau.getPhysicalQuantity() == PhysicalQuantityEnum.ENERGY && qau.getUnit() == UnitEnum.JOULE &&
+					qau.getMultiplier() == MultiplierEnum.NONE && qau.getPerUnit() == UnitEnum.NONE && 
+					qau.getPerMultiplier() == MultiplierEnum.NONE && qau.getPerScope()==QuantityAndUnitScopeEnum.UNDEFINED &&
+					qau.getPerTimeUnit() == TimeUnitEnum.NONE) {
+				energyInJoule = qau;
+				break;
+			}
+		}
+		if (energyInJoule == null) {
+			energyInJoule = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+			energyInJoule.setId(UUID.randomUUID().toString());
+			energyInJoule.setUnit(UnitEnum.JOULE);
+			energyInJoule.setDescription("Energy in J");
+			energyInJoule.setMultiplier(MultiplierEnum.NONE);
+			energyInJoule.setPerUnit(UnitEnum.NONE);
+			energyInJoule.setPhysicalQuantity(PhysicalQuantityEnum.ENERGY);
+			energyInJoule.setPerTimeUnit(TimeUnitEnum.NONE);
+			energyInJoule.setPerMultiplier(MultiplierEnum.NONE);
+			energyInJoule.setPerScope(QuantityAndUnitScopeEnum.UNDEFINED);
+			energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(energyInJoule);
+		}
+		return energyInJoule;
+	}
+	
+	
+	/**
+	 * Create a reference to an existing {@link esdl.QuantityAndUnitType}.
+	 * @param quantityAndUnitType
+	 * @return
+	 */
+	@NotNull
+	public static QuantityAndUnitReference createQaUReference(QuantityAndUnitType quantityAndUnitType) {
+		QuantityAndUnitReference quantityAndUnitReference = EsdlFactory.eINSTANCE.createQuantityAndUnitReference();
+		quantityAndUnitReference.setReference(quantityAndUnitType);		
+		return quantityAndUnitReference;
+	}
 }
