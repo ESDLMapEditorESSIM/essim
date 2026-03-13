@@ -608,9 +608,6 @@ public class SimulationService {
             EssimSimulation simulation = mongo.getSimulation(simulationId);
             XMIResourceImpl xmiResource = ESDLUtil.loadEcoreResource(new ByteArrayInputStream(Base64.getDecoder().decode(simulation.getEsdlContents())));
             EnergySystem energySystem = (EnergySystem) xmiResource.getContents().getFirst();
-            // set new ID and name for this ESDL, as profiles are added and therefore this is a different ESDL
-            energySystem.setId(UUID.randomUUID().toString());
-            energySystem.setName(energySystem.getName() + " [ESSIM output]");
             Instance instance = energySystem.getInstance().getFirst();
             if (instance.getArea() == null) {
                 throw new IllegalArgumentException("No area found in ESDL energy instance !");
@@ -630,6 +627,9 @@ public class SimulationService {
                         new InfluxDBPortProfileProcessor(simulationId, simulation, energySystem, solverIdentifier);
                 connectedAssets.keySet().forEach(energyAsset -> energyAsset.getPort().forEach(portProcessor));
             });
+            // set new ID and name for this ESDL, as profiles are added and therefore this is a different ESDL
+            energySystem.setId(UUID.randomUUID().toString());
+            energySystem.setName(energySystem.getName() + " [ESSIM output]");
             String newEsdl = ESDLUtil.ecoreResourceToString((EnergySystem) xmiResource.getContents().getFirst());
             ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();
             statusJson.put("esdl", Base64.getEncoder().encodeToString(newEsdl.getBytes(StandardCharsets.UTF_8)));
