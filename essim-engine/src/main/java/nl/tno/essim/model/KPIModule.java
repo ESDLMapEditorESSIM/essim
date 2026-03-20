@@ -1,6 +1,7 @@
 package nl.tno.essim.model;
 
 import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
@@ -11,11 +12,13 @@ import java.util.Map;
     "config"
 })
 public class KPIModule {
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+
   @JsonProperty("id")
   private String id;
 
   @JsonProperty("result")
-  private String result;
+  private Object result;
 
   @JsonProperty("config")
   private Object config;
@@ -34,13 +37,21 @@ public class KPIModule {
   }
 
   @JsonProperty("result")
-  public String getResult() {
+  public Object getResult() {
     return this.result;
   }
 
   @JsonProperty("result")
-  public void setResult(String result) {
-    this.result = result;
+  public void setResult(Object result) {
+    if (result instanceof String s) {
+      try {
+        this.result = MAPPER.readValue(s, Object.class);
+      } catch (Exception e) {
+        this.result = result;
+      }
+    } else {
+      this.result = result;
+    }
   }
 
   @JsonProperty("config")

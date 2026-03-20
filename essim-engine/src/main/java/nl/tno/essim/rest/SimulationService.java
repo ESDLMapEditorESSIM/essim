@@ -17,7 +17,6 @@ import java.util.UUID;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.slf4j.MarkerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -533,19 +532,17 @@ public class SimulationService {
     }
 
     private JsonNode getKPIResult(String simulationId, KPIModule module) {
-        String moduleResultString = module.getResult();
         JsonNode result = null;
-        if (moduleResultString != null) {
+        Object moduleResult = module.getResult();
+        if (moduleResult != null) {
             try {
-                result = ESSimEngine.getObjectMapper().readTree(moduleResultString);
+                result = ESSimEngine.getObjectMapper().valueToTree(moduleResult);
                 if (!result.has("status")) {
                     ((ObjectNode) result).put("status", "Success");
                 }
-
-            } catch (JsonProcessingException e) {
-                log.warn("Could not parse json", e);
+            } catch (IllegalArgumentException e) {
+                log.warn("Could not convert KPI result to JSON", e);
             }
-
         }
         if (result == null) {
             KPIStatus.SimulationProgress simulationProgress = KPIManager.getInstance().getKPIModuleInfo(module.getId(), simulationId);
