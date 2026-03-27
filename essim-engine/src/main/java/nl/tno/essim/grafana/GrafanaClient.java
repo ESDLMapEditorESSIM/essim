@@ -17,7 +17,7 @@ import java.util.Date;
 
 @Slf4j
 public class GrafanaClient {
-    static final String GRAFANA_INTERNAL_URL_ENV = "GRAFANA_INTERNAL_URL";
+    public static final String GRAFANA_INTERNAL_URL_ENV = "GRAFANA_INTERNAL_URL";
     private static final String GRAFANA_ADMIN_USER_ENV = "GRAFANA_ADMIN_USER";
     private static final String GRAFANA_ADMIN_PASSWORD_ENV = "GRAFANA_ADMIN_PASSWORD";
     private static final String GRAFANA_KEY = "GRAFANA_KEY";
