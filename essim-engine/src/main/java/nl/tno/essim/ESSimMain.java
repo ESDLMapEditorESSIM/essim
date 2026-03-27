@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.Version.GitRepositoryState;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.kpi.KPIManager;
+import nl.tno.essim.grafana.GrafanaClient;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mongo.MongoBackend;
 import nl.tno.essim.rest.EssimHttpServer;
@@ -54,6 +55,16 @@ public class ESSimMain {
         // Setup MongoDB server
         log.info("Connecting to Mongo Backend");
         mongoBackend = new MongoBackend(System.getenv(MONGODB_HOST), System.getenv(MONGODB_PORT));
+
+        // Pre-create Grafana API key at startup if Grafana is configured
+        if (System.getenv(GrafanaClient.GRAFANA_INTERNAL_URL_ENV) != null) {
+            log.info("Initialising Grafana API key");
+            try {
+                new GrafanaClient(mongoBackend);
+            } catch (Exception e) {
+                log.warn("Could not initialise Grafana API key at startup: {}", e.getMessage());
+            }
+        }
 
         // Setup RAML server
         log.info("Starting ESSIM REST Server");
