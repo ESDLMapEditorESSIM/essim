@@ -1,9 +1,11 @@
 package nl.tno.essim.kpi.data;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.*;
 
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Data
 @Builder

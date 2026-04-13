@@ -46,6 +46,7 @@ import nl.tno.essim.commons.Commons;
 import nl.tno.essim.influxdb.InfluxConnectionProvider;
 import nl.tno.essim.influxdb.InfluxDBService;
 import nl.tno.essim.kpi.KPIManager;
+import nl.tno.essim.kpi.KPIResultProcessor;
 import nl.tno.essim.kpi.data.KPIStatus;
 import nl.tno.essim.model.CreatedStatus;
 import nl.tno.essim.model.ESDLProfileConversion;
@@ -555,7 +556,7 @@ public class SimulationService {
 
         }
         ObjectNode objectNode = ESSimEngine.getObjectMapper().createObjectNode();
-        objectNode.put(module.getId(), result);
+        objectNode.set(module.getId(), result);
         return objectNode;
     }
 
@@ -627,6 +628,15 @@ public class SimulationService {
             // set new ID and name for this ESDL, as profiles are added and therefore this is a different ESDL
             energySystem.setId(UUID.randomUUID().toString());
             energySystem.setName(energySystem.getName() + " [ESSIM output]");
+            
+            RemoteKPIModule kpiModules = simulation.getKpiModule();
+            if (kpiModules != null && kpiModules.getModules() != null && !kpiModules.getModules().isEmpty()) {
+            	for (KPIModule kpiModule : kpiModules.getModules()) {
+            		JsonNode result = getKPIResult(simulationId, kpiModule);
+            		KPIResultProcessor.convertKPIJsonToESDLKPIs(energySystem, kpiModule, result);
+				}
+            }
+            
             String newEsdl = ESDLUtil.ecoreResourceToString((EnergySystem) xmiResource.getContents().getFirst());
             ObjectNode statusJson = ESSimEngine.getObjectMapper().createObjectNode();
             statusJson.put("esdl", Base64.getEncoder().encodeToString(newEsdl.getBytes(StandardCharsets.UTF_8)));

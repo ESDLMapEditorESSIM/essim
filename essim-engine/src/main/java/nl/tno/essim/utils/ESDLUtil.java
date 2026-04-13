@@ -242,16 +242,7 @@ public class ESDLUtil {
      */
 	@NotNull
 	public static QuantityAndUnitType getOrCreateEnergyInJouleQuantityAndUnit(EnergySystem energySystem) {
-		if (energySystem.getEnergySystemInformation() == null) {
-			EnergySystemInformation energySystemInformation = EsdlFactory.eINSTANCE.createEnergySystemInformation();
-			energySystemInformation.setId(UUID.randomUUID().toString());
-			energySystem.setEnergySystemInformation(energySystemInformation);
-		}
-		if (energySystem.getEnergySystemInformation().getQuantityAndUnits() == null) {
-			energySystem.getEnergySystemInformation()
-					.setQuantityAndUnits(EsdlFactory.eINSTANCE.createQuantityAndUnits());
-			energySystem.getEnergySystemInformation().getQuantityAndUnits().setId(UUID.randomUUID().toString());
-		}
+		ensureESI_QaU_InESDL(energySystem);
 		QuantityAndUnitType energyInJoule = null;
 		// find EnergyInJoule in ESI of ESDL. If not create one and add it.
 		for (QuantityAndUnitType qau : energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit()) {
@@ -266,17 +257,120 @@ public class ESDLUtil {
 		if (energyInJoule == null) {
 			energyInJoule = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
 			energyInJoule.setId(UUID.randomUUID().toString());
+			energyInJoule.setPhysicalQuantity(PhysicalQuantityEnum.ENERGY);
+			energyInJoule.setMultiplier(MultiplierEnum.NONE);
 			energyInJoule.setUnit(UnitEnum.JOULE);
 			energyInJoule.setDescription("Energy in J");
-			energyInJoule.setMultiplier(MultiplierEnum.NONE);
 			energyInJoule.setPerUnit(UnitEnum.NONE);
-			energyInJoule.setPhysicalQuantity(PhysicalQuantityEnum.ENERGY);
 			energyInJoule.setPerTimeUnit(TimeUnitEnum.NONE);
 			energyInJoule.setPerMultiplier(MultiplierEnum.NONE);
 			energyInJoule.setPerScope(QuantityAndUnitScopeEnum.UNDEFINED);
 			energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(energyInJoule);
 		}
 		return energyInJoule;
+	}
+	
+	@NotNull
+	public static QuantityAndUnitType getOrCreatePowerInWattQuantityAndUnit(EnergySystem energySystem) {
+		ensureESI_QaU_InESDL(energySystem);
+		QuantityAndUnitType powerInWatt = null;
+		// find EnergyInJoule in ESI of ESDL. If not create one and add it.
+		for (QuantityAndUnitType qau : energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit()) {
+			if (qau.getPhysicalQuantity() == PhysicalQuantityEnum.POWER && qau.getUnit() == UnitEnum.WATT &&
+					qau.getMultiplier() == MultiplierEnum.NONE && qau.getPerUnit() == UnitEnum.NONE && 
+					qau.getPerMultiplier() == MultiplierEnum.NONE && qau.getPerScope()==QuantityAndUnitScopeEnum.UNDEFINED &&
+					qau.getPerTimeUnit() == TimeUnitEnum.NONE) {
+				powerInWatt = qau;
+				break;
+			}
+		}
+		if (powerInWatt == null) {
+			powerInWatt = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+			powerInWatt.setId(UUID.randomUUID().toString());
+			powerInWatt.setPhysicalQuantity(PhysicalQuantityEnum.POWER);
+			powerInWatt.setMultiplier(MultiplierEnum.NONE);
+			powerInWatt.setUnit(UnitEnum.WATT);
+			powerInWatt.setDescription("Power in W");
+			powerInWatt.setPerUnit(UnitEnum.NONE);
+			powerInWatt.setPerTimeUnit(TimeUnitEnum.NONE);
+			powerInWatt.setPerMultiplier(MultiplierEnum.NONE);
+			powerInWatt.setPerScope(QuantityAndUnitScopeEnum.UNDEFINED);
+			energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(powerInWatt);
+		}
+		return powerInWatt;
+	}
+	
+	@NotNull
+	public static QuantityAndUnitType getOrCreateTimeInHourQuantityAndUnit(EnergySystem energySystem) {
+		ensureESI_QaU_InESDL(energySystem);
+		QuantityAndUnitType timeInHour = null;
+		// find EnergyInJoule in ESI of ESDL. If not create one and add it.
+		for (QuantityAndUnitType qau : energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit()) {
+			if (qau.getPhysicalQuantity() == PhysicalQuantityEnum.TIME && qau.getUnit() == UnitEnum.HOUR &&
+					qau.getMultiplier() == MultiplierEnum.NONE && qau.getPerUnit() == UnitEnum.NONE && 
+					qau.getPerMultiplier() == MultiplierEnum.NONE && qau.getPerScope()==QuantityAndUnitScopeEnum.UNDEFINED &&
+					qau.getPerTimeUnit() == TimeUnitEnum.NONE) {
+				timeInHour = qau;
+				break;
+			}
+		}
+		if (timeInHour == null) {
+			timeInHour = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+			timeInHour.setId(UUID.randomUUID().toString());
+			timeInHour.setPhysicalQuantity(PhysicalQuantityEnum.TIME);
+			timeInHour.setMultiplier(MultiplierEnum.NONE);
+			timeInHour.setUnit(UnitEnum.HOUR);
+			timeInHour.setDescription("Time in Hour");
+			timeInHour.setPerUnit(UnitEnum.NONE);
+			timeInHour.setPerTimeUnit(TimeUnitEnum.NONE);
+			timeInHour.setPerMultiplier(MultiplierEnum.NONE);
+			timeInHour.setPerScope(QuantityAndUnitScopeEnum.UNDEFINED);
+			energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(timeInHour);
+		}
+		return timeInHour;
+	}
+
+	@NotNull
+	public static QuantityAndUnitType getOrCreatePercentageQuantityAndUnit(EnergySystem energySystem) {
+		ensureESI_QaU_InESDL(energySystem);
+		QuantityAndUnitType percent = null;
+		// find EnergyInJoule in ESI of ESDL. If not create one and add it.
+		for (QuantityAndUnitType qau : energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit()) {
+			if (qau.getPhysicalQuantity() == PhysicalQuantityEnum.COEFFICIENT && qau.getUnit() == UnitEnum.PERCENT &&
+					qau.getMultiplier() == MultiplierEnum.NONE && qau.getPerUnit() == UnitEnum.NONE && 
+					qau.getPerMultiplier() == MultiplierEnum.NONE && qau.getPerScope()==QuantityAndUnitScopeEnum.UNDEFINED &&
+					qau.getPerTimeUnit() == TimeUnitEnum.NONE) {
+				percent = qau;
+				break;
+			}
+		}
+		if (percent == null) {
+			percent = EsdlFactory.eINSTANCE.createQuantityAndUnitType();
+			percent.setId(UUID.randomUUID().toString());
+			percent.setPhysicalQuantity(PhysicalQuantityEnum.COEFFICIENT);
+			percent.setMultiplier(MultiplierEnum.NONE);
+			percent.setUnit(UnitEnum.PERCENT);
+			percent.setDescription("Time in Hour");
+			percent.setPerUnit(UnitEnum.NONE);
+			percent.setPerTimeUnit(TimeUnitEnum.NONE);
+			percent.setPerMultiplier(MultiplierEnum.NONE);
+			percent.setPerScope(QuantityAndUnitScopeEnum.UNDEFINED);
+			energySystem.getEnergySystemInformation().getQuantityAndUnits().getQuantityAndUnit().add(percent);
+		}
+		return percent;
+	}
+
+	private static void ensureESI_QaU_InESDL(EnergySystem energySystem) {
+		if (energySystem.getEnergySystemInformation() == null) {
+			EnergySystemInformation energySystemInformation = EsdlFactory.eINSTANCE.createEnergySystemInformation();
+			energySystemInformation.setId(UUID.randomUUID().toString());
+			energySystem.setEnergySystemInformation(energySystemInformation);
+		}
+		if (energySystem.getEnergySystemInformation().getQuantityAndUnits() == null) {
+			energySystem.getEnergySystemInformation()
+					.setQuantityAndUnits(EsdlFactory.eINSTANCE.createQuantityAndUnits());
+			energySystem.getEnergySystemInformation().getQuantityAndUnits().setId(UUID.randomUUID().toString());
+		}
 	}
 	
 	
