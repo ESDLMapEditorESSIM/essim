@@ -28,6 +28,7 @@ public class KPIResultProcessor {
 	
 	public static void convertKPIJsonToESDLKPIs(EnergySystem energySystem, KPIModule kpiModule, JsonNode result) {
 		try {
+			
 			String kpiModuleId = kpiModule.getId();
 			// JSON Object should start with ID of KPI module e.g. "TotalAbsoluteEnergyImbalanceID" 
 			if (result instanceof ObjectNode o) {
@@ -36,9 +37,9 @@ public class KPIResultProcessor {
 				// and "kpi" that describes the kpi values
 				if (kpiModuleMain != null && kpiModuleMain instanceof ObjectNode k) {
 					@SuppressWarnings("unused")
-					String description = k.get("Description").asText(); // KPI Module description
+					String description = (k.has("Description") ? k.get("Description").asText() : "" ); // KPI Module description
 					@SuppressWarnings("unused")
-					String scope = k.get("scope").asText();  // Scope of KPI, not sure what do do with this info
+					String scope = (k.has("scope") ? k.get("scope").asText():"");  // Scope of KPI, not sure what do do with this info
 					String id = k.get("id").asText();
 					String status = k.get("status").asText();
 					JsonNode kpiField = k.get("kpi");
