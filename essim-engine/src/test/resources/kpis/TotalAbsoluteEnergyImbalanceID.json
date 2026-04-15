@@ -1,0 +1,86 @@
+
+    {
+        "TotalAbsoluteEnergyImbalanceID": {
+            "Description": "",
+            "kpi": [
+                {
+                    "system": [
+                        {
+                            "Values": 4000000000000800.0,
+                            "Unit": "Joule",
+                            "Name": "Total absolute energy imbalance [Joule]"
+                        },
+                        {
+                            "Values": 240,
+                            "Unit": "Hour",
+                            "Name": "Number of hours with absolute energy imbalance [Hour]"
+                        },
+                        {
+                            "Values": 100,
+                            "Unit": "Percentage",
+                            "Name": "Percentage of hours with absolute energy imbalance [Percentage]"
+                        }
+                    ],
+                    "per_carrier": [
+                        {
+                            "Values": [
+                                {
+                                    "carrier": "Electricity",
+                                    "value": 1000000000000800.0
+                                },
+                                {
+                                    "carrier": "Heat",
+                                    "value": 0
+                                },
+                                {
+                                    "carrier": "Gas",
+                                    "value": 3000000000000000.0
+                                }
+                            ],
+                            "Unit": "Joule",
+                            "Name": "Total absolute energy imbalance, per energy carrier [Joule]"
+                        },
+                        {
+                            "Values": [
+                                {
+                                    "carrier": "Electricity",
+                                    "value": 240
+                                },
+                                {
+                                    "carrier": "Heat",
+                                    "value": 0
+                                },
+                                {
+                                    "carrier": "Gas",
+                                    "value": 240
+                                }
+                            ],
+                            "Unit": "Hour",
+                            "Name": "Number of hours with absolute energy imbalance, per energy carrier [Hour]"
+                        },
+                        {
+                            "Values": [
+                                {
+                                    "carrier": "Electricity",
+                                    "value": 100
+                                },
+                                {
+                                    "carrier": "Heat",
+                                    "value": 0
+                                },
+                                {
+                                    "carrier": "Gas",
+                                    "value": 100
+                                }
+                            ],
+                            "Unit": "Percentage",
+                            "Name": "Percentage of hours with absolute energy imbalance, per energy carrier [Percentage]"
+                        }
+                    ]
+                }
+            ],
+            "scope": "whole",
+            "id": "TotalAbsoluteEnergyImbalanceID",
+            "status": "Success"
+        }
+    }

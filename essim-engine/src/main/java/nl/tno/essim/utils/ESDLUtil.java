@@ -110,6 +110,7 @@ public class ESDLUtil {
         xmiResource.getContents().add(ecoreResource);
         HashMap<String, Object> opts = new HashMap<>();
         opts.put(XMIResource.OPTION_SCHEMA_LOCATION, true);
+        opts.put(XMIResource.OPTION_ENCODING, StandardCharsets.UTF_8.name());
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         xmiResource.save(stream, opts);
         return stream.toString(StandardCharsets.UTF_8);
@@ -350,7 +351,7 @@ public class ESDLUtil {
 			percent.setPhysicalQuantity(PhysicalQuantityEnum.COEFFICIENT);
 			percent.setMultiplier(MultiplierEnum.NONE);
 			percent.setUnit(UnitEnum.PERCENT);
-			percent.setDescription("Time in Hour");
+			percent.setDescription("Coefficient as Percentage");
 			percent.setPerUnit(UnitEnum.NONE);
 			percent.setPerTimeUnit(TimeUnitEnum.NONE);
 			percent.setPerMultiplier(MultiplierEnum.NONE);

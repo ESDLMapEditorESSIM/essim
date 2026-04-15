@@ -1,0 +1,39 @@
+	{
+        "TotalEnergyDemandID": {
+            "Description": "This KPI calculates the total energy demand.",
+            "kpi": [
+                {
+                    "system": [
+                        {
+                            "Values": 23000000000016000.0,
+                            "Unit": "Joule",
+                            "Name": "Total energy demand [Joule]"
+                        }
+                    ],
+                    "per_carrier": [
+                        {
+                            "Values": [
+                                {
+                                    "carrier": "Gas",
+                                    "value": 7000000000008000.0
+                                },
+                                {
+                                    "carrier": "Heat",
+                                    "value": 10000000000008000.0
+                                },
+                                {
+                                    "carrier": "Electricity",
+                                    "value": 6000000000000000.0
+                                }
+                            ],
+                            "Unit": "Joule",
+                            "Name": "Total energy demand, per energy carrier [Joule]"
+                        }
+                    ]
+                }
+            ],
+            "scope": "total",
+            "id": "TotalEnergyDemandID",
+            "status": "Success"
+        }
+    }

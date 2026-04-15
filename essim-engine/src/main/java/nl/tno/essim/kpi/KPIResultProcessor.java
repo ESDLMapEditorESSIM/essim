@@ -35,7 +35,9 @@ public class KPIResultProcessor {
 				// main KPI object has "Description" (text), "scope" ["Local", "Total"], "id" (same as main id), "status" [Success, Not yet started, Calculating]
 				// and "kpi" that describes the kpi values
 				if (kpiModuleMain != null && kpiModuleMain instanceof ObjectNode k) {
+					@SuppressWarnings("unused")
 					String description = k.get("Description").asText(); // KPI Module description
+					@SuppressWarnings("unused")
 					String scope = k.get("scope").asText();  // Scope of KPI, not sure what do do with this info
 					String id = k.get("id").asText();
 					String status = k.get("status").asText();
@@ -54,7 +56,8 @@ public class KPIResultProcessor {
 										handleKPI(energySystem, "system", subSystemKPI);
 									}
 								}
-							} else if (highLevelItem.has("per_carrier")) {
+							}
+							if (highLevelItem.has("per_carrier")) {
 								// per carrier KPI
 								JsonNode systemKPINode = highLevelItem.get("per_carrier");
 								if (systemKPINode != null && systemKPINode instanceof ArrayNode systemKPIArray) {								
@@ -62,13 +65,11 @@ public class KPIResultProcessor {
 										handleKPI(energySystem, "per_carrier", subSystemKPI);
 									}
 								}
-							} else if (highLevelItem.has("Name") && highLevelItem.has("Unit") && highLevelItem.has("Value")) {
+							}
+							if (highLevelItem.has("Name") && highLevelItem.has("Unit") && highLevelItem.has("Value")) {
 								// no distinction in KPIs
 								handleKPI(energySystem, "none", highLevelItem);
-							} else {
-							
-								log.debug("Adding KPIs - > Unknown kpi type: " + highLevelItem.asText());
-							}
+							} 
 						}
 					} else if (!status.toLowerCase().equals("success")) {
 						log.warn("Adding KPIs - Status of KPI with ID=" + id + " is not Success, but " + status + ", ignoring.");
@@ -115,8 +116,10 @@ public class KPIResultProcessor {
 			kpis = EsdlFactory.eINSTANCE.createKPIs();
 			kpis.setDescription("ESSIM Energy system KPIs");
 			kpis.setId(UUID.randomUUID().toString());
+			mainArea.setKPIs(kpis);
 		}
 		EList<KPI> areaKPIList = kpis.getKpi();
+	
 		
 		if (subSystemKPI != null && subSystemKPI instanceof ObjectNode jsonObject) {
 			String kpiName = jsonObject.get("Name").asText();
@@ -127,7 +130,7 @@ public class KPIResultProcessor {
 				DistributionKPI distributionKPI = EsdlFactory.eINSTANCE.createDistributionKPI();
 				distributionKPI.setName(kpiName);
 				distributionKPI.setQuantityAndUnit(getUnit(kpiUnitString, energySystem));
-				distributionKPI.setId(UUID.randomUUID().toString());
+				distributionKPI.setId(UUID.randomUUID().toString());				
 				StringLabelDistribution stringLabelDistribution = EsdlFactory.eINSTANCE.createStringLabelDistribution();
 				stringLabelDistribution.setName(kpiName);
 				distributionKPI.setDistribution(stringLabelDistribution);
