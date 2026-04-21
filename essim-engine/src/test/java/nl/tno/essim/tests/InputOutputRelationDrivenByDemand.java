@@ -11,14 +11,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import esdl.*;
-import nl.tno.essim.transportsolver.nodes.Node;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import esdl.Asset;
+import esdl.EnergyAsset;
+import esdl.EnergySystem;
+import esdl.Port;
 import esdl.impl.AbstractBasicConversionImpl;
 import nl.tno.essim.ESSimEngine;
 import nl.tno.essim.commons.Commons;
@@ -27,6 +29,7 @@ import nl.tno.essim.model.Market;
 import nl.tno.essim.model.Status;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.time.EssimTime;
+import nl.tno.essim.transportsolver.nodes.Node;
 import tech.tablesaw.api.Table;
 import tech.tablesaw.columns.Column;
 
@@ -113,7 +116,7 @@ class InputOutputRelationDrivenByDemand {
                 Resource eResource = es.eResource();
                 EnergyAsset asset = (EnergyAsset) eResource.getEObject(entry.getKey());
                 if (asset instanceof AbstractBasicConversionImpl) {
-                	List<String> list = bidcurveMap.get(asset);
+                	List<String> list = bidcurveMap.get(asset.getName());
                 	if (list == null) {
                 		list = new ArrayList<String>();
                 		bidcurveMap.put(asset.getName(), list);

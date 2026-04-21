@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.xmi.XMIResource;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
 import org.jetbrains.annotations.NotNull;
@@ -385,5 +386,16 @@ public class ESDLUtil {
 		QuantityAndUnitReference quantityAndUnitReference = EsdlFactory.eINSTANCE.createQuantityAndUnitReference();
 		quantityAndUnitReference.setReference(quantityAndUnitType);		
 		return quantityAndUnitReference;
+	}
+	
+	public static String repr(EObject eobj) {
+		EStructuralFeature nameAttr = eobj.eClass().getEStructuralFeature("name");
+		String name = null;
+		if (nameAttr != null) {
+			//nameAttr.getEType().getClass().cast(
+			name = eobj.eGet(nameAttr).toString();
+		}
+			
+		return "<" + eobj.eClass().getName() + " name='" + name + "'>";
 	}
 }

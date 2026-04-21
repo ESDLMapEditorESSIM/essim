@@ -1,12 +1,14 @@
 package nl.tno.essim.observation.consumers;
 
 import esdl.*;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.profiles.DataTableProfileDataHandler;
 import nl.tno.essim.utils.ESDLUtil;
 
 import java.util.UUID;
 
+@Slf4j
 public class InfluxDBPortProfileProcessor implements java.util.function.Consumer<Port> {
     private final String simulationId;
     private final EssimSimulation simulation;
@@ -24,6 +26,7 @@ public class InfluxDBPortProfileProcessor implements java.util.function.Consumer
 
     @Override
     public void accept(Port port) {
+    	log.debug("Adding InfluxDB profile to port " + port.getEnergyasset().getName() + "." + port.eClass().getName() + "[name=" + port.getName() + "]");
         String scenarioID = simulation.getScenarioID();
         dbc.setDatabase(scenarioID);
         DataTableProfile dataTableProfile = EsdlFactory.eINSTANCE.createDataTableProfile();
@@ -37,6 +40,7 @@ public class InfluxDBPortProfileProcessor implements java.util.function.Consumer
         dataTableProfile.setStartDate(simulation.getStartDate());
         dataTableProfile.setEndDate(simulation.getEndDate());
         dataTableProfile.setMultiplier(1);
+        dataTableProfile.setProfileType(ProfileTypeEnum.OUTPUT);
         port.getProfile().add(dataTableProfile);
 
     }

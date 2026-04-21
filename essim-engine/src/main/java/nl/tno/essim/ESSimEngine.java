@@ -16,24 +16,76 @@
 
 package nl.tno.essim;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.eclipse.emf.common.util.EList;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import esdl.*;
-import nl.tno.essim.grafana.GrafanaDashboardGenerator;
-import nl.tno.essim.profiles.ProfileDataManager;
-import nl.tno.essim.commons.CredentialUtils;
+
+import esdl.Area;
+import esdl.Carrier;
+import esdl.Carriers;
+import esdl.ControlStrategy;
+import esdl.Conversion;
+import esdl.DrivenByDemand;
+import esdl.DrivenBySupply;
+import esdl.ElectricityCommodity;
+import esdl.EnergyAsset;
+import esdl.EnergyCarrier;
+import esdl.EnergySystem;
+import esdl.EnergySystemInformation;
+import esdl.EsdlFactory;
+import esdl.InPort;
+import esdl.Instance;
+import esdl.OutPort;
+import esdl.Port;
+import esdl.Service;
+import esdl.Services;
+import esdl.Transport;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.commons.Commons;
 import nl.tno.essim.commons.Commons.Role;
+import nl.tno.essim.commons.CredentialUtils;
 import nl.tno.essim.commons.IStatusProvider;
+import nl.tno.essim.grafana.GrafanaDashboardGenerator;
 import nl.tno.essim.kpi.KPIManager;
 import nl.tno.essim.kpi.data.KPIInfo;
 import nl.tno.essim.loadflow.EssimLoadFlowController;
 import nl.tno.essim.managers.EmissionManager;
 import nl.tno.essim.managers.ObservationManager;
 import nl.tno.essim.managers.SimulationManager;
-import nl.tno.essim.model.*;
+import nl.tno.essim.model.EssimSimulation;
+import nl.tno.essim.model.KPIModule;
+import nl.tno.essim.model.MSOConfiguration;
+import nl.tno.essim.model.Market;
+import nl.tno.essim.model.NodeConfiguration;
+import nl.tno.essim.model.RemoteKPIModule;
+import nl.tno.essim.model.TransportNetwork;
 import nl.tno.essim.mongo.IMongoBackend;
 import nl.tno.essim.mso.MSOClient;
 import nl.tno.essim.observation.IObservationManager;
@@ -44,29 +96,12 @@ import nl.tno.essim.observation.consumers.InfluxDBObservationConsumer;
 import nl.tno.essim.observation.consumers.KPIObservationConsumer;
 import nl.tno.essim.observation.consumers.PostgresObservationConsumer;
 import nl.tno.essim.observation.consumers.csv.CSVObservationConsumer;
+import nl.tno.essim.profiles.ProfileDataManager;
 import nl.tno.essim.time.EssimDuration;
 import nl.tno.essim.time.EssimTime;
 import nl.tno.essim.transportsolver.ChocoOptimiser;
 import nl.tno.essim.transportsolver.TransportSolver;
 import nl.tno.essim.utils.ESDLUtil;
-import org.eclipse.emf.common.util.EList;
-import org.eclipse.emf.ecore.xmi.impl.XMIResourceImpl;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ESSimEngine implements IStatusProvider {
@@ -407,7 +442,7 @@ public class ESSimEngine implements IStatusProvider {
                     }
                     connectedAssets.put(energyAsset, role);
                 }
-            }
+            }            
             visitor.visit(connectedAssets, connectedCarriers, i);
             allPorts.removeAll(networkPorts);
             ++i;

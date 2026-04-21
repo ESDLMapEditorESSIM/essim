@@ -623,7 +623,12 @@ public class SimulationService {
                 java.util.function.Consumer<Port> portProcessor = postgresURL != null ?
                         new PostgresPortProfileProcessor(simulationId, simulation, energySystem, solverIdentifier) :
                         new InfluxDBPortProfileProcessor(simulationId, simulation, energySystem, solverIdentifier);
-                connectedAssets.keySet().forEach(energyAsset -> energyAsset.getPort().forEach(portProcessor));
+                // for all connectedAssets, get their ports, check if they belong to the connected carrier, and if so
+                // create a profile for it using the portProcessor
+                connectedAssets.keySet().stream().map(energyasset -> energyasset.getPort()).flatMap(List::stream)  // list of ports
+                	.filter(p -> connectedCarriers.stream().anyMatch(c -> p.getCarrier().equals(c)))
+                	.forEach(portProcessor);
+                	
             });
             // set new ID and name for this ESDL, as profiles are added and therefore this is a different ESDL
             energySystem.setId(UUID.randomUUID().toString());

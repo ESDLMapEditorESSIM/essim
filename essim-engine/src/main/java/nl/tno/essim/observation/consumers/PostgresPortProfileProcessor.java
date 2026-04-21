@@ -8,11 +8,14 @@ import esdl.DatabaseTypeEnum;
 import esdl.EnergySystem;
 import esdl.EsdlFactory;
 import esdl.Port;
+import esdl.ProfileTypeEnum;
 import esdl.QuantityAndUnitType;
+import lombok.extern.slf4j.Slf4j;
 import nl.tno.essim.model.EssimSimulation;
 import nl.tno.essim.profiles.DataTableProfileDataHandler;
 import nl.tno.essim.utils.ESDLUtil;
 
+@Slf4j
 public class PostgresPortProfileProcessor implements java.util.function.Consumer<Port> {
 	private final String simulationId;
 	private final EssimSimulation simulation;
@@ -32,6 +35,7 @@ public class PostgresPortProfileProcessor implements java.util.function.Consumer
 
 	@Override
 	public void accept(Port port) {
+		log.debug("Adding Postgres profile to port " + port.getEnergyasset().getName() + "." + port.eClass().getName() + "[name=" + port.getName() + "]");
 		String scenarioID = simulation.getScenarioID();
 		DataTableProfile dataTableProfile = EsdlFactory.eINSTANCE.createDataTableProfile();
 		dataTableProfile.setConfiguration(dbc);
@@ -47,6 +51,7 @@ public class PostgresPortProfileProcessor implements java.util.function.Consumer
 		dataTableProfile.setStartDate(simulation.getStartDate());
 		dataTableProfile.setEndDate(simulation.getEndDate());
 		dataTableProfile.setMultiplier(1);
+		dataTableProfile.setProfileType(ProfileTypeEnum.OUTPUT);
 		port.getProfile().add(dataTableProfile);
 
 	}
