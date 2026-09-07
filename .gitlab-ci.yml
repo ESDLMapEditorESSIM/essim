@@ -8,7 +8,7 @@ variables:
 
 .build-script:
   before_script:
-    - apt-get update && apt-get install -y libatomic1 docker.io
+    - apt-get update && apt-get install -y libatomic1 docker.io docker-buildx
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_TNO_REGISTRY
 
 
@@ -37,7 +37,7 @@ build-and-push-essim:
     - VERSION=$(date +%y.%m)-g$COMMIT_SHA
     - mvn -Drevision=$VERSION clean package
     - cd $CI_PROJECT_DIR/essim-engine
-    - docker build --no-cache
+    - docker buildx build --no-cache
       --build-arg VERSION=$VERSION
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_BRANCH 
       -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
