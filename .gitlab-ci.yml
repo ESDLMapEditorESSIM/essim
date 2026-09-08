@@ -1,23 +1,17 @@
 stages:
   - build
+  - package
 
 image: maven:3-eclipse-temurin-21
 
 variables:
   REGISTRY: ci.tno.nl
 
-.build-script:
-  before_script:
-    - apt-get update && apt-get install -y libatomic1 podman
-    - podman login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_TNO_REGISTRY
-
-
 build-essim:
   stage: build
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_DEPTH: 0
-  extends: .build-script
   script:
     - cd $CI_PROJECT_DIR
     - mvn clean package
@@ -25,25 +19,45 @@ build-essim:
     - main
     - loadflow
 
-build-and-push-essim:
+build-essim-jar:
   stage: build
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_DEPTH: 0
-  extends: .build-script
   script:
     - cd $CI_PROJECT_DIR
-    - COMMIT_SHA=`git rev-parse --short HEAD`
-    - VERSION=$(date +%y.%m)-g$COMMIT_SHA
+    - VERSION=$(date +%y.%m)-g$CI_COMMIT_SHORT_SHA
+    - echo "VERSION=$VERSION" > build.env
     - mvn -Drevision=$VERSION clean package
-    - cd $CI_PROJECT_DIR/essim-engine
-    - podman build --no-cache
-      --build-arg VERSION=$VERSION
-      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_BRANCH 
-      -t ci.tno.nl/essim/open-sourced-essim/essim-engine:$COMMIT_SHA 
-      .
-    - podman push  --all-tags
-      ci.tno.nl/essim/open-sourced-essim/essim-engine
-  only: 
+  artifacts:
+    paths:
+      - essim-engine/target/essim.jar
+    reports:
+      dotenv: build.env
+  only:
     - main
     - loadflow
+    - kaniko_test
+
+# Switch to Kaniko so the image can be built and pushed without a privileged docker daemon
+push-essim:
+  stage: package
+  image:
+    name: gcr.io/kaniko-project/executor:v1.24.0-debug
+    entrypoint: [""]
+  needs:
+    - build-essim-jar
+  before_script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+  script:
+    - /kaniko/executor
+      --context $CI_PROJECT_DIR/essim-engine
+      --dockerfile $CI_PROJECT_DIR/essim-engine/Dockerfile
+      --build-arg VERSION=$VERSION
+      --destination ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_BRANCH
+      --destination ci.tno.nl/essim/open-sourced-essim/essim-engine:$CI_COMMIT_SHORT_SHA
+  only:
+    - main
+    - loadflow
+    - kaniko_test
