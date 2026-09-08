@@ -23,7 +23,11 @@ public class InfluxDBProfileCacheSupplier implements ProfileCacheSupplier {
     @Override
     public String createUri(AbstractDataConfiguration configuration) {
         dbConfig = (DatabaseConfiguration) configuration;
-        return "http://" + dbConfig.getHost() + ":" + dbConfig.getPort();
+        if (dbConfig.isTls()) {
+        	return "https://" + dbConfig.getHost() + ":" + dbConfig.getPort();
+        } else {
+        	return "http://" + dbConfig.getHost() + ":" + dbConfig.getPort();
+        }
     }
 
     private InfluxDB connectToInfluxHost(String serverUri) {
