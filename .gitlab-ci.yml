@@ -37,7 +37,6 @@ build-essim-jar:
   only:
     - main
     - loadflow
-    - kaniko_test
 
 # Switch to Kaniko so the image can be built and pushed without a privileged docker daemon
 push-essim:
@@ -60,4 +59,3 @@ push-essim:
   only:
     - main
     - loadflow
-    - kaniko_test
